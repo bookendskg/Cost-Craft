@@ -27,6 +27,7 @@ import { useAuditLogs } from "@/features/audit/hooks";
 import { useFoodCostPct, useAllSettings } from "@/features/settings/hooks";
 import { foodCostPctOf } from "@/features/recipes/recipeMetrics";
 import { BrandFilter, type BrandSelection } from "./BrandFilter";
+import { BrandBanner } from "./BrandBanner";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -100,6 +101,8 @@ export function AdminDashboard() {
         description="Live costing health across your catalog"
         actions={<BrandFilter value={brand} onChange={setBrand} />}
       />
+
+      <BrandBanner brand={brand} />
 
       {/* KPI cards */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
