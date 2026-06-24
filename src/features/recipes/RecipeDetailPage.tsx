@@ -61,7 +61,6 @@ const CATEGORY_EMOJI: Record<string, string> = {
   Pasta: "🍝", Rice: "🍚", Dessert: "🍰", Beverage: "🍵", Protein: "🍗",
 };
 const emojiFor = (c: string) => CATEGORY_EMOJI[c] ?? "🍽️";
-const SCALES = [1, 2, 5];
 
 export function RecipeDetailPage() {
   const { id } = useParams();
@@ -80,7 +79,7 @@ export function RecipeDetailPage() {
   const approveMut = useApproveRecipe();
   const rejectMut = useRejectRecipe();
 
-  const [scale, setScale] = useState(1);
+  const scale = 1;
   const [submitOpen, setSubmitOpen] = useState(false);
   const [submitNote, setSubmitNote] = useState("");
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -206,21 +205,7 @@ export function RecipeDetailPage() {
                 <div className="mt-4 flex items-center justify-between border-t pt-3">
                   <div className="text-sm">
                     <p className="text-xs uppercase text-muted-foreground">Recipe Yield</p>
-                    <p className="font-semibold">{recipe.serving_size * scale} Portions</p>
-                  </div>
-                  <div className="inline-flex rounded-lg border bg-muted p-1">
-                    {SCALES.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setScale(s)}
-                        className={cn(
-                          "rounded-md px-3 py-1 text-sm font-medium transition-colors",
-                          scale === s ? "bg-background shadow" : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {s}X
-                      </button>
-                    ))}
+                    <p className="font-semibold">{recipe.serving_size} Portion{recipe.serving_size > 1 ? "s" : ""}</p>
                   </div>
                 </div>
               </div>
