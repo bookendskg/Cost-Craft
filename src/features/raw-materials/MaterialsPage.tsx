@@ -132,9 +132,8 @@ export function MaterialsPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead>Purchase</TableHead>
-                <TableHead>Base Unit</TableHead>
+                <TableHead>Purchase Price</TableHead>
+                <TableHead>Unit</TableHead>
                 <TableHead>Cost / Unit</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
@@ -151,15 +150,16 @@ export function MaterialsPage() {
                     </div>
                   </TableCell>
                   <TableCell>{m.category}</TableCell>
-                  <TableCell className="text-muted-foreground">{m.supplier_name ?? "—"}</TableCell>
                   <TableCell>
                     {m.purchase_price === null ? (
                       <Badge variant="warning">No Price</Badge>
+                    ) : m.purchase_quantity === 1 ? (
+                      formatINR(m.purchase_price)
                     ) : (
-                      `${formatINR(m.purchase_price)} / ${m.purchase_quantity} ${m.purchase_unit}`
+                      `${formatINR(m.purchase_price)} / ${m.purchase_quantity}`
                     )}
                   </TableCell>
-                  <TableCell>{m.base_unit}</TableCell>
+                  <TableCell>{m.purchase_unit}</TableCell>
                   <TableCell className="font-medium">
                     {m.cost_per_base_unit === null
                       ? "—"

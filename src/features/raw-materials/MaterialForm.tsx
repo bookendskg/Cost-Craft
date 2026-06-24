@@ -134,29 +134,23 @@ export function MaterialForm({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Category *</Label>
-              <Select value={watch("category")} onValueChange={(v) => setValue("category", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {formState.errors.category && (
-                <p className="text-xs text-destructive">{formState.errors.category.message}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Supplier Name</Label>
-              <Input {...register("supplier_name")} />
-            </div>
+          <div className="space-y-1.5">
+            <Label>Category *</Label>
+            <Select value={watch("category")} onValueChange={(v) => setValue("category", v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formState.errors.category && (
+              <p className="text-xs text-destructive">{formState.errors.category.message}</p>
+            )}
           </div>
 
           <div className="rounded-md border p-3">
