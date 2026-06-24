@@ -27,14 +27,14 @@ export function prepUnitCost(recipe: Recipe): number {
 function lineCost(db: MockDb, line: { ingredient_id: string; component_type: string; quantity_used: number; unit_used: string }): number | null {
   if (line.component_type === "recipe") {
     const sub = db.recipes.find((r) => r.id === line.ingredient_id);
-    if (!sub) return null;
-    const factor = canConvert(line.unit_used, sub.yield_unit)
-      ? getConversionFactor(line.unit_used, sub.yield_unit)
-      : 1;
+    // Unconvertible unit → unknown cost (never silently assume factor 1).
+    if (!sub || !canConvert(line.unit_used, sub.yield_unit)) return null;
+    const factor = getConversionFactor(line.unit_used, sub.yield_unit);
     return round2(prepUnitCost(sub) * line.quantity_used * factor);
   }
   const m = findMaterial(db, line.ingredient_id);
-  if (!m || m.cost_per_base_unit === null) return null;
+  // Guard the unit pair so an invalid conversion can never throw mid-recompute.
+  if (!m || m.cost_per_base_unit === null || !canConvert(line.unit_used, m.base_unit)) return null;
   return calculateIngredientCost(m.cost_per_base_unit, line.quantity_used, line.unit_used, m.base_unit);
 }
 
