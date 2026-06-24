@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { calculateIngredientCost, round2, type RecipeCostingResult } from "@/lib/costing";
+import { calculateIngredientCost, prepUnitCostFrom, round2, type RecipeCostingResult } from "@/lib/costing";
 import { canConvert, getConversionFactor } from "@/lib/units";
 import type { RawMaterial, Recipe } from "@/lib/data/types";
 
@@ -25,9 +25,9 @@ export interface RecipeCostingView extends RecipeCostingResult {
   hasMissingPrice: boolean;
 }
 
-/** A prep recipe's cost per unit of its yield (e.g. ₹/gram). */
+/** A prep recipe's cost per unit of its yield (pre-wastage; ₹/gram). */
 function prepUnitCost(r: Recipe): number {
-  return r.yield_quantity > 0 ? (r.total_cost ?? 0) / r.yield_quantity : 0;
+  return prepUnitCostFrom(r.total_cost ?? 0, r.yield_quantity, r.wastage_pct ?? 0);
 }
 
 /**

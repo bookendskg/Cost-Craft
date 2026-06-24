@@ -2,7 +2,7 @@
 // Centralises the cost roll-up (PRD §4.5) including sub-recipe (in-house prep)
 // components, so ingredient price changes and recipe edits stay consistent.
 
-import { calculateIngredientCost, round2 } from "../../costing";
+import { calculateIngredientCost, prepUnitCostFrom, round2 } from "../../costing";
 import { canConvert, getConversionFactor } from "../../units";
 import type {
   AuditAction,
@@ -17,10 +17,9 @@ export function findMaterial(db: MockDb, id: string): RawMaterial | undefined {
   return db.raw_materials.find((m) => m.id === id);
 }
 
-/** A prep recipe's cost per unit of its yield (e.g. ₹/gram). */
+/** A prep recipe's cost per unit of its yield (pre-wastage; ₹/gram). */
 export function prepUnitCost(recipe: Recipe): number {
-  const yieldQty = recipe.yield_quantity > 0 ? recipe.yield_quantity : 1;
-  return (recipe.total_cost ?? 0) / yieldQty;
+  return prepUnitCostFrom(recipe.total_cost ?? 0, recipe.yield_quantity, recipe.wastage_pct ?? 0);
 }
 
 /** Cost of one recipe line — a raw material or a sub-recipe (prep). */

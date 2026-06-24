@@ -111,6 +111,21 @@ export function calculateRecipeCosting(
   };
 }
 
+/**
+ * Cost per yield-unit of an in-house prep, BEFORE the prep's own wastage — so a
+ * menu using the prep applies wastage only once (matches the costing sheet,
+ * which never compounds wastage across nested tables).
+ */
+export function prepUnitCostFrom(
+  totalCost: number,
+  yieldQuantity: number,
+  wastagePct: number,
+): number {
+  const y = yieldQuantity > 0 ? yieldQuantity : 1;
+  const raw = totalCost / (1 + (wastagePct || 0) / 100);
+  return raw / y;
+}
+
 /** Percentage change between two cost values (used by the price cascade). */
 export function percentChange(oldValue: number, newValue: number): number {
   if (oldValue === 0) return newValue === 0 ? 0 : 100;

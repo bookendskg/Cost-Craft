@@ -3,7 +3,7 @@
 // (component_type "recipe"); preps are costed from leaf raw materials and a
 // prep's per-unit cost = total_cost ÷ yield (sum of its ingredient grams).
 
-import { calculateCostPerBaseUnit } from "../costing";
+import { calculateCostPerBaseUnit, prepUnitCostFrom } from "../costing";
 import type { MockDb } from "./mock/db";
 import type { Brand, RawMaterial, Recipe, RecipeIngredient, User } from "./types";
 
@@ -231,7 +231,8 @@ function totalOf(id: string, stack = new Set<string>()): number {
   for (const l of d.lines) {
     if ("r" in l) {
       const sub = defById.get(l.r)!;
-      raw += round2((totalOf(l.r, stack) / yieldOf(sub)) * l.g);
+      // Use the prep's pre-wastage per-gram so wastage isn't double-counted.
+      raw += round2(prepUnitCostFrom(totalOf(l.r, stack), yieldOf(sub), WASTAGE_PCT) * l.g);
     } else {
       raw += round2((matPerGram.get(l.m) ?? 0) * l.g);
     }
@@ -251,7 +252,7 @@ for (const d of allDefs) {
     const isRecipe = "r" in l;
     const refId = isRecipe ? l.r : l.m;
     const cost = isRecipe
-      ? round2((totalOf(refId) / yieldOf(defById.get(refId)!)) * l.g)
+      ? round2(prepUnitCostFrom(totalOf(refId), yieldOf(defById.get(refId)!), WASTAGE_PCT) * l.g)
       : round2((matPerGram.get(refId) ?? 0) * l.g);
     recipe_ingredients.push({
       id: `${d.id}-i${idx}`,

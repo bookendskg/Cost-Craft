@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { cn, formatDate, formatINR } from "@/lib/utils";
-import { calculateIngredientCost, round2 } from "@/lib/costing";
+import { calculateIngredientCost, prepUnitCostFrom, round2 } from "@/lib/costing";
 import { canConvert, getConversionFactor } from "@/lib/units";
 
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
@@ -294,7 +294,7 @@ export function RecipeDetailPage() {
                       const m = ing.material;
                       if (ing.component_type === "recipe" && sub) {
                         // Sub-recipe (in-house prep) component — double-click to open it.
-                        const perUnit = sub.yield_quantity > 0 ? (sub.total_cost ?? 0) / sub.yield_quantity : 0;
+                        const perUnit = prepUnitCostFrom(sub.total_cost ?? 0, sub.yield_quantity, sub.wastage_pct ?? 0);
                         const cost = round2(perUnit * ing.quantity_used * scale);
                         return (
                           <TableRow

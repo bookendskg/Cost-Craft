@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { recipeHeaderSchema, type RecipeHeaderValues } from "@/lib/validation/schemas";
 import { compatibleUnits, canConvert } from "@/lib/units";
-import { calculateIngredientCost, round2 } from "@/lib/costing";
+import { calculateIngredientCost, prepUnitCostFrom, round2 } from "@/lib/costing";
 import { formatINR } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { BRANDS, type RawMaterial } from "@/lib/data/types";
@@ -379,7 +379,7 @@ export function RecipeEditorPage() {
                   const units = prep ? [prep.yield_unit] : material ? compatibleUnits(material.base_unit) : [];
                   let lineCost: number | null = null;
                   if (prep && line.quantity_used > 0) {
-                    const perUnit = prep.yield_quantity > 0 ? (prep.total_cost ?? 0) / prep.yield_quantity : 0;
+                    const perUnit = prepUnitCostFrom(prep.total_cost ?? 0, prep.yield_quantity, prep.wastage_pct ?? 0);
                     lineCost = round2(perUnit * line.quantity_used);
                   } else if (
                     material &&
