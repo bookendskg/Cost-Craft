@@ -233,13 +233,34 @@ for (const rs of recipeSeeds) {
 }
 
 export function buildSeed(): MockDb {
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
   return {
     users: structuredClone(users),
     raw_materials: structuredClone(raw_materials),
     recipes: structuredClone(recipes),
     recipe_ingredients: structuredClone(recipe_ingredients),
     recipe_cost_history: [],
-    ingredient_price_history: [],
+    // A few illustrative recent price changes for the dashboard feed.
+    ingredient_price_history: [
+      {
+        id: "iph-1", ingredient_id: "m-onion",
+        old_price: 90, new_price: 100,
+        old_cost_per_base_unit: 0.09, new_cost_per_base_unit: 0.1,
+        changed_by: U_EDITOR, changed_at: hoursAgo(2),
+      },
+      {
+        id: "iph-2", ingredient_id: "m-chicken",
+        old_price: 260, new_price: 250,
+        old_cost_per_base_unit: 0.26, new_cost_per_base_unit: 0.25,
+        changed_by: U_EDITOR, changed_at: hoursAgo(26),
+      },
+      {
+        id: "iph-3", ingredient_id: "m-butter",
+        old_price: 380, new_price: 400,
+        old_cost_per_base_unit: 0.38, new_cost_per_base_unit: 0.4,
+        changed_by: U_ADMIN, changed_at: hoursAgo(28),
+      },
+    ],
     recipe_versions: recipeSeeds.map((rs) => ({
       id: `${rs.id}-v1`,
       recipe_id: rs.id,

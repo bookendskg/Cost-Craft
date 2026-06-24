@@ -26,6 +26,28 @@ export function formatDate(value: string | Date | null | undefined): string {
   });
 }
 
+/** Signed percent label like "+15.5%" / "-3.1%". */
+export function percentChangeLabel(pct: number): string {
+  return `${pct >= 0 ? "+" : ""}${pct}%`;
+}
+
+/** Relative time like "2h ago", "Yesterday", "3d ago". */
+export function timeAgo(value: string | Date | null | undefined): string {
+  if (!value) return "—";
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return "—";
+  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 60) return "just now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  if (day === 1) return "Yesterday";
+  if (day < 30) return `${day}d ago`;
+  return formatDate(d);
+}
+
 /** Format a date+time as e.g. "Jun 23, 10:45". */
 export function formatDateTime(value: string | Date | null | undefined): string {
   if (!value) return "—";

@@ -14,6 +14,13 @@ export function useMaterial(id: string | undefined) {
   });
 }
 
+export function useRecentPriceHistory(limit = 10) {
+  return useQuery({
+    queryKey: ["materials", "recentPriceHistory", limit],
+    queryFn: () => materialsRepo.recentPriceHistory(limit),
+  });
+}
+
 export function usePriceHistory(id: string | undefined) {
   return useQuery({
     queryKey: ["materials", id, "priceHistory"],

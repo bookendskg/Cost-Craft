@@ -172,6 +172,15 @@ export const materialsRepo = {
     );
   },
 
+  /** Most recent price changes across all ingredients (dashboard feed). */
+  async recentPriceHistory(limit = 10): Promise<IngredientPriceHistory[]> {
+    return delay(
+      [...getDb().ingredient_price_history]
+        .sort((a, b) => b.changed_at.localeCompare(a.changed_at))
+        .slice(0, limit),
+    );
+  },
+
   async priceHistory(id: string): Promise<IngredientPriceHistory[]> {
     return delay(
       getDb()
