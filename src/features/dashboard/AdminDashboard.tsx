@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowDownRight,
@@ -7,7 +7,6 @@ import {
   Filter as FilterIcon,
   TrendingUp,
 } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkline, sparkSeries } from "@/components/Sparkline";
@@ -26,8 +25,8 @@ import { useMaterials, useRecentPriceHistory } from "@/features/raw-materials/ho
 import { useAuditLogs } from "@/features/audit/hooks";
 import { useFoodCostPct, useAllSettings } from "@/features/settings/hooks";
 import { foodCostPctOf } from "@/features/recipes/recipeMetrics";
-import { BrandFilter, type BrandSelection } from "./BrandFilter";
-import { BrandBanner } from "./BrandBanner";
+import { BrandFilter } from "./BrandFilter";
+import { useDashboardBrand, brandWordmark } from "./brandTheme";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -41,7 +40,8 @@ export function AdminDashboard() {
   const criticalPct = Number(settings.find((s) => s.key === "margin_alert_pct")?.value ?? 35);
   const materialsById = useMemo(() => new Map(materials.map((m) => [m.id, m])), [materials]);
 
-  const [brand, setBrand] = useState<BrandSelection>("all");
+  const brand = useDashboardBrand((s) => s.brand);
+  const setBrand = useDashboardBrand((s) => s.setBrand);
   const recipes = useMemo(
     () => (brand === "all" ? allRecipes : allRecipes.filter((r) => r.brand === brand)),
     [allRecipes, brand],
@@ -96,13 +96,16 @@ export function AdminDashboard() {
 
   return (
     <>
-      <PageHeader
-        title="Kitchen Operations"
-        description="Live costing health across your catalog"
-        actions={<BrandFilter value={brand} onChange={setBrand} />}
-      />
-
-      <BrandBanner brand={brand} />
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.3em] text-white/80">
+            {brandWordmark[brand]}
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">Kitchen Operations</h1>
+          <p className="text-sm text-white/70">Live costing health across your catalog</p>
+        </div>
+        <BrandFilter value={brand} onChange={setBrand} />
+      </div>
 
       {/* KPI cards */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">

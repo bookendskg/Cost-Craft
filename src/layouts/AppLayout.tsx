@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   ChefHat,
   LogOut,
@@ -14,12 +14,15 @@ import { useTheme } from "@/lib/theme";
 import { navForRole } from "./nav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useDashboardBrand, brandBgClass } from "@/features/dashboard/brandTheme";
 
 export function AppLayout() {
   const user = useSession((s) => s.user);
   const logout = useSession((s) => s.logout);
   const { dark, toggle } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+  const brand = useDashboardBrand((s) => s.brand);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   if (!user) return null;
@@ -101,7 +104,13 @@ export function AppLayout() {
             {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main
+          className={cn(
+            "flex-1 overflow-y-auto p-4 transition-colors sm:p-6",
+            // Paint the whole admin dashboard background in the brand colour.
+            location.pathname === "/dashboard" && user.role === "admin" && brandBgClass(brand),
+          )}
+        >
           <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>
