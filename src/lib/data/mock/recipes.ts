@@ -1,4 +1,5 @@
 import type {
+  Brand,
   Recipe,
   RecipeCostHistory,
   RecipeIngredient,
@@ -11,6 +12,7 @@ import { findMaterial, recomputeRecipe, recordAudit } from "./recompute";
 export interface RecipeHeaderInput {
   recipe_name: string;
   category: string;
+  brand: Brand;
   description?: string | null;
   preparation_time?: number | null;
   serving_size: number;
@@ -105,6 +107,7 @@ export const recipesRepo = {
           id: uid(),
           recipe_name: header.recipe_name,
           category: header.category,
+          brand: header.brand,
           description: header.description ?? null,
           preparation_time: header.preparation_time ?? null,
           serving_size: header.serving_size,
@@ -158,6 +161,7 @@ export const recipesRepo = {
 
         recipe.recipe_name = header.recipe_name;
         recipe.category = header.category;
+        recipe.brand = header.brand;
         recipe.description = header.description ?? null;
         recipe.preparation_time = header.preparation_time ?? null;
         recipe.serving_size = header.serving_size;

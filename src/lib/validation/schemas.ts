@@ -45,6 +45,7 @@ export type MaterialValues = z.infer<typeof materialSchema>;
 export const recipeHeaderSchema = z.object({
   recipe_name: z.string().min(1, "Recipe name is required"),
   category: z.string().min(1, "Category is required"),
+  brand: z.enum(["capiche", "aiko"], { required_error: "Brand is required" }),
   description: z.string().optional().or(z.literal("")),
   preparation_time: z
     .number({ invalid_type_error: "Enter a valid time" })

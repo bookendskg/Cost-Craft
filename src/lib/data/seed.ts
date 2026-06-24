@@ -101,6 +101,7 @@ interface RecipeSeed {
   id: string;
   name: string;
   category: string;
+  brand: Recipe["brand"];
   description: string;
   prep: number;
   serving: number;
@@ -115,6 +116,7 @@ const recipeSeeds: RecipeSeed[] = [
     id: "r-alfredo",
     name: "Chicken Alfredo Pasta",
     category: "Pasta",
+    brand: "capiche",
     description: "Creamy chicken alfredo with garlic butter.",
     prep: 45,
     serving: 4,
@@ -133,6 +135,7 @@ const recipeSeeds: RecipeSeed[] = [
     id: "r-biryani",
     name: "Veg Biryani",
     category: "Rice",
+    brand: "aiko",
     description: "Fragrant layered vegetable biryani.",
     prep: 60,
     serving: 6,
@@ -149,6 +152,7 @@ const recipeSeeds: RecipeSeed[] = [
     id: "r-mousse",
     name: "Chocolate Mousse",
     category: "Dessert",
+    brand: "capiche",
     description: "Rich eggless chocolate mousse.",
     prep: 30,
     serving: 8,
@@ -164,6 +168,7 @@ const recipeSeeds: RecipeSeed[] = [
     id: "r-chai",
     name: "Masala Chai",
     category: "Beverage",
+    brand: "aiko",
     description: "Spiced Indian milk tea.",
     prep: 15,
     serving: 10,
@@ -204,6 +209,7 @@ for (const rs of recipeSeeds) {
     id: rs.id,
     recipe_name: rs.name,
     category: rs.category,
+    brand: rs.brand,
     description: rs.description,
     preparation_time: rs.prep,
     serving_size: rs.serving,

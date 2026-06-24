@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   BookOpen,
   CheckCircle2,
@@ -25,13 +25,20 @@ import { formatDateTime, formatINR } from "@/lib/utils";
 import { useRecipes } from "@/features/recipes/hooks";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useAuditLogs } from "@/features/audit/hooks";
+import { BrandFilter, type BrandSelection } from "./BrandFilter";
 
 const DONUT_COLORS = ["#4f46e5", "#0ea5e9", "#16a34a", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#64748b"];
 
 export function AdminDashboard() {
-  const { data: recipes = [] } = useRecipes();
+  const { data: allRecipes = [] } = useRecipes();
   const { data: materials = [] } = useMaterials();
   const { data: audit = [] } = useAuditLogs();
+
+  const [brand, setBrand] = useState<BrandSelection>("all");
+  const recipes = useMemo(
+    () => (brand === "all" ? allRecipes : allRecipes.filter((r) => r.brand === brand)),
+    [allRecipes, brand],
+  );
 
   const stats = useMemo(() => {
     const thisMonth = new Date().toISOString().slice(0, 7);
@@ -64,7 +71,11 @@ export function AdminDashboard() {
 
   return (
     <>
-      <PageHeader title="Admin Dashboard" description="Overview of recipes, costs, and approvals" />
+      <PageHeader
+        title="Admin Dashboard"
+        description="Overview of recipes, costs, and approvals"
+        actions={<BrandFilter value={brand} onChange={setBrand} />}
+      />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard label="Total Recipes" value={stats.total} icon={BookOpen} />

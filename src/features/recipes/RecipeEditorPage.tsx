@@ -29,7 +29,7 @@ import { compatibleUnits, canConvert } from "@/lib/units";
 import { calculateIngredientCost } from "@/lib/costing";
 import { formatINR } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
-import type { RawMaterial } from "@/lib/data/types";
+import { BRANDS, type RawMaterial } from "@/lib/data/types";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useFoodCostPct, useCategories } from "@/features/settings/hooks";
 import { useRecipeCosting, type EditorLine } from "@/features/costing/useRecipeCosting";
@@ -75,6 +75,7 @@ export function RecipeEditorPage() {
     defaultValues: {
       recipe_name: "",
       category: "",
+      brand: "capiche",
       description: "",
       preparation_time: null,
       serving_size: 1,
@@ -88,6 +89,7 @@ export function RecipeEditorPage() {
       reset({
         recipe_name: existing.recipe.recipe_name,
         category: existing.recipe.category,
+        brand: existing.recipe.brand,
         description: existing.recipe.description ?? "",
         preparation_time: existing.recipe.preparation_time,
         serving_size: existing.recipe.serving_size,
@@ -227,6 +229,27 @@ export function RecipeEditorPage() {
               <Input {...register("recipe_name")} />
               {formState.errors.recipe_name && (
                 <p className="text-xs text-destructive">{formState.errors.recipe_name.message}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Brand *</Label>
+              <Select
+                value={watch("brand")}
+                onValueChange={(v) => setValue("brand", v as RecipeHeaderValues["brand"])}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select brand" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BRANDS.map((b) => (
+                    <SelectItem key={b.value} value={b.value}>
+                      {b.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formState.errors.brand && (
+                <p className="text-xs text-destructive">{formState.errors.brand.message}</p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">

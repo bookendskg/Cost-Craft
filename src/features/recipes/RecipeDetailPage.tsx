@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatDate, formatINR } from "@/lib/utils";
+import { BRANDS } from "@/lib/data/types";
 import { calculateIngredientCost } from "@/lib/costing";
 import { canConvert } from "@/lib/units";
 import { useSession } from "@/lib/auth/session";
@@ -96,7 +97,7 @@ export function RecipeDetailPage() {
     <>
       <PageHeader
         title={recipe.recipe_name}
-        description={`${recipe.category} • ${recipe.serving_size} portions`}
+        description={`${BRANDS.find((b) => b.value === recipe.brand)?.label ?? recipe.brand} • ${recipe.category} • ${recipe.serving_size} portions`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <RecipePdfButton recipe={recipe} ingredients={ingredients} foodCostPct={foodCostPct} visibility={vis} />

@@ -4,6 +4,12 @@
 export type Role = "admin" | "editor" | "viewer";
 export type UserStatus = "active" | "inactive";
 export type RecipeStatus = "draft" | "testing" | "approved" | "rejected";
+/** Restaurant brands a recipe can belong to (PRD multi-brand operations). */
+export type Brand = "capiche" | "aiko";
+export const BRANDS: { value: Brand; label: string }[] = [
+  { value: "capiche", label: "Capiche" },
+  { value: "aiko", label: "Aiko" },
+];
 export type MaterialStatus = "active" | "inactive";
 export type ViewType = "capiche" | "aiko";
 
@@ -40,6 +46,7 @@ export interface Recipe {
   id: string;
   recipe_name: string;
   category: string;
+  brand: Brand;
   description: string | null;
   preparation_time: number | null;
   serving_size: number;

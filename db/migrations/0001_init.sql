@@ -38,6 +38,7 @@ create table recipes (
   id               uuid primary key default gen_random_uuid(),
   recipe_name      text not null unique,
   category         text not null,
+  brand            text not null check (brand in ('capiche','aiko')),
   description      text,
   preparation_time integer check (preparation_time > 0),
   serving_size     integer not null check (serving_size > 0),
