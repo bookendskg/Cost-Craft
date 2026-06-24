@@ -9,7 +9,6 @@ import {
   Calendar,
   FileDown,
   MoreVertical,
-  Sparkles,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,21 +29,9 @@ import { useAllRecipeIngredients } from "@/features/reports/hooks";
 import { foodCostPctOf, menuPriceOf } from "@/features/recipes/recipeMetrics";
 
 // Brand accent theming for the operations dashboard.
-const THEME: Record<Brand, { bar: string; aiCard: string; aiBtn: string; accentText: string; pill: string }> = {
-  aiko: {
-    bar: "bg-amber-400",
-    aiCard: "bg-amber-400 text-amber-950",
-    aiBtn: "bg-slate-900 text-white hover:bg-slate-800",
-    accentText: "text-amber-600",
-    pill: "bg-amber-400 text-amber-900",
-  },
-  capiche: {
-    bar: "bg-[#ed1c24]",
-    aiCard: "bg-[#ed1c24] text-white",
-    aiBtn: "bg-white text-[#ed1c24] hover:bg-white/90",
-    accentText: "text-[#ed1c24]",
-    pill: "bg-[#ed1c24] text-white",
-  },
+const THEME: Record<Brand, { bar: string; accentText: string }> = {
+  aiko: { bar: "bg-amber-400", accentText: "text-amber-600" },
+  capiche: { bar: "bg-[#ed1c24]", accentText: "text-[#ed1c24]" },
 };
 
 // Illustrative ops figures (no POS/inventory feed in this build).
@@ -136,55 +123,7 @@ export function OperationsDashboard({ brand }: { brand: Brand }) {
         </Kpi>
       </div>
 
-      {/* AI insight + Cost by category */}
-      <div className="mb-6 grid gap-4 lg:grid-cols-3">
-        <Card className={cn("flex flex-col border-0 p-6 lg:col-span-2", t.aiCard)}>
-          <p className="flex items-center gap-2 text-sm font-semibold">
-            <Sparkles className="h-4 w-4" /> AI Operation Insight
-          </p>
-          <p className="mt-4 text-lg font-semibold leading-relaxed">
-            "Current inventory velocity suggests a potential <span className="underline">Truffle Oil shortage</span> by Tuesday.
-            Recommended order volume: 15 units. We've also noticed a 12% lag in ticket times between 8:00 PM and 9:30 PM."
-          </p>
-          <div className="mt-6 flex gap-2">
-            <Button className={t.aiBtn}>Review Order</Button>
-            <Button variant="outline" className="border-white/40 bg-white/10 text-current hover:bg-white/20">Optimize Stations</Button>
-          </div>
-        </Card>
-
-        <Card className="p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm font-semibold">Cost by Category</p>
-            <MoreVertical className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="space-y-4">
-            {byCategory.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No data.</p>
-            ) : (
-              byCategory.map((c) => (
-                <div key={c.name}>
-                  <div className="mb-1 flex items-center justify-between text-sm">
-                    <span>{c.name}</span>
-                    <span className="font-semibold">{c.pct}%</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div className={cn("h-full rounded-full", t.bar)} style={{ width: `${c.pct}%` }} />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="mt-5 space-y-1 border-t pt-4 text-xs">
-            <p className="flex items-center gap-2"><span className={cn("h-2 w-2 rounded-full", t.bar)} /> Theoretical Food Cost: {foodCostPct.toFixed(1)}%</p>
-            <p className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-slate-900" /> Actual Food Cost: {avgFc.toFixed(1)}%</p>
-            <p className="pt-1 italic text-muted-foreground">
-              Variance: {avgFc - foodCostPct >= 0 ? "+" : ""}{(avgFc - foodCostPct).toFixed(1)}% (Check Waste Logs)
-            </p>
-          </div>
-        </Card>
-      </div>
-
-      {/* Inventory + Margin watch */}
+      {/* Inventory (left) + Cost by Category & Margin Watch (right) */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
@@ -217,22 +156,55 @@ export function OperationsDashboard({ brand }: { brand: Brand }) {
           </Table>
         </Card>
 
-        <Card className="p-5">
-          <p className="text-sm font-semibold">Recipe Margin Watch</p>
-          <p className="mb-4 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Top Loss Leaders</p>
-          <div className="space-y-3">
-            {lossLeaders.map((r) => (
-              <div key={r.name} className="flex items-center justify-between border-b pb-2 last:border-0">
-                <div>
-                  <p className="font-semibold">{r.name}</p>
-                  <p className="text-[11px] text-muted-foreground">Margin: {r.margin}%</p>
+        <div className="space-y-4">
+          <Card className="p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm font-semibold">Cost by Category</p>
+              <MoreVertical className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="space-y-4">
+              {byCategory.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No data.</p>
+              ) : (
+                byCategory.map((c) => (
+                  <div key={c.name}>
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span>{c.name}</span>
+                      <span className="font-semibold">{c.pct}%</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                      <div className={cn("h-full rounded-full", t.bar)} style={{ width: `${c.pct}%` }} />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="mt-5 space-y-1 border-t pt-4 text-xs">
+              <p className="flex items-center gap-2"><span className={cn("h-2 w-2 rounded-full", t.bar)} /> Theoretical Food Cost: {foodCostPct.toFixed(1)}%</p>
+              <p className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-slate-900" /> Actual Food Cost: {avgFc.toFixed(1)}%</p>
+              <p className="pt-1 italic text-muted-foreground">
+                Variance: {avgFc - foodCostPct >= 0 ? "+" : ""}{(avgFc - foodCostPct).toFixed(1)}% (Check Waste Logs)
+              </p>
+            </div>
+          </Card>
+
+          <Card className="p-5">
+            <p className="text-sm font-semibold">Recipe Margin Watch</p>
+            <p className="mb-4 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Top Loss Leaders</p>
+            <div className="space-y-3">
+              {lossLeaders.map((r) => (
+                <div key={r.name} className="flex items-center justify-between border-b pb-2 last:border-0">
+                  <div>
+                    <p className="font-semibold">{r.name}</p>
+                    <p className="text-[11px] text-muted-foreground">Margin: {r.margin}%</p>
+                  </div>
+                  <span className={cn("font-mono font-bold", t.accentText)}>{formatINR(r.menu).replace(".00", "")}</span>
                 </div>
-                <span className={cn("font-mono font-bold", t.accentText)}>{formatINR(r.menu).replace(".00", "")}</span>
-              </div>
-            ))}
-          </div>
-          <Button variant="outline" className={cn("mt-4 w-full", t.accentText)}>Recalculate Margins</Button>
-        </Card>
+              ))}
+            </div>
+            <Button variant="outline" className={cn("mt-4 w-full", t.accentText)}>Recalculate Margins</Button>
+          </Card>
+        </div>
       </div>
     </>
   );
