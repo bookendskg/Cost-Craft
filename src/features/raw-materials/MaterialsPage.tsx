@@ -161,9 +161,9 @@ export function MaterialsPage() {
                   </TableCell>
                   <TableCell>{m.purchase_unit}</TableCell>
                   <TableCell className="font-medium">
-                    {m.cost_per_base_unit === null
+                    {m.purchase_price === null
                       ? "—"
-                      : `${formatINR(m.cost_per_base_unit)}`}
+                      : `${formatINR(m.purchase_price / m.purchase_quantity)} / ${m.purchase_unit}`}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
