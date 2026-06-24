@@ -113,8 +113,8 @@ export function AppLayout() {
         <main
           className={cn(
             "flex-1 overflow-y-auto p-4 transition-colors sm:p-6",
-            // Soft brand background on every section.
-            brandBgClass(brand),
+            // Soft brand background on every section (light mode only — keep dark mode black).
+            !dark && brandBgClass(brand),
           )}
         >
           <div className="mx-auto max-w-7xl">
