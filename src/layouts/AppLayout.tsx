@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   ChefHat,
   LogOut,
@@ -14,7 +14,7 @@ import { useTheme } from "@/lib/theme";
 import { navForRole } from "./nav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useDashboardBrand, brandBgClass, brandTintClass } from "@/features/dashboard/brandTheme";
+import { useDashboardBrand, brandBgClass } from "@/features/dashboard/brandTheme";
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 
 export function AppLayout() {
@@ -22,7 +22,6 @@ export function AppLayout() {
   const logout = useSession((s) => s.logout);
   const { dark, toggle } = useTheme();
   const navigate = useNavigate();
-  const location = useLocation();
   const brand = useDashboardBrand((s) => s.brand);
   const setBrand = useDashboardBrand((s) => s.setBrand);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -114,10 +113,8 @@ export function AppLayout() {
         <main
           className={cn(
             "flex-1 overflow-y-auto p-4 transition-colors sm:p-6",
-            // Bold brand colour on the admin dashboard; a soft brand tint elsewhere.
-            location.pathname === "/dashboard" && user.role === "admin"
-              ? brandBgClass(brand)
-              : brandTintClass(brand),
+            // Soft brand background on every section.
+            brandBgClass(brand),
           )}
         >
           <div className="mx-auto max-w-7xl">

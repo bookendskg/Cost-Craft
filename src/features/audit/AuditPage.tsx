@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { ArrowDownRight, ArrowUpRight, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -20,66 +21,95 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDateTime } from "@/lib/utils";
-import type { AuditEntityType } from "@/lib/data/types";
+import { cn, formatDateTime, formatINR, percentChangeLabel } from "@/lib/utils";
+import { percentChange } from "@/lib/costing";
 import { useUsers } from "@/features/users/hooks";
-import { useAuditLogs } from "./hooks";
+import { useMaterials } from "@/features/raw-materials/hooks";
+import { useRecipes } from "@/features/recipes/hooks";
+import { useAllPriceHistory, useAllRecipeCostHistory } from "./hooks";
 
-const actionVariant: Record<string, "success" | "warning" | "info" | "danger" | "secondary"> = {
-  create: "info",
-  update: "secondary",
-  delete: "danger",
-  approve: "success",
-  reject: "danger",
-  submit: "warning",
-};
+type Kind = "all" | "ingredient" | "recipe";
+
+interface Row {
+  id: string;
+  when: string;
+  item: string;
+  kind: "Ingredient Price" | "Recipe Cost";
+  oldValue: number | null;
+  newValue: number | null;
+  pct: number;
+  by: string | null;
+}
 
 export function AuditPage() {
+  const { data: priceHistory = [] } = useAllPriceHistory();
+  const { data: costHistory = [] } = useAllRecipeCostHistory();
   const { data: users = [] } = useUsers();
-  const usersById = new Map(users.map((u) => [u.id, u]));
+  const { data: materials = [] } = useMaterials();
+  const { data: recipes = [] } = useRecipes();
 
-  const [entityType, setEntityType] = useState<AuditEntityType | "all">("all");
-  const [userId, setUserId] = useState("all");
+  const usersById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
+  const materialsById = useMemo(() => new Map(materials.map((m) => [m.id, m])), [materials]);
+  const recipesById = useMemo(() => new Map(recipes.map((r) => [r.id, r])), [recipes]);
+
+  const [kind, setKind] = useState<Kind>("all");
+  const [search, setSearch] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  const { data: logs = [], isLoading } = useAuditLogs({ entityType, userId, from, to });
+  const rows = useMemo<Row[]>(() => {
+    const ing: Row[] = priceHistory.map((h) => ({
+      id: h.id,
+      when: h.changed_at,
+      item: materialsById.get(h.ingredient_id)?.ingredient_name ?? "—",
+      kind: "Ingredient Price",
+      oldValue: h.old_price,
+      newValue: h.new_price,
+      pct: percentChange(h.old_price ?? 0, h.new_price ?? 0),
+      by: h.changed_by,
+    }));
+    const rec: Row[] = costHistory.map((h) => ({
+      id: h.id,
+      when: h.changed_at,
+      item: recipesById.get(h.recipe_id)?.recipe_name ?? "—",
+      kind: "Recipe Cost",
+      oldValue: h.old_total_cost,
+      newValue: h.new_total_cost,
+      pct: percentChange(h.old_total_cost ?? 0, h.new_total_cost ?? 0),
+      by: h.changed_by,
+    }));
+    let all = [...ing, ...rec];
+    if (kind === "ingredient") all = ing;
+    if (kind === "recipe") all = rec;
+    if (search) all = all.filter((r) => r.item.toLowerCase().includes(search.toLowerCase()));
+    if (from) all = all.filter((r) => r.when >= from);
+    if (to) all = all.filter((r) => r.when <= to + "T23:59:59.999Z");
+    return all.sort((a, b) => b.when.localeCompare(a.when));
+  }, [priceHistory, costHistory, materialsById, recipesById, kind, search, from, to]);
 
   return (
     <>
-      <PageHeader title="Audit Log" description="Every change to recipes, ingredients, and users" />
+      <PageHeader
+        title="Price Changes"
+        description="Every ingredient price and recipe cost change — from, to, who, and when."
+      />
 
       <Card className="mb-4 p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-1.5">
-            <Label>Event Type</Label>
-            <Select value={entityType} onValueChange={(v) => setEntityType(v as AuditEntityType | "all")}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+            <Label>Type</Label>
+            <Select value={kind} onValueChange={(v) => setKind(v as Kind)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Events</SelectItem>
-                <SelectItem value="recipe">Recipe</SelectItem>
-                <SelectItem value="ingredient">Ingredient</SelectItem>
-                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="all">All Changes</SelectItem>
+                <SelectItem value="ingredient">Ingredient Prices</SelectItem>
+                <SelectItem value="recipe">Recipe Costs</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>User</Label>
-            <Select value={userId} onValueChange={setUserId}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Users</SelectItem>
-                {users.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Search</Label>
+            <Input placeholder="Item name…" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label>From</Label>
@@ -93,31 +123,48 @@ export function AuditPage() {
       </Card>
 
       <Card>
-        {isLoading ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">Loading…</p>
-        ) : logs.length === 0 ? (
-          <EmptyState title="No audit entries" description="Actions will be recorded here." />
+        {rows.length === 0 ? (
+          <EmptyState title="No price changes yet" description="Update an ingredient price and it will appear here." />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Details</TableHead>
+                <TableHead>When</TableHead>
+                <TableHead>Item</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Old</TableHead>
+                <TableHead>New</TableHead>
+                <TableHead>Change</TableHead>
+                <TableHead>By</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {logs.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell className="whitespace-nowrap">{formatDateTime(a.performed_at)}</TableCell>
-                  <TableCell>{usersById.get(a.performed_by ?? "")?.name ?? "—"}</TableCell>
-                  <TableCell>
-                    <Badge variant={actionVariant[a.action] ?? "secondary"}>{a.action}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{a.notes ?? "—"}</TableCell>
-                </TableRow>
-              ))}
+              {rows.map((r) => {
+                const up = r.pct >= 0;
+                return (
+                  <TableRow key={`${r.kind}-${r.id}`}>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">{formatDateTime(r.when)}</TableCell>
+                    <TableCell className="font-medium">{r.item}</TableCell>
+                    <TableCell>
+                      <Badge variant={r.kind === "Ingredient Price" ? "info" : "secondary"}>{r.kind}</Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-muted-foreground">{formatINR(r.oldValue)}</TableCell>
+                    <TableCell className="font-mono font-semibold">
+                      <span className="inline-flex items-center gap-1">
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        {formatINR(r.newValue)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={cn("inline-flex items-center gap-1 font-semibold", up ? "text-red-600" : "text-emerald-600")}>
+                        {up ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+                        {percentChangeLabel(r.pct)}
+                      </span>
+                    </TableCell>
+                    <TableCell>{usersById.get(r.by ?? "")?.name ?? "—"}</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}

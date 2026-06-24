@@ -23,10 +23,12 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatINR } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
+import { BRANDS } from "@/lib/data/types";
 import { useRecipes } from "@/features/recipes/hooks";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useUsers } from "@/features/users/hooks";
 import { useCategories, useFoodCostPct } from "@/features/settings/hooks";
+import { RecipePdfButton } from "./RecipePdfButton";
 import {
   useAllCostHistory,
   useAllPriceHistory,
@@ -44,6 +46,7 @@ export function ReportsPage() {
   const costHistory = useAllCostHistory();
   const priceHistory = useAllPriceHistory();
 
+  const [brand, setBrand] = useState("all");
   const [status, setStatus] = useState("all");
   const [category, setCategory] = useState("all");
   const [from, setFrom] = useState("");
@@ -52,6 +55,7 @@ export function ReportsPage() {
   const filtered = useMemo(
     () =>
       recipes.filter((r) => {
+        if (brand !== "all" && r.brand !== brand) return false;
         if (status !== "all" && r.status !== status) return false;
         if (category !== "all" && r.category !== category) return false;
         const date = (r.approved_at ?? r.created_at).slice(0, 10);
@@ -59,8 +63,18 @@ export function ReportsPage() {
         if (to && date > to) return false;
         return true;
       }),
-    [recipes, status, category, from, to],
+    [recipes, brand, status, category, from, to],
   );
+  const ingredientsByRecipe = useMemo(() => {
+    const map = new Map<string, typeof ingredients.data>();
+    (ingredients.data ?? []).forEach((i) => {
+      const arr = map.get(i.recipe_id) ?? [];
+      arr.push(i);
+      map.set(i.recipe_id, arr);
+    });
+    return map;
+  }, [ingredients.data]);
+  const brandLabel = brand === "all" ? "AllBrands" : brand === "capiche" ? "Capiche" : "Aiko";
 
   const exportExcel = async () => {
     try {
@@ -75,7 +89,7 @@ export function ReportsPage() {
           materialsById: new Map(materials.map((m) => [m.id, m])),
           foodCostPct,
         },
-        new Date().toISOString().slice(0, 10),
+        `${brandLabel}_${new Date().toISOString().slice(0, 10)}`,
       );
       toast.success("Excel report downloaded");
     } catch (e) {
@@ -96,7 +110,23 @@ export function ReportsPage() {
       />
 
       <Card className="mb-4 p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="space-y-1.5">
+            <Label>Brand</Label>
+            <Select value={brand} onValueChange={setBrand}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Brands</SelectItem>
+                {BRANDS.map((b) => (
+                  <SelectItem key={b.value} value={b.value}>
+                    {b.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-1.5">
             <Label>Status</Label>
             <Select value={status} onValueChange={setStatus}>
@@ -148,6 +178,7 @@ export function ReportsPage() {
               <TableHead>Total Cost</TableHead>
               <TableHead>Cost / Portion</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="text-right">Export</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -159,6 +190,13 @@ export function ReportsPage() {
                 <TableCell>{formatINR(r.cost_per_portion)}</TableCell>
                 <TableCell>
                   <StatusBadge status={r.status} />
+                </TableCell>
+                <TableCell className="text-right">
+                  <RecipePdfButton
+                    recipe={r}
+                    ingredients={ingredientsByRecipe.get(r.id) ?? []}
+                    foodCostPct={foodCostPct}
+                  />
                 </TableCell>
               </TableRow>
             ))}

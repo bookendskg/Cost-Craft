@@ -29,7 +29,7 @@ export function EditorDashboard() {
   const mine = useMemo(
     () =>
       recipes.filter(
-        (r) => r.created_by === user.id && (brand === "all" || r.brand === brand),
+        (r) => r.created_by === user.id && !r.is_prep && (brand === "all" || r.brand === brand),
       ),
     [recipes, user.id, brand],
   );

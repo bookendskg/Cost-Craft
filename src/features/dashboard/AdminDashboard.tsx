@@ -25,7 +25,7 @@ import { useMaterials, useRecentPriceHistory } from "@/features/raw-materials/ho
 import { useAuditLogs } from "@/features/audit/hooks";
 import { useFoodCostPct, useAllSettings } from "@/features/settings/hooks";
 import { foodCostPctOf } from "@/features/recipes/recipeMetrics";
-import { useDashboardBrand, brandWordmark, brandIsLight } from "./brandTheme";
+import { useDashboardBrand, brandWordmark, brandAccentText } from "./brandTheme";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -40,8 +40,10 @@ export function AdminDashboard() {
   const materialsById = useMemo(() => new Map(materials.map((m) => [m.id, m])), [materials]);
 
   const brand = useDashboardBrand((s) => s.brand);
+  // Dashboard is menu-focused: exclude in-house prep recipes from the stats.
   const recipes = useMemo(
-    () => (brand === "all" ? allRecipes : allRecipes.filter((r) => r.brand === brand)),
+    () =>
+      allRecipes.filter((r) => !r.is_prep && (brand === "all" || r.brand === brand)),
     [allRecipes, brand],
   );
 
@@ -94,12 +96,12 @@ export function AdminDashboard() {
 
   return (
     <>
-      <div className={cn("mb-6", brandIsLight(brand) ? "text-slate-900" : "text-white")}>
-        <p className="text-xs font-extrabold uppercase tracking-[0.3em] opacity-80">
+      <div className="mb-6">
+        <p className={cn("text-xs font-extrabold uppercase tracking-[0.3em]", brandAccentText(brand))}>
           {brandWordmark[brand]}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight">Kitchen Operations</h1>
-        <p className="text-sm opacity-70">Live costing health across your catalog</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Kitchen Operations</h1>
+        <p className="text-sm text-muted-foreground">Live costing health across your catalog</p>
       </div>
 
       {/* KPI cards */}
