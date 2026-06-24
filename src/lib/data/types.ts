@@ -62,6 +62,7 @@ export interface Recipe {
   version_no: number;
   created_at: string;
   updated_at: string;
+  updated_by: string | null;
 }
 
 export interface RecipeIngredient {

@@ -229,6 +229,7 @@ for (const rs of recipeSeeds) {
     version_no: 1,
     created_at: SEED_TS,
     updated_at: SEED_TS,
+    updated_by: rs.approvedBy ?? rs.createdBy,
   });
 }
 

@@ -52,7 +52,8 @@ create table recipes (
   rejection_note   text,
   version_no       integer not null default 1,
   created_at       timestamptz not null default now(),
-  updated_at       timestamptz not null default now()
+  updated_at       timestamptz not null default now(),
+  updated_by       uuid references users(id)
 );
 
 create table recipe_ingredients (

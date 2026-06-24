@@ -41,6 +41,7 @@ import type { Recipe } from "@/lib/data/types";
 import { toast } from "@/components/ui/use-toast";
 import { useCategories, useFoodCostPct, useAllSettings } from "@/features/settings/hooks";
 import { useMaterials } from "@/features/raw-materials/hooks";
+import { useUsersMap } from "@/features/users/hooks";
 import { useDuplicateRecipe, useRecipe, useRecipes } from "./hooks";
 import {
   FC_TONE_STYLES,
@@ -70,7 +71,11 @@ export function RecipesPage() {
   const { data: foodCostPct = 30 } = useFoodCostPct();
   const { data: settings = [] } = useAllSettings();
   const { data: materials = [] } = useMaterials();
+  const { map: usersMap } = useUsersMap();
   const dupMut = useDuplicateRecipe();
+
+  // "Updated by" is visible only to admins and editors.
+  const showUpdatedBy = user.role === "admin" || user.role === "editor";
 
   const criticalPct = Number(
     settings.find((s) => s.key === "margin_alert_pct")?.value ?? 35,
@@ -252,6 +257,7 @@ export function RecipesPage() {
                   canDuplicate={can(user.role, "recipe.duplicate")}
                   onEdit={() => navigate(`/recipes/${r.id}/edit`)}
                   onDuplicate={() => duplicate(r.id)}
+                  updatedBy={showUpdatedBy ? usersMap.get(r.updated_by ?? "")?.name ?? null : null}
                 />
               ))}
             </div>
@@ -361,6 +367,7 @@ function RecipeRow({
   canDuplicate,
   onEdit,
   onDuplicate,
+  updatedBy,
 }: {
   recipe: Recipe;
   foodCostPct: number;
@@ -372,6 +379,7 @@ function RecipeRow({
   canDuplicate: boolean;
   onEdit: () => void;
   onDuplicate: () => void;
+  updatedBy: string | null;
 }) {
   const unitCost = recipe.cost_per_portion ?? 0;
   const menuPrice = menuPriceOf(recipe, foodCostPct);
@@ -419,7 +427,8 @@ function RecipeRow({
           </div>
         </div>
         <div className="hidden text-xs text-muted-foreground lg:block lg:col-span-1">
-          {formatDateTime(recipe.updated_at)}
+          <div>{formatDateTime(recipe.updated_at)}</div>
+          {updatedBy && <div className="text-[11px]">by {updatedBy}</div>}
         </div>
         <div className="hidden items-center justify-end lg:flex lg:col-span-1">
           <ChevronDown className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")} />

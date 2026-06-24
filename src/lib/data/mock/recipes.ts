@@ -123,6 +123,7 @@ export const recipesRepo = {
           version_no: 1,
           created_at: nowISO(),
           updated_at: nowISO(),
+          updated_by: actorId,
         };
         db.recipes.push(recipe);
         writeLines(db, recipe.id, lines);
@@ -169,6 +170,7 @@ export const recipesRepo = {
         recipe.preparation_time = header.preparation_time ?? null;
         recipe.serving_size = header.serving_size;
         recipe.version_no += 1;
+        recipe.updated_by = actorId;
 
         // Editing an approved recipe reverts it to Draft (PRD §3.6 regression).
         const wasApproved = recipe.status === "approved";
@@ -217,6 +219,7 @@ export const recipesRepo = {
           created_by: actorId,
           created_at: nowISO(),
           updated_at: nowISO(),
+          updated_by: actorId,
         };
         db.recipes.push(copy);
         const srcLines = db.recipe_ingredients.filter((ri) => ri.recipe_id === id);
@@ -253,6 +256,7 @@ export const recipesRepo = {
         recipe.status = "testing";
         recipe.rejection_note = null;
         recipe.updated_at = nowISO();
+        recipe.updated_by = actorId;
         recordAudit(db, {
           entity_type: "recipe",
           entity_id: id,
@@ -275,6 +279,7 @@ export const recipesRepo = {
         recipe.approved_at = nowISO();
         recipe.rejection_note = null;
         recipe.updated_at = nowISO();
+        recipe.updated_by = actorId;
         recordAudit(db, {
           entity_type: "recipe",
           entity_id: id,
@@ -295,6 +300,7 @@ export const recipesRepo = {
         recipe.status = "draft";
         recipe.rejection_note = note;
         recipe.updated_at = nowISO();
+        recipe.updated_by = actorId;
         recordAudit(db, {
           entity_type: "recipe",
           entity_id: id,
