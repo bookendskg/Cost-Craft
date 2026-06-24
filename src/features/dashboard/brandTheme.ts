@@ -13,16 +13,21 @@ export const useDashboardBrand = create<BrandState>((set) => ({
   setBrand: (brand) => set({ brand }),
 }));
 
-/** Full-page background class for the selected brand. */
+/** Full-page background class for the selected brand (matches brand logos). */
 export function brandBgClass(brand: BrandSelection): string {
   switch (brand) {
     case "capiche":
-      return "bg-emerald-800";
+      return "bg-[#ed1c24]"; // Capiche red
     case "aiko":
-      return "bg-slate-900";
+      return "bg-[#e8b923]"; // Aiko gold
     default:
       return "bg-[#1b35a8]"; // BOOKENDS blue (All Brands)
   }
+}
+
+/** Aiko's gold is light → needs dark foreground text; the others use white. */
+export function brandIsLight(brand: BrandSelection): boolean {
+  return brand === "aiko";
 }
 
 export const brandWordmark: Record<BrandSelection, string> = {
