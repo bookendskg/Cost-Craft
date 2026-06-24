@@ -45,10 +45,9 @@ import { canConvert, getConversionFactor } from "@/lib/units";
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
 import { BRANDS } from "@/lib/data/types";
 import { useSession } from "@/lib/auth/session";
-import { can, canEditRecipe, visibilityFor } from "@/lib/auth/permissions";
+import { can, canEditRecipe, viewerCanAccess, visibilityForUser } from "@/lib/auth/permissions";
 import { toast } from "@/components/ui/use-toast";
 import { useUsersMap } from "@/features/users/hooks";
-import { useUserViews } from "@/features/viewers/hooks";
 import { useFoodCostPct } from "@/features/settings/hooks";
 import { menuPriceOf } from "./recipeMetrics";
 import { RecipePdfButton } from "@/features/reports/RecipePdfButton";
@@ -79,7 +78,6 @@ export function RecipeDetailPage() {
   const { data, isLoading } = useRecipe(id);
   const { data: foodCostPct = 30 } = useFoodCostPct();
   const { map: usersMap } = useUsersMap();
-  const { data: myViews = [] } = useUserViews(user.role === "viewer" ? user.id : undefined);
   const costHistory = useRecipeCostHistory(id);
   const versions = useRecipeVersions(id);
 
@@ -124,19 +122,18 @@ export function RecipeDetailPage() {
 
   const { recipe, ingredients } = data;
 
-  // Viewer access enforcement (PRD §14).
-  const myView = myViews.find((v) => v.recipe_id === recipe.id) ?? null;
-  if (user.role === "viewer" && (!myView || recipe.status !== "approved")) {
+  // Viewer access enforcement — by granted brand (PRD §14).
+  if (user.role === "viewer" && !viewerCanAccess(user, recipe)) {
     return (
       <EmptyState
         icon={<Lock className="h-10 w-10" />}
         title="No access"
-        description="This recipe hasn't been shared with you."
+        description="This recipe's brand hasn't been shared with you."
       />
     );
   }
 
-  const vis = visibilityFor(user.role, myView?.view_type ?? null);
+  const vis = visibilityForUser(user);
   const editable = canEditRecipe(user, recipe);
   const isAdmin = can(user.role, "recipe.approve");
   const showFinancials = vis.totalCost;

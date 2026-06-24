@@ -8,6 +8,7 @@ import {
   Settings,
   ScrollText,
   ChefHat,
+  Eye,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/lib/data/types";
@@ -26,6 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/prep", label: "In-House Prep", icon: ChefHat, roles: ["admin", "editor"] },
   { to: "/approvals", label: "Approvals", icon: CheckCircle2, roles: ["admin"] },
   { to: "/reports", label: "Reports", icon: FileBarChart, roles: ["admin", "editor"] },
+  { to: "/viewer-access", label: "Viewer Access", icon: Eye, roles: ["admin", "editor"] },
   { to: "/users", label: "Users", icon: Users, roles: ["admin"] },
   { to: "/audit", label: "Price Changes", icon: ScrollText, roles: ["admin"] },
   { to: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },

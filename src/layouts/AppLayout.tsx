@@ -14,7 +14,7 @@ import { useTheme } from "@/lib/theme";
 import { navForRole } from "./nav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useDashboardBrand, brandBgClass } from "@/features/dashboard/brandTheme";
+import { useDashboardBrand, brandBgClass, brandFgClass, brandWordmark } from "@/features/dashboard/brandTheme";
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 
 export function AppLayout() {
@@ -36,8 +36,8 @@ export function AppLayout() {
 
   const sidebar = (
     <div className="flex h-full flex-col">
-      <div className="flex h-14 items-center gap-2 border-b px-4">
-        <ChefHat className="h-6 w-6 text-accent" />
+      <div className="flex h-14 items-center gap-2 border-b border-current/10 px-4">
+        <ChefHat className="h-6 w-6" />
         <span className="text-sm font-semibold leading-tight">Recipe Costing</span>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
@@ -51,7 +51,7 @@ export function AppLayout() {
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 isActive
                   ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  : "opacity-75 hover:bg-current/10 hover:opacity-100",
               )
             }
           >
@@ -60,10 +60,10 @@ export function AppLayout() {
           </NavLink>
         ))}
       </nav>
-      <div className="border-t p-3">
+      <div className="border-t border-current/10 p-3">
         <div className="mb-2 px-1">
           <p className="truncate text-sm font-medium">{user.name}</p>
-          <Badge variant="outline" className="mt-1 capitalize">
+          <Badge variant="outline" className="mt-1 border-current/30 capitalize">
             {user.role}
           </Badge>
         </div>
@@ -76,22 +76,45 @@ export function AppLayout() {
   );
 
   return (
-    <div className="flex h-screen bg-muted/30">
+    <div
+      className={cn(
+        "flex h-screen",
+        // Brand colour fills the whole screen in light mode; neutral in dark.
+        dark ? "bg-background" : cn(brandBgClass(brand), brandFgClass(brand)),
+      )}
+    >
       {/* Desktop sidebar */}
-      <aside className="hidden w-60 shrink-0 border-r bg-background md:block">{sidebar}</aside>
+      <aside
+        className={cn(
+          "hidden w-60 shrink-0 border-r md:block",
+          dark ? "border-border bg-background" : "border-white/15 bg-black/10",
+        )}
+      >
+        {sidebar}
+      </aside>
 
       {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 h-full w-64 bg-background shadow-lg">
+          <aside
+            className={cn(
+              "absolute left-0 top-0 h-full w-64 shadow-lg",
+              dark ? "bg-background" : cn(brandBgClass(brand), brandFgClass(brand)),
+            )}
+          >
             {sidebar}
           </aside>
         </div>
       )}
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 items-center justify-between border-b bg-background px-4">
+        <header
+          className={cn(
+            "flex h-14 items-center justify-between border-b px-4",
+            dark ? "border-border bg-background" : "border-white/15 bg-black/10",
+          )}
+        >
           <Button
             variant="ghost"
             size="icon"
@@ -110,14 +133,22 @@ export function AppLayout() {
             {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
         </header>
-        <main
-          className={cn(
-            "flex-1 overflow-y-auto p-4 transition-colors sm:p-6",
-            // Soft brand background on every section (light mode only — keep dark mode black).
-            !dark && brandBgClass(brand),
+        <main className="relative flex-1 overflow-y-auto p-4 transition-colors sm:p-6">
+          {/* Brand wordmark watermark behind the content — sized to fit the width */}
+          {!dark && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 z-0 flex h-[70vh] items-center justify-center overflow-hidden"
+            >
+              <span
+                className="select-none whitespace-nowrap font-black leading-none tracking-tighter opacity-[0.06]"
+                style={{ fontSize: `${Math.min(22, 92 / brandWordmark[brand].length)}vw` }}
+              >
+                {brandWordmark[brand]}
+              </span>
+            </div>
           )}
-        >
-          <div className="mx-auto max-w-7xl">
+          <div className="relative z-10 mx-auto max-w-7xl">
             <Outlet />
           </div>
         </main>

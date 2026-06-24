@@ -3,7 +3,9 @@
 // Postgres RLS policies (PRD §9.3) authored in db/migrations — when Supabase
 // is added these checks are backed by RLS, not replaced.
 
-import type { Recipe, Role, User, ViewType } from "../data/types";
+import { BRANDS, type Brand, type Recipe, type Role, type User, type ViewType } from "../data/types";
+
+const ALL_BRANDS: Brand[] = BRANDS.map((b) => b.value);
 
 export type Capability =
   // user management
@@ -21,6 +23,8 @@ export type Capability =
   | "recipe.approve"
   // viewing
   | "recipe.viewAll"
+  // viewer access management
+  | "viewer.assign"
   // settings
   | "settings.manage"
   // reports
@@ -39,17 +43,19 @@ const MATRIX: Record<Role, Capability[]> = {
     "recipe.submit",
     "recipe.approve",
     "recipe.viewAll",
+    "viewer.assign",
     "settings.manage",
     "report.excel",
     "audit.view",
   ],
   editor: [
+    // Ingredients are read-only for editors — only an admin changes them.
     "material.view",
-    "material.edit",
     "recipe.create",
     "recipe.duplicate",
     "recipe.submit",
     "recipe.viewAll",
+    "viewer.assign",
     "report.excel",
   ],
   viewer: [],
@@ -114,6 +120,31 @@ export function visibilityFor(
   if (viewType === "capiche") return CAPICHE;
   if (viewType === "aiko") return AIKO;
   return CAPICHE; // safest default for an unassigned viewer
+}
+
+/**
+ * Brands a viewer can see. Default (unset) is EVERYTHING — a viewer gets full
+ * access until an editor/admin restricts them to specific brands.
+ */
+export function viewerBrands(user: User | null): Brand[] {
+  return user?.accessible_brands ?? ALL_BRANDS;
+}
+
+/** Viewers see costs by default; an editor/admin can turn this off. */
+export function viewerShowCost(user: User | null): boolean {
+  return user?.show_cost ?? true;
+}
+
+/** A viewer can see a recipe if it's approved and in one of their brands. */
+export function viewerCanAccess(user: User | null, recipe: Recipe): boolean {
+  if (!user || user.role !== "viewer") return false;
+  return recipe.status === "approved" && viewerBrands(user).includes(recipe.brand);
+}
+
+/** Visibility for any user: admin/editor see all; viewers per their show_cost grant. */
+export function visibilityForUser(user: User): ViewVisibility {
+  if (user.role !== "viewer") return visibilityFor(user.role, null);
+  return visibilityFor("viewer", viewerShowCost(user) ? "aiko" : "capiche");
 }
 
 export const HOME_BY_ROLE: Record<Role, string> = {

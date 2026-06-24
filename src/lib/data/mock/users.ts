@@ -16,6 +16,8 @@ export interface UpdateUserInput {
   role?: Role;
   status?: UserStatus;
   password?: string;
+  accessible_brands?: import("../types").Brand[];
+  show_cost?: boolean;
 }
 
 /** Strip the mock-only password before handing a user to the UI. */
@@ -75,6 +77,8 @@ export const usersRepo = {
         if (patch.role !== undefined) u.role = patch.role;
         if (patch.status !== undefined) u.status = patch.status;
         if (patch.password) u.password = patch.password;
+        if (patch.accessible_brands !== undefined) u.accessible_brands = patch.accessible_brands;
+        if (patch.show_cost !== undefined) u.show_cost = patch.show_cost;
         u.updated_at = nowISO();
         recordAudit(db, {
           entity_type: "user",

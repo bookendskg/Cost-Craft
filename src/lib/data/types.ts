@@ -21,6 +21,10 @@ export interface User {
   status: UserStatus;
   /** Mock-only: plaintext password for the local auth simulation. */
   password?: string;
+  /** Viewer-only: which brands' approved recipes this viewer can see. */
+  accessible_brands?: Brand[];
+  /** Viewer-only: whether this viewer sees costs/pricing (else Capiche-style). */
+  show_cost?: boolean;
   created_at: string;
   updated_at: string;
 }

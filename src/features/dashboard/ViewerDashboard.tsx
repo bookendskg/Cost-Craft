@@ -14,23 +14,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSession } from "@/lib/auth/session";
+import { viewerBrands } from "@/lib/auth/permissions";
 import { useRecipes } from "@/features/recipes/hooks";
-import { useUserViews } from "@/features/viewers/hooks";
 
 export function ViewerDashboard() {
   const user = useSession((s) => s.user)!;
   const navigate = useNavigate();
   const { data: recipes = [] } = useRecipes();
-  const { data: views = [] } = useUserViews(user.id);
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
 
-  // Only approved recipes assigned to this viewer (PRD §14, §9.3).
-  const assignedIds = useMemo(() => new Set(views.map((v) => v.recipe_id)), [views]);
+  // Approved menu recipes of the brands this viewer can see (default = all).
+  const brands = useMemo(() => viewerBrands(user), [user]);
   const accessible = useMemo(
-    () => recipes.filter((r) => r.status === "approved" && assignedIds.has(r.id)),
-    [recipes, assignedIds],
+    () => recipes.filter((r) => r.status === "approved" && !r.is_prep && brands.includes(r.brand)),
+    [recipes, brands],
   );
   const categories = useMemo(
     () => [...new Set(accessible.map((r) => r.category))],

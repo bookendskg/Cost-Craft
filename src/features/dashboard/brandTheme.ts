@@ -13,32 +13,26 @@ export const useDashboardBrand = create<BrandState>((set) => ({
   setBrand: (brand) => set({ brand }),
 }));
 
-/**
- * Soft full-page brand background applied to every section (low-opacity brand
- * over the base). Light enough to keep dark text + white cards readable and not
- * flashy.
- */
+/** Full bold brand background applied across the whole screen (light mode). */
 export function brandBgClass(brand: BrandSelection): string {
   switch (brand) {
     case "capiche":
-      return "bg-[#ed1c24]/[0.07]"; // soft Capiche red
+      return "bg-[#ed1c24]"; // Capiche red
     case "aiko":
-      return "bg-[#e8b923]/[0.16]"; // soft Aiko gold
+      return "bg-[#e8b923]"; // Aiko gold
     default:
-      return "bg-[#1b35a8]/[0.08]"; // soft BOOKENDS blue
+      return "bg-[#1b35a8]"; // BOOKENDS blue
   }
 }
 
-/** Brand accent colour for the dashboard wordmark / headings. */
-export function brandAccentText(brand: BrandSelection): string {
-  switch (brand) {
-    case "capiche":
-      return "text-[#ed1c24]";
-    case "aiko":
-      return "text-amber-700";
-    default:
-      return "text-[#1b35a8]";
-  }
+/** Aiko's gold is light → dark text; the others use white. */
+export function brandIsLight(brand: BrandSelection): boolean {
+  return brand === "aiko";
+}
+
+/** Readable text colour for content sitting directly on the brand background. */
+export function brandFgClass(brand: BrandSelection): string {
+  return brandIsLight(brand) ? "text-slate-900" : "text-white";
 }
 
 export const brandWordmark: Record<BrandSelection, string> = {

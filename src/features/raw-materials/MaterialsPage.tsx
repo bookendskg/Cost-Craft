@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatINR } from "@/lib/utils";
+import { useSession } from "@/lib/auth/session";
+import { can } from "@/lib/auth/permissions";
 import type { RawMaterial } from "@/lib/data/types";
 import { useMaterials, useSetMaterialStatus } from "./hooks";
 import { useCategories } from "@/features/settings/hooks";
@@ -37,6 +39,8 @@ import { PriceHistoryDialog } from "./PriceHistoryDialog";
 import { toast } from "@/components/ui/use-toast";
 
 export function MaterialsPage() {
+  const user = useSession((s) => s.user)!;
+  const canEdit = can(user.role, "material.edit"); // admin-only — ingredients locked otherwise
   const { data: materials = [], isLoading } = useMaterials();
   const { data: categories = [] } = useCategories();
   const setStatus = useSetMaterialStatus();
@@ -72,11 +76,13 @@ export function MaterialsPage() {
     <>
       <PageHeader
         title="Raw Materials"
-        description="Manage ingredients and their purchase pricing"
+        description={canEdit ? "Manage ingredients and their purchase pricing" : "Ingredient prices are managed by an admin."}
         actions={
-          <Button variant="accent" onClick={openAdd}>
-            <Plus className="h-4 w-4" /> Add Ingredient
-          </Button>
+          canEdit && (
+            <Button variant="accent" onClick={openAdd}>
+              <Plus className="h-4 w-4" /> Add Ingredient
+            </Button>
+          )
         }
       />
 
@@ -167,24 +173,25 @@ export function MaterialsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(m)}>Edit</DropdownMenuItem>
+                        {canEdit && <DropdownMenuItem onClick={() => openEdit(m)}>Edit</DropdownMenuItem>}
                         <DropdownMenuItem onClick={() => setHistoryFor(m)}>
                           Price History
                         </DropdownMenuItem>
-                        {m.status === "active" ? (
-                          <DropdownMenuItem onClick={() => setDeactivating(m)}>
-                            Deactivate
-                          </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem
-                            onClick={async () => {
-                              await setStatus.mutateAsync({ id: m.id, status: "active" });
-                              toast.success("Ingredient reactivated");
-                            }}
-                          >
-                            Reactivate
-                          </DropdownMenuItem>
-                        )}
+                        {canEdit &&
+                          (m.status === "active" ? (
+                            <DropdownMenuItem onClick={() => setDeactivating(m)}>
+                              Deactivate
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                await setStatus.mutateAsync({ id: m.id, status: "active" });
+                                toast.success("Ingredient reactivated");
+                              }}
+                            >
+                              Reactivate
+                            </DropdownMenuItem>
+                          ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

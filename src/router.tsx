@@ -10,6 +10,7 @@ import { RecipeDetailPage } from "@/features/recipes/RecipeDetailPage";
 import { ApprovalsPage } from "@/features/approvals/ApprovalsPage";
 import { ReportsPage } from "@/features/reports/ReportsPage";
 import { UsersPage } from "@/features/users/UsersPage";
+import { ViewerAccessPage } from "@/features/viewers/ViewerAccessPage";
 import { AuditPage } from "@/features/audit/AuditPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 
@@ -72,6 +73,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireRole roles={["admin", "editor"]}>
             <ReportsPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "viewer-access",
+        element: (
+          <RequireRole roles={["admin", "editor"]}>
+            <ViewerAccessPage />
           </RequireRole>
         ),
       },

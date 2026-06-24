@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn, formatDateTime, formatINR } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
-import { can, canEditRecipe } from "@/lib/auth/permissions";
+import { can, canEditRecipe, viewerBrands, viewerShowCost } from "@/lib/auth/permissions";
 import { calculateIngredientCost } from "@/lib/costing";
 import { canConvert } from "@/lib/units";
 import type { Recipe } from "@/lib/data/types";
@@ -42,6 +42,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useCategories, useFoodCostPct, useAllSettings } from "@/features/settings/hooks";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useUsersMap } from "@/features/users/hooks";
+import { useDashboardBrand } from "@/features/dashboard/brandTheme";
 import { useDuplicateRecipe, useRecipe, useRecipes } from "./hooks";
 import {
   FC_TONE_STYLES,
@@ -67,10 +68,16 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
   const user = useSession((s) => s.user)!;
   const navigate = useNavigate();
   const { data: allRecipes = [], isLoading } = useRecipes();
-  const recipes = useMemo(
-    () => allRecipes.filter((r) => (prepMode ? r.is_prep : !r.is_prep)),
-    [allRecipes, prepMode],
-  );
+  const globalBrand = useDashboardBrand((s) => s.brand);
+  const canSeeCost = user.role !== "viewer" || viewerShowCost(user);
+  const recipes = useMemo(() => {
+    const base = allRecipes.filter((r) => (prepMode ? r.is_prep : !r.is_prep));
+    if (user.role === "viewer") {
+      const brands = viewerBrands(user);
+      return base.filter((r) => r.status === "approved" && brands.includes(r.brand));
+    }
+    return globalBrand === "all" ? base : base.filter((r) => r.brand === globalBrand);
+  }, [allRecipes, prepMode, user, globalBrand]);
   const { data: categories = [] } = useCategories();
   const { data: foodCostPct = 30 } = useFoodCostPct();
   const { data: settings = [] } = useAllSettings();
@@ -266,6 +273,7 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
                   onEdit={() => navigate(`/recipes/${r.id}/edit`)}
                   onDuplicate={() => duplicate(r.id)}
                   updatedBy={showUpdatedBy ? usersMap.get(r.updated_by ?? "")?.name ?? null : null}
+                  canSeeCost={canSeeCost}
                 />
               ))}
             </div>
@@ -301,7 +309,8 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
         )}
       </Card>
 
-      {/* Bottom KPI strip */}
+      {/* Bottom KPI strip (cost — hidden for viewers without cost access) */}
+      {canSeeCost && (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<Percent className="h-4 w-4" />}
@@ -328,6 +337,7 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
           sub={`Across ${kpis.activeCount} active items`}
         />
       </div>
+      )}
     </>
   );
 }
@@ -376,6 +386,7 @@ function RecipeRow({
   onEdit,
   onDuplicate,
   updatedBy,
+  canSeeCost,
 }: {
   recipe: Recipe;
   foodCostPct: number;
@@ -388,6 +399,7 @@ function RecipeRow({
   onEdit: () => void;
   onDuplicate: () => void;
   updatedBy: string | null;
+  canSeeCost: boolean;
 }) {
   const unitCost = recipe.cost_per_portion ?? 0;
   const menuPrice = menuPriceOf(recipe, foodCostPct);
@@ -423,9 +435,10 @@ function RecipeRow({
         <div className="hidden lg:block lg:col-span-1">
           <span className="font-mono">{recipe.serving_size} Port.</span>
         </div>
-        <div className="hidden text-right font-mono lg:block lg:col-span-1">{formatINR(unitCost)}</div>
-        <div className="hidden text-right font-mono font-semibold lg:block lg:col-span-1">{formatINR(menuPrice)}</div>
+        <div className="hidden text-right font-mono lg:block lg:col-span-1">{canSeeCost ? formatINR(unitCost) : "—"}</div>
+        <div className="hidden text-right font-mono font-semibold lg:block lg:col-span-1">{canSeeCost ? formatINR(menuPrice) : "—"}</div>
         <div className="col-span-2 lg:col-span-2">
+          {canSeeCost ? (
           <div className="flex items-center gap-2">
             <span className={cn("rounded px-1.5 py-0.5 text-xs font-semibold", toneStyle.badge)}>
               {fc}%
@@ -437,6 +450,9 @@ function RecipeRow({
               />
             </div>
           </div>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
         </div>
         <div className="hidden text-xs text-muted-foreground lg:block lg:col-span-1">
           <div>{formatDateTime(recipe.updated_at)}</div>
@@ -447,7 +463,7 @@ function RecipeRow({
         </div>
       </button>
 
-      {expanded && (
+      {expanded && canSeeCost && (
         <ExpandedBreakdown
           recipe={recipe}
           foodCostPct={foodCostPct}

@@ -37,3 +37,9 @@ export function useUpdateUser() {
     },
   });
 }
+
+/** Viewers only — for the Viewer Access page. */
+export function useViewers() {
+  const q = useUsers();
+  return { ...q, viewers: (q.data ?? []).filter((u) => u.role === "viewer") };
+}
