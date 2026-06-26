@@ -7,6 +7,7 @@ export interface MaterialInput {
   ingredient_name: string;
   category: string;
   supplier_name?: string | null;
+  notes?: string | null;
   purchase_price: number | null;
   purchase_quantity: number;
   purchase_unit: string;
@@ -54,6 +55,7 @@ export const materialsRepo = {
           ingredient_name: input.ingredient_name,
           category: input.category,
           supplier_name: input.supplier_name ?? null,
+          notes: input.notes ?? null,
           purchase_price: input.purchase_price,
           purchase_quantity: input.purchase_quantity,
           purchase_unit: input.purchase_unit,
@@ -99,6 +101,7 @@ export const materialsRepo = {
         m.ingredient_name = input.ingredient_name;
         m.category = input.category;
         m.supplier_name = input.supplier_name ?? null;
+        m.notes = input.notes ?? null;
         m.purchase_price = input.purchase_price;
         m.purchase_quantity = input.purchase_quantity;
         m.purchase_unit = input.purchase_unit;
@@ -159,6 +162,33 @@ export const materialsRepo = {
           notes: `${status === "inactive" ? "Deactivated" : "Reactivated"} ${m.ingredient_name}`,
         });
         return m;
+      }),
+    );
+  },
+
+  /** Bulk activate/deactivate (bulk delete = bulk deactivate, soft delete). */
+  async bulkSetStatus(
+    ids: string[],
+    status: "active" | "inactive",
+    actorId: string,
+  ): Promise<number> {
+    return delay(
+      mutate((db) => {
+        let n = 0;
+        for (const id of ids) {
+          const m = db.raw_materials.find((x) => x.id === id);
+          if (!m || m.status === status) continue;
+          m.status = status;
+          n++;
+          recordAudit(db, {
+            entity_type: "ingredient",
+            entity_id: m.id,
+            action: status === "inactive" ? "delete" : "update",
+            performed_by: actorId,
+            notes: `${status === "inactive" ? "Deactivated" : "Reactivated"} ${m.ingredient_name} (bulk)`,
+          });
+        }
+        return n;
       }),
     );
   },

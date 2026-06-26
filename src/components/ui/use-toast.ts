@@ -2,11 +2,21 @@ import { create } from "zustand";
 
 export type ToastVariant = "default" | "success" | "destructive" | "warning";
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface Toast {
   id: string;
   title: string;
   description?: string;
   variant: ToastVariant;
+  action?: ToastAction;
+}
+
+interface ToastOpts {
+  action?: ToastAction;
 }
 
 interface ToastState {
@@ -29,14 +39,14 @@ export const useToastStore = create<ToastState>((set) => ({
   },
 }));
 
-/** Convenience helpers. */
+/** Convenience helpers. Pass `{ action }` for e.g. an Undo button. */
 export const toast = {
-  success: (title: string, description?: string) =>
-    useToastStore.getState().push({ title, description, variant: "success" }),
-  error: (title: string, description?: string) =>
-    useToastStore.getState().push({ title, description, variant: "destructive" }),
-  warning: (title: string, description?: string) =>
-    useToastStore.getState().push({ title, description, variant: "warning" }),
-  info: (title: string, description?: string) =>
-    useToastStore.getState().push({ title, description, variant: "default" }),
+  success: (title: string, description?: string, opts?: ToastOpts) =>
+    useToastStore.getState().push({ title, description, variant: "success", action: opts?.action }),
+  error: (title: string, description?: string, opts?: ToastOpts) =>
+    useToastStore.getState().push({ title, description, variant: "destructive", action: opts?.action }),
+  warning: (title: string, description?: string, opts?: ToastOpts) =>
+    useToastStore.getState().push({ title, description, variant: "warning", action: opts?.action }),
+  info: (title: string, description?: string, opts?: ToastOpts) =>
+    useToastStore.getState().push({ title, description, variant: "default", action: opts?.action }),
 };

@@ -29,6 +29,14 @@ export interface User {
   status: UserStatus;
   /** Mock-only: plaintext password for the local auth simulation. */
   password?: string;
+  /** Optional contact number shown on the profile. */
+  phone?: string | null;
+  /** Avatar image as a data URL (mock) or external URL. */
+  avatar_url?: string | null;
+  /** Last successful sign-in timestamp (set by the auth layer). */
+  last_login?: string | null;
+  /** Saved UI theme preference ('light' | 'dark' | 'capiche' | 'aiko'). */
+  theme_pref?: string | null;
   /** Viewer-only: which brands' approved recipes this viewer can see. */
   accessible_brands?: Brand[];
   /** Viewer-only: whether this viewer sees costs/pricing (else Capiche-style). */
@@ -42,6 +50,8 @@ export interface RawMaterial {
   ingredient_name: string;
   category: string;
   supplier_name: string | null;
+  /** Free-text note about the ingredient (storage, brand, prep, etc.). */
+  notes: string | null;
   purchase_price: number | null;
   purchase_quantity: number;
   purchase_unit: string;
@@ -69,6 +79,8 @@ export interface Recipe {
   cost_per_portion: number | null;
   /** Actual menu price set by the chef. Null → use the suggested price. */
   selling_price: number | null;
+  /** Per-portion packaging cost (box/container), added on top of food cost. */
+  packaging_cost: number;
   /** Wastage % added on top of the raw ingredient cost (PRD / sheet "Wastage"). */
   wastage_pct: number;
   /** True for in-house prep recipes (sauces, doughs, pastes) used as components. */
@@ -111,6 +123,35 @@ export interface RecipeCostHistory {
   change_reason: string | null;
   changed_by: string | null;
   changed_at: string;
+}
+
+/**
+ * Standard yield (preparation-loss) data for an ingredient. The full purchase
+ * cost is distributed across the USABLE quantity, giving the effective rate.
+ */
+export interface IngredientYield {
+  id: string;
+  ingredient_id: string;
+  purchase_cost: number;
+  purchase_quantity: number;
+  purchase_unit: string;
+  /** Raw quantity expressed in the base unit (Gram/ML/piece). */
+  raw_quantity: number;
+  raw_unit: string;
+  wastage_quantity: number;
+  wastage_unit: string;
+  usable_quantity: number;
+  wastage_percentage: number;
+  yield_percentage: number;
+  /** Per base unit. */
+  original_unit_cost: number;
+  /** Per base unit, distributing full cost over the usable quantity. */
+  yield_adjusted_unit_cost: number;
+  effective_from: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
 }
 
 export interface IngredientPriceHistory {

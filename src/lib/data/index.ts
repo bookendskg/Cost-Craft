@@ -9,6 +9,9 @@ export type { CreateUserInput, UpdateUserInput } from "./mock/users";
 export { materialsRepo } from "./mock/materials";
 export type { MaterialInput } from "./mock/materials";
 
+export { yieldsRepo } from "./mock/yields";
+export type { YieldInput } from "./mock/yields";
+
 export { recipesRepo } from "./mock/recipes";
 export type {
   RecipeHeaderInput,

@@ -1,65 +1,96 @@
-import { formatINR } from "@/lib/utils";
-import type { ViewVisibility } from "@/lib/auth/permissions";
+import { Package, Receipt, Tag, Percent, TrendingUp, Wallet } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { cn, formatINR } from "@/lib/utils";
+import { round2 } from "@/lib/costing";
+import { fcTone, type FcTone } from "@/features/recipes/recipeMetrics";
+
+const TONE_TEXT: Record<FcTone, string> = {
+  good: "text-emerald-600",
+  warn: "text-amber-600",
+  bad: "text-red-600",
+};
 
 interface CostSummaryProps {
-  totalCost: number;
-  costPerPortion: number;
-  suggestedPrice: number;
-  grossProfit: number;
-  grossMarginPct: number;
+  /** Ingredient cost incl. wastage (per portion / single-portion recipe). */
+  recipeCost: number;
+  packagingCost: number;
+  /** Price the metrics use — the chef-set menu price, or the suggested price. */
+  sellingPrice: number;
+  /** True when `sellingPrice` is the suggested fallback (no menu price set). */
+  isSuggested: boolean;
   foodCostPct: number;
-  servingSize: number;
-  /** Optional view-mode gate (viewers). Omitted = show everything. */
-  visibility?: ViewVisibility;
+  criticalPct?: number;
 }
 
-function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+/** A compact metric tile. */
+function Stat({
+  icon,
+  label,
+  value,
+  hint,
+  className,
+  valueClass,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  hint?: string;
+  className?: string;
+  valueClass?: string;
+}) {
   return (
-    <div className="flex items-center justify-between py-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={strong ? "text-base font-semibold" : "font-medium"}>{value}</span>
-    </div>
+    <Card className={cn("p-3", className)}>
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        {icon}
+        {label}
+      </div>
+      <div className={cn("mt-1 text-lg font-bold", valueClass)}>{value}</div>
+      {hint && <div className="mt-0.5 text-[11px] text-muted-foreground">{hint}</div>}
+    </Card>
   );
 }
 
-export function CostSummary(props: CostSummaryProps) {
-  const v = props.visibility;
-  const showCost = v ? v.totalCost : true;
-  const showPortion = v ? v.costPerPortion : true;
-  const showPrice = v ? v.sellingPrice : true;
-  const showProfit = v ? v.grossProfit : true;
-
-  if (!showCost && !showPortion && !showPrice && !showProfit) {
-    return (
-      <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
-        Costing details are hidden for this view.
-      </div>
-    );
-  }
+export function CostSummary({
+  recipeCost,
+  packagingCost,
+  sellingPrice,
+  isSuggested,
+  foodCostPct,
+  criticalPct = 35,
+}: CostSummaryProps) {
+  const fullCost = round2(recipeCost + packagingCost);
+  const profit = round2(sellingPrice - fullCost);
+  const fcPct = sellingPrice > 0 ? round2((fullCost / sellingPrice) * 100) : 0;
+  const marginPct = sellingPrice > 0 ? round2((profit / sellingPrice) * 100) : 0;
+  const tone = fcTone(fcPct, criticalPct);
 
   return (
-    <div className="rounded-lg border bg-muted/40 p-4">
-      <p className="mb-2 text-sm font-semibold">Cost Summary</p>
-      {showCost && <Row label="Total Recipe Cost" value={formatINR(props.totalCost)} />}
-      {showPortion && props.servingSize > 1 && (
-        <Row
-          label={`Cost Per Portion (÷${props.servingSize})`}
-          value={formatINR(props.costPerPortion)}
+    <div className="space-y-3">
+      <p className="text-sm font-semibold">Cost Summary</p>
+      <div className="grid grid-cols-2 gap-3">
+        <Stat icon={<Receipt className="h-3.5 w-3.5" />} label="Recipe Cost" value={formatINR(recipeCost)} />
+        <Stat icon={<Package className="h-3.5 w-3.5" />} label="Packaging" value={formatINR(packagingCost)} />
+        <Stat
+          icon={<Tag className="h-3.5 w-3.5" />}
+          label="Selling Price"
+          value={formatINR(sellingPrice)}
+          hint={isSuggested ? `Suggested @ ${foodCostPct}%` : "Your menu price"}
+          className="col-span-2"
         />
-      )}
-      {showPrice && (
-        <Row
-          label={`Suggested Selling Price (${props.foodCostPct}% food cost)`}
-          value={formatINR(props.suggestedPrice)}
-          strong
+        <Stat
+          icon={<Percent className="h-3.5 w-3.5" />}
+          label="Food Cost %"
+          value={`${fcPct}%`}
+          valueClass={TONE_TEXT[tone]}
         />
-      )}
-      {showProfit && (
-        <>
-          <Row label="Gross Profit" value={formatINR(props.grossProfit)} />
-          <Row label="Gross Margin" value={`${props.grossMarginPct}%`} />
-        </>
-      )}
+        <Stat icon={<TrendingUp className="h-3.5 w-3.5" />} label="Gross Margin" value={`${marginPct}%`} />
+        <Stat
+          icon={<Wallet className="h-3.5 w-3.5" />}
+          label="Profit / Portion"
+          value={formatINR(profit)}
+          className="col-span-2"
+        />
+      </div>
     </div>
   );
 }

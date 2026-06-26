@@ -49,7 +49,7 @@ import { can, canEditRecipe, viewerCanAccess, visibilityForUser } from "@/lib/au
 import { toast } from "@/components/ui/use-toast";
 import { useUsersMap } from "@/features/users/hooks";
 import { useFoodCostPct } from "@/features/settings/hooks";
-import { menuPriceOf } from "./recipeMetrics";
+import { menuPriceOf, fullCostPerPortion, packagingOf } from "./recipeMetrics";
 import { RecipePdfButton } from "@/features/reports/RecipePdfButton";
 import {
   useApproveRecipe,
@@ -104,11 +104,13 @@ export function RecipeDetailPage() {
   };
 
   const [sellingInput, setSellingInput] = useState("");
+  const recipeId = data?.recipe?.id;
+  const recipeSellingPrice = data?.recipe?.selling_price ?? null;
   useEffect(() => {
-    if (data?.recipe) {
-      setSellingInput(data.recipe.selling_price != null ? String(data.recipe.selling_price) : "");
+    if (recipeId) {
+      setSellingInput(recipeSellingPrice != null ? String(recipeSellingPrice) : "");
     }
-  }, [data?.recipe?.id, data?.recipe?.selling_price]);
+  }, [recipeId, recipeSellingPrice]);
 
   const scale = 1;
   const [submitOpen, setSubmitOpen] = useState(false);
@@ -143,11 +145,13 @@ export function RecipeDetailPage() {
   const rawIngredientCost = round2(batchCost / (1 + (recipe.wastage_pct ?? 0) / 100));
   const wastageAmount = round2(batchCost - rawIngredientCost);
   const portionCost = recipe.cost_per_portion ?? 0;
+  const packaging = packagingOf(recipe);
+  const fullCpp = fullCostPerPortion(recipe); // food cost + packaging
   const menuPrice = menuPriceOf(recipe, foodCostPct);
-  const marginPct = menuPrice > 0 ? round2(((menuPrice - portionCost) / menuPrice) * 100) : 0;
+  const marginPct = menuPrice > 0 ? round2(((menuPrice - fullCpp) / menuPrice) * 100) : 0;
   const brandLabel = BRANDS.find((b) => b.value === recipe.brand)?.label ?? recipe.brand;
 
-  const actualFc = menuPrice > 0 ? round2((portionCost / menuPrice) * 100) : foodCostPct;
+  const actualFc = menuPrice > 0 ? round2((fullCpp / menuPrice) * 100) : foodCostPct;
   const efficiency = Math.max(0, Math.min(100, Math.round((foodCostPct / Math.max(actualFc, 1)) * 100)));
 
   return (
@@ -188,10 +192,7 @@ export function RecipeDetailPage() {
             </Button>
           )}
           {editable && (
-            <Button
-              className="bg-emerald-800 text-white hover:bg-emerald-900"
-              onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
-            >
+            <Button variant="accent" onClick={() => navigate(`/recipes/${recipe.id}/edit`)}>
               <Pencil className="h-4 w-4" /> Edit Recipe
             </Button>
           )}
@@ -206,7 +207,7 @@ export function RecipeDetailPage() {
                 <XCircle className="h-4 w-4" /> Reject
               </Button>
               <Button
-                className="bg-emerald-800 text-white hover:bg-emerald-900"
+                variant="accent"
                 onClick={() => setApproveOpen(true)}
               >
                 <CheckCircle2 className="h-4 w-4" /> Approve
@@ -359,6 +360,22 @@ export function RecipeDetailPage() {
                             {formatINR(batchCost)}
                           </TableCell>
                         </TableRow>
+                        {packaging > 0 && (
+                          <>
+                            <TableRow>
+                              <TableCell colSpan={vis.quantities ? 3 : 1} className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Packaging / Portion
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-muted-foreground">+{formatINR(packaging)}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell colSpan={vis.quantities ? 3 : 1} className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Full Cost / Portion
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-base font-bold text-emerald-700">{formatINR(fullCpp)}</TableCell>
+                            </TableRow>
+                          </>
+                        )}
                       </>
                     )}
                   </TableBody>
@@ -378,7 +395,13 @@ export function RecipeDetailPage() {
                     {recipe.serving_size > 1 && (
                       <FinRow label={`Cost Per Portion (÷${recipe.serving_size})`} value={formatINR(portionCost)} />
                     )}
-                    <FinRow label={`Suggested Price (${foodCostPct}% food cost)`} value={formatINR(round2(portionCost / (foodCostPct / 100)))} strong />
+                    {packaging > 0 && (
+                      <>
+                        <FinRow label="Packaging / Portion" value={formatINR(packaging)} />
+                        <FinRow label="Full Cost / Portion" value={formatINR(fullCpp)} />
+                      </>
+                    )}
+                    <FinRow label={`Suggested Price (${foodCostPct}% food cost)`} value={formatINR(round2(fullCpp / (foodCostPct / 100)))} strong />
                     <FinRow label="Menu Price" value={formatINR(menuPrice)} />
                     <FinRow label="Gross Margin" value={`${marginPct}%`} />
                   </div>
@@ -466,7 +489,7 @@ export function RecipeDetailPage() {
                       </div>
                       <Button
                         size="sm"
-                        className="bg-emerald-800 text-white hover:bg-emerald-900"
+                        variant="accent"
                         disabled={sellingMut.isPending}
                         onClick={async () => {
                           const v = sellingInput.trim() === "" ? null : Number(sellingInput);

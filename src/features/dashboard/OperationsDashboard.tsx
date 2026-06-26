@@ -139,7 +139,7 @@ export function OperationsDashboard({ brand }: { brand: BrandSelection }) {
                 rows.map((r) => {
                   const tone = fcTone(r.fc, criticalPct);
                   return (
-                    <TableRow key={r.id} className="cursor-pointer" onClick={() => navigate(`/recipes/${r.id}`)}>
+                    <TableRow key={r.id} className="cursor-pointer transition-colors hover:bg-muted/50" onClick={() => navigate(`/recipes/${r.id}`)}>
                       <TableCell>
                         <p className="font-medium">{r.name}</p>
                         <p className="text-[11px] text-muted-foreground">{r.category}</p>

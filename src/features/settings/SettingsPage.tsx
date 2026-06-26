@@ -33,11 +33,15 @@ export function SettingsPage() {
       toast.error("Food cost % must be between 1 and 100");
       return;
     }
-    await setSetting.mutateAsync({ key: "food_cost_pct", value: String(fc) });
-    await setSetting.mutateAsync({ key: "margin_alert_pct", value: String(Number(marginAlert)) });
-    // Recompute downstream costing that depends on food cost %.
-    qc.invalidateQueries({ queryKey: ["recipes"] });
-    toast.success("Settings saved");
+    try {
+      await setSetting.mutateAsync({ key: "food_cost_pct", value: String(fc) });
+      await setSetting.mutateAsync({ key: "margin_alert_pct", value: String(Number(marginAlert)) });
+      // Recompute downstream costing that depends on food cost %.
+      qc.invalidateQueries({ queryKey: ["recipes"] });
+      toast.success("Settings saved");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to save settings");
+    }
   };
 
   return (

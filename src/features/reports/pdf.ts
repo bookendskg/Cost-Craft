@@ -57,14 +57,20 @@ export async function generateRecipePdf(
 
   const total = recipe.total_cost ?? 0;
   const perPortion = recipe.cost_per_portion ?? 0;
-  const suggested = perPortion > 0 ? round2(perPortion / (foodCostPct / 100)) : 0;
-  const grossProfit = round2(suggested - perPortion);
+  const packaging = recipe.packaging_cost ?? 0;
+  const fullPerPortion = round2(perPortion + packaging);
+  const suggested = fullPerPortion > 0 ? round2(fullPerPortion / (foodCostPct / 100)) : 0;
+  const grossProfit = round2(suggested - fullPerPortion);
   const grossMargin = suggested > 0 ? round2((grossProfit / suggested) * 100) : 0;
 
   const summary: [string, string][] = [];
   if (showCost) {
     summary.push(["Total Recipe Cost", formatINR(total)]);
     summary.push(["Cost Per Portion", formatINR(perPortion)]);
+    if (packaging > 0) {
+      summary.push(["Packaging / Portion", formatINR(packaging)]);
+      summary.push(["Full Cost / Portion", formatINR(fullPerPortion)]);
+    }
   }
   if (showPrice) {
     summary.push(["Food Cost %", `${foodCostPct}%`]);

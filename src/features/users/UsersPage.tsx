@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { KeyRound, MoreVertical, Plus } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { TableSkeleton } from "@/components/TableSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { toast } from "@/components/ui/use-toast";
 import { ROLE_LABELS, type User } from "@/lib/data/types";
 import { useUpdateUser, useUsers } from "./hooks";
@@ -57,12 +59,15 @@ export function UsersPage() {
     [users, search, role, status],
   );
 
-  const toggleStatus = async (u: User) => {
-    await updateMut.mutateAsync({
-      id: u.id,
-      patch: { status: u.status === "active" ? "inactive" : "active" },
-    });
-    toast.success(u.status === "active" ? "User deactivated" : "User reactivated");
+  const [deactivating, setDeactivating] = useState<User | null>(null);
+
+  const setUserStatus = async (u: User, next: "active" | "inactive") => {
+    try {
+      await updateMut.mutateAsync({ id: u.id, patch: { status: next } });
+      toast.success(next === "inactive" ? "User deactivated" : "User reactivated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    }
   };
 
   return (
@@ -112,7 +117,7 @@ export function UsersPage() {
 
       <Card>
         {isLoading ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">Loading…</p>
+          <TableSkeleton rows={5} cols={4} />
         ) : filtered.length === 0 ? (
           <EmptyState title="No users found" />
         ) : (
@@ -158,7 +163,11 @@ export function UsersPage() {
                             <KeyRound className="h-4 w-4" /> Assign Recipe Access
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem onClick={() => toggleStatus(u)}>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            u.status === "active" ? setDeactivating(u) : setUserStatus(u, "active")
+                          }
+                        >
                           {u.status === "active" ? "Deactivate" : "Reactivate"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -176,6 +185,15 @@ export function UsersPage() {
         user={assignFor}
         open={!!assignFor}
         onOpenChange={(o) => !o && setAssignFor(null)}
+      />
+      <ConfirmDialog
+        open={!!deactivating}
+        onOpenChange={(o) => !o && setDeactivating(null)}
+        title={`Deactivate ${deactivating?.name}?`}
+        description="They'll lose access until reactivated. Their data is kept."
+        confirmLabel="Deactivate"
+        destructive
+        onConfirm={() => deactivating && setUserStatus(deactivating, "inactive")}
       />
     </>
   );

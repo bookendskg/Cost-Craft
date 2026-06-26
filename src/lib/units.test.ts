@@ -28,6 +28,10 @@ describe("getConversionFactor — all valid pairs (PRD §4.2)", () => {
   it("count identity", () => {
     expect(getConversionFactor("Piece", "Piece")).toBe(1);
   });
+  it("dozen pairs", () => {
+    expect(getConversionFactor("Dozen", "Piece")).toBe(12);
+    expect(getConversionFactor("Piece", "Dozen")).toBe(1 / 12);
+  });
   it("throws on cross-family", () => {
     expect(() => getConversionFactor("Gram", "ML")).toThrow();
     expect(() => getConversionFactor("Piece", "Packet")).toThrow();
@@ -39,6 +43,8 @@ describe("canConvert", () => {
     expect(canConvert("KG", "Gram")).toBe(true);
     expect(canConvert("Litre", "ML")).toBe(true);
     expect(canConvert("Piece", "Piece")).toBe(true);
+    expect(canConvert("Piece", "Dozen")).toBe(true);
+    expect(canConvert("Dozen", "Piece")).toBe(true);
     expect(canConvert("Piece", "Bottle")).toBe(false);
     expect(canConvert("Gram", "Litre")).toBe(false);
   });
@@ -48,6 +54,7 @@ describe("compatibleUnits", () => {
   it("returns the family options for the line unit dropdown", () => {
     expect(compatibleUnits("Gram")).toEqual(["Gram", "KG"]);
     expect(compatibleUnits("ML")).toEqual(["ML", "Litre"]);
-    expect(compatibleUnits("Piece")).toEqual(["Piece"]);
+    expect(compatibleUnits("Piece")).toEqual(["Piece", "Dozen"]);
+    expect(compatibleUnits("Bottle")).toEqual(["Bottle"]);
   });
 });

@@ -65,15 +65,16 @@ export function ReportsPage() {
       }),
     [recipes, brand, status, category, from, to],
   );
+  const ingData = ingredients.data;
   const ingredientsByRecipe = useMemo(() => {
-    const map = new Map<string, typeof ingredients.data>();
-    (ingredients.data ?? []).forEach((i) => {
+    const map = new Map<string, typeof ingData>();
+    (ingData ?? []).forEach((i) => {
       const arr = map.get(i.recipe_id) ?? [];
       arr.push(i);
       map.set(i.recipe_id, arr);
     });
     return map;
-  }, [ingredients.data]);
+  }, [ingData]);
   const brandLabel = brand === "all" ? "AllBrands" : brand === "capiche" ? "Capiche" : "Aiko";
 
   const exportExcel = async () => {

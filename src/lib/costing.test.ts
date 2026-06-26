@@ -107,3 +107,11 @@ describe("price / profit helpers", () => {
     expect(percentChange(100, 120)).toBe(20);
   });
 });
+
+describe("PRD §14 — Onion worked example", () => {
+  it("₹2400 / 20 kg → ₹0.12 per gram; 150 g used = ₹18.00", () => {
+    const cpu = calculateCostPerBaseUnit(2400, 20, "KG", "Gram"); // ₹ per gram
+    expect(cpu).toBeCloseTo(0.12, 6);
+    expect(calculateIngredientCost(cpu, 150, "Gram", "Gram")).toBe(18);
+  });
+});

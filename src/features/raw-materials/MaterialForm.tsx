@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -49,6 +51,7 @@ export function MaterialForm({
       ingredient_name: "",
       category: "",
       supplier_name: "",
+      notes: "",
       purchase_price: undefined as unknown as number,
       purchase_quantity: undefined as unknown as number,
       purchase_unit: "KG",
@@ -66,6 +69,7 @@ export function MaterialForm({
               ingredient_name: material.ingredient_name,
               category: material.category,
               supplier_name: material.supplier_name ?? "",
+              notes: material.notes ?? "",
               purchase_price: material.purchase_price ?? (undefined as unknown as number),
               purchase_quantity: material.purchase_quantity,
               purchase_unit: material.purchase_unit as MaterialValues["purchase_unit"],
@@ -75,6 +79,7 @@ export function MaterialForm({
               ingredient_name: "",
               category: categories[0] ?? "",
               supplier_name: "",
+              notes: "",
               purchase_price: undefined as unknown as number,
               purchase_quantity: undefined as unknown as number,
               purchase_unit: "KG",
@@ -91,12 +96,17 @@ export function MaterialForm({
   const bUnit = watch("base_unit");
 
   let preview: number | null = null;
-  if (price > 0 && qty > 0 && canConvert(pUnit, bUnit)) {
+  if (price != null && price > 0 && qty > 0 && canConvert(pUnit, bUnit)) {
     preview = calculateCostPerBaseUnit(price, qty, pUnit, bUnit);
   }
 
   const onSubmit = async (values: MaterialValues) => {
-    const input = { ...values, supplier_name: values.supplier_name || null };
+    const input = {
+      ...values,
+      supplier_name: values.supplier_name || null,
+      notes: values.notes || null,
+      purchase_price: values.purchase_price ?? null,
+    };
     try {
       if (isEdit && material) {
         await updateMut.mutateAsync({ id: material.id, input });
@@ -153,15 +163,20 @@ export function MaterialForm({
             )}
           </div>
 
+          <div className="space-y-1.5">
+            <Label>Supplier</Label>
+            <Input {...register("supplier_name")} placeholder="Optional" />
+          </div>
+
           <div className="rounded-md border p-3">
             <p className="mb-3 text-sm font-medium">Pricing</p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Purchase Price (₹) *</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...register("purchase_price", { valueAsNumber: true })}
+                <CurrencyInput
+                  value={price ?? undefined}
+                  onChange={(v) => setValue("purchase_price", v ?? null, { shouldValidate: true })}
+                  placeholder="Leave blank if price is pending"
                 />
                 {formState.errors.purchase_price && (
                   <p className="text-xs text-destructive">
@@ -229,6 +244,11 @@ export function MaterialForm({
             <span className="font-semibold">
               {preview !== null ? `${formatINR(preview)} / ${bUnit}` : "—"}
             </span>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Notes</Label>
+            <Textarea {...register("notes")} placeholder="Optional — storage, brand, prep notes…" rows={2} />
           </div>
 
           <DialogFooter>

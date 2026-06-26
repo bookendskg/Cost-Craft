@@ -23,6 +23,10 @@ export interface CostedLine extends EditorLine {
 export interface RecipeCostingView extends RecipeCostingResult {
   lines: CostedLine[];
   hasMissingPrice: boolean;
+  /** Per-portion packaging cost passed in. */
+  packagingCost: number;
+  /** cost_per_portion + packaging — what the menu price must cover. */
+  fullCostPerPortion: number;
 }
 
 /** A prep recipe's cost per unit of its yield (pre-wastage; ₹/gram). */
@@ -41,6 +45,7 @@ export function useRecipeCosting(
   servingSize: number,
   foodCostPct: number,
   wastagePct = 0,
+  packagingCost = 0,
 ): RecipeCostingView {
   return useMemo(() => {
     const costed: CostedLine[] = lines.map((l) => {
@@ -69,8 +74,10 @@ export function useRecipeCosting(
     const totalCost = round2(rawCost * (1 + wastagePct / 100));
     const serving = servingSize > 0 ? servingSize : 1;
     const rawCpp = totalCost / serving;
-    const rawSuggested = foodCostPct > 0 ? rawCpp / (foodCostPct / 100) : 0;
-    const rawProfit = rawSuggested - rawCpp;
+    // Packaging is a per-portion cost the price must also cover.
+    const rawFullCpp = rawCpp + packagingCost;
+    const rawSuggested = foodCostPct > 0 ? rawFullCpp / (foodCostPct / 100) : 0;
+    const rawProfit = rawSuggested - rawFullCpp;
     const rawMargin = rawSuggested > 0 ? (rawProfit / rawSuggested) * 100 : 0;
 
     return {
@@ -82,6 +89,8 @@ export function useRecipeCosting(
       grossMarginPct: round2(rawMargin),
       lines: costed,
       hasMissingPrice: costed.some((l) => l.missingPrice),
+      packagingCost,
+      fullCostPerPortion: round2(rawFullCpp),
     };
-  }, [lines, materialsById, prepsById, servingSize, foodCostPct, wastagePct]);
+  }, [lines, materialsById, prepsById, servingSize, foodCostPct, wastagePct, packagingCost]);
 }

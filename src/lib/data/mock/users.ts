@@ -16,6 +16,9 @@ export interface UpdateUserInput {
   role?: Role;
   status?: UserStatus;
   password?: string;
+  phone?: string | null;
+  avatar_url?: string | null;
+  last_login?: string | null;
   accessible_brands?: import("../types").Brand[];
   show_cost?: boolean;
 }
@@ -77,6 +80,9 @@ export const usersRepo = {
         if (patch.role !== undefined) u.role = patch.role;
         if (patch.status !== undefined) u.status = patch.status;
         if (patch.password) u.password = patch.password;
+        if (patch.phone !== undefined) u.phone = patch.phone;
+        if (patch.avatar_url !== undefined) u.avatar_url = patch.avatar_url;
+        if (patch.last_login !== undefined) u.last_login = patch.last_login;
         if (patch.accessible_brands !== undefined) u.accessible_brands = patch.accessible_brands;
         if (patch.show_cost !== undefined) u.show_cost = patch.show_cost;
         u.updated_at = nowISO();

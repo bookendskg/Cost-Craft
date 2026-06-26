@@ -1,22 +1,32 @@
 import { round2 } from "@/lib/costing";
 import type { Recipe } from "@/lib/data/types";
 
+/** Per-portion packaging cost (box/container). */
+export function packagingOf(recipe: Recipe): number {
+  return recipe.packaging_cost ?? 0;
+}
+
+/** Full per-portion cost the menu price must cover = food cost + packaging. */
+export function fullCostPerPortion(recipe: Recipe): number {
+  return round2((recipe.cost_per_portion ?? 0) + packagingOf(recipe));
+}
+
 /** Menu price = chef-set selling price, or the suggested price as a fallback. */
 export function menuPriceOf(recipe: Recipe, foodCostPct: number): number {
   if (recipe.selling_price && recipe.selling_price > 0) return recipe.selling_price;
-  const cpp = recipe.cost_per_portion ?? 0;
+  const cpp = fullCostPerPortion(recipe);
   return foodCostPct > 0 ? round2(cpp / (foodCostPct / 100)) : 0;
 }
 
-/** Actual food cost % = unit cost ÷ menu price. */
+/** Actual food cost % = full per-portion cost ÷ menu price. */
 export function foodCostPctOf(recipe: Recipe, foodCostPct: number): number {
   const menu = menuPriceOf(recipe, foodCostPct);
-  const cpp = recipe.cost_per_portion ?? 0;
+  const cpp = fullCostPerPortion(recipe);
   return menu > 0 ? round2((cpp / menu) * 100) : 0;
 }
 
 export function profitMarginOf(recipe: Recipe, foodCostPct: number): number {
-  return round2(menuPriceOf(recipe, foodCostPct) - (recipe.cost_per_portion ?? 0));
+  return round2(menuPriceOf(recipe, foodCostPct) - fullCostPerPortion(recipe));
 }
 
 export type FcTone = "good" | "warn" | "bad";

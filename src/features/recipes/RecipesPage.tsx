@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { TableSkeleton } from "@/components/TableSkeleton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,10 +51,10 @@ import {
   foodCostPctOf,
   menuPriceOf,
   profitMarginOf,
-  skuOf,
 } from "./recipeMetrics";
+import { Pagination } from "@/components/Pagination";
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 10;
 
 const CATEGORY_EMOJI: Record<string, string> = {
   Pasta: "🍝",
@@ -97,6 +98,7 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
   const [status, setStatus] = useState("all");
   const [fcRange, setFcRange] = useState("all");
   const [page, setPage] = useState(1);
+  const pageSize = PAGE_SIZE;
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const canCreate = can(user.role, "recipe.create");
@@ -116,9 +118,9 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
     });
   }, [recipes, search, category, status, fcRange, foodCostPct]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount);
-  const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pageItems = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const kpis = useMemo(() => {
     const withFc = recipes.map((r) => foodCostPctOf(r, foodCostPct));
@@ -170,7 +172,7 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
             </Button>
             {canCreate && (
               <Button
-                className="bg-emerald-800 text-white hover:bg-emerald-900"
+                variant="accent"
                 onClick={() => navigate("/recipes/new", { state: prepMode ? { isPrep: true } : undefined })}
               >
                 <Plus className="h-4 w-4" /> {prepMode ? "New Prep" : "New Recipe"}
@@ -223,7 +225,7 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
-            <button onClick={clearFilters} className="whitespace-nowrap text-sm font-semibold text-emerald-800 hover:underline">
+            <button onClick={clearFilters} aria-label="Clear all filters" className="whitespace-nowrap rounded text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               Clear Filters
             </button>
           </div>
@@ -233,13 +235,13 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
       {/* Table */}
       <Card className="mb-6 overflow-hidden">
         {isLoading ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">Loading…</p>
+          <TableSkeleton rows={Math.min(pageSize, 8)} cols={6} />
         ) : filtered.length === 0 ? (
           <EmptyState
             title="No recipes found"
             description="Adjust your filters or create a new recipe."
             action={canCreate && (
-              <Button className="bg-emerald-800 text-white hover:bg-emerald-900" onClick={() => navigate("/recipes/new")}>
+              <Button variant="accent" onClick={() => navigate("/recipes/new")}>
                 <Plus className="h-4 w-4" /> New Recipe
               </Button>
             )}
@@ -274,37 +276,18 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
                   onDuplicate={() => duplicate(r.id)}
                   updatedBy={showUpdatedBy ? usersMap.get(r.updated_by ?? "")?.name ?? null : null}
                   canSeeCost={canSeeCost}
+                  brandColored={prepMode}
                 />
               ))}
             </div>
 
-            {/* Pagination */}
-            <div className="flex flex-col items-center justify-between gap-3 bg-muted/30 px-4 py-3 text-sm sm:flex-row">
-              <span className="text-muted-foreground">
-                Showing <strong>{(currentPage - 1) * PAGE_SIZE + 1}-
-                {Math.min(currentPage * PAGE_SIZE, filtered.length)}</strong> of{" "}
-                <strong>{filtered.length}</strong> recipes
-              </span>
-              <div className="flex items-center gap-1">
-                <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>
-                  ‹
-                </Button>
-                {Array.from({ length: pageCount }, (_, i) => i + 1).map((p) => (
-                  <Button
-                    key={p}
-                    size="sm"
-                    variant={p === currentPage ? "default" : "outline"}
-                    className={p === currentPage ? "bg-emerald-800 text-white hover:bg-emerald-900" : ""}
-                    onClick={() => setPage(p)}
-                  >
-                    {p}
-                  </Button>
-                ))}
-                <Button variant="outline" size="sm" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)}>
-                  ›
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              page={currentPage}
+              pageSize={pageSize}
+              total={filtered.length}
+              onPageChange={setPage}
+              label="recipes"
+            />
           </>
         )}
       </Card>
@@ -387,6 +370,7 @@ function RecipeRow({
   onDuplicate,
   updatedBy,
   canSeeCost,
+  brandColored,
 }: {
   recipe: Recipe;
   foodCostPct: number;
@@ -400,33 +384,46 @@ function RecipeRow({
   onDuplicate: () => void;
   updatedBy: string | null;
   canSeeCost: boolean;
+  /** Color the food-cost bar/badge by the active brand instead of by FC tone. */
+  brandColored?: boolean;
 }) {
   const unitCost = recipe.cost_per_portion ?? 0;
   const menuPrice = menuPriceOf(recipe, foodCostPct);
   const fc = foodCostPctOf(recipe, foodCostPct);
   const tone = fcTone(fc, criticalPct);
   const toneStyle = FC_TONE_STYLES[tone];
+  // Preps follow the brand accent (--primary); menu recipes keep the FC tone.
+  const barClass = brandColored ? "bg-primary" : toneStyle.bar;
+  const badgeClass = brandColored ? "bg-primary/10 text-primary" : toneStyle.badge;
 
   return (
-    <div className={cn(expanded && "bg-emerald-50/50")}>
+    <div className={cn(expanded && "bg-primary/5")}>
       <button
         onClick={onToggle}
+        aria-expanded={expanded}
+        aria-label={`${recipe.recipe_name} — toggle cost breakdown`}
         className={cn(
           "grid w-full grid-cols-2 items-center gap-2 px-4 py-3 text-left lg:grid-cols-12",
-          expanded && "border-l-4 border-emerald-700",
+          expanded && "border-l-4 border-primary",
         )}
       >
         <div className="col-span-2 flex items-center gap-3 lg:col-span-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-lg">
             {recipe.image_url ? (
-              <img src={recipe.image_url} alt="" className="h-full w-full object-cover" />
+              <img src={recipe.image_url} alt={recipe.recipe_name} className="h-full w-full object-cover" />
             ) : (
               emojiFor(recipe.category)
             )}
           </div>
           <div className="min-w-0">
             <p className="truncate font-semibold">{recipe.recipe_name}</p>
-            <p className="text-xs text-muted-foreground">SKU: {skuOf(recipe.id)}</p>
+            <p className="text-xs text-muted-foreground">{recipe.category}</p>
+            {/* Mobile-only stat line (desktop shows these as columns) */}
+            {canSeeCost && (
+              <p className="mt-1 font-mono text-xs text-muted-foreground lg:hidden">
+                Cost {formatINR(unitCost)} · Price {formatINR(menuPrice)}
+              </p>
+            )}
           </div>
         </div>
         <div className="col-span-1 hidden text-xs font-medium uppercase text-muted-foreground lg:block lg:col-span-2">
@@ -440,12 +437,12 @@ function RecipeRow({
         <div className="col-span-2 lg:col-span-2">
           {canSeeCost ? (
           <div className="flex items-center gap-2">
-            <span className={cn("rounded px-1.5 py-0.5 text-xs font-semibold", toneStyle.badge)}>
+            <span className={cn("rounded px-1.5 py-0.5 text-xs font-semibold", badgeClass)}>
               {fc}%
             </span>
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
               <div
-                className={cn("h-full rounded-full", toneStyle.bar)}
+                className={cn("h-full rounded-full", barClass)}
                 style={{ width: `${Math.min(100, (fc / Math.max(criticalPct + 15, 1)) * 100)}%` }}
               />
             </div>
@@ -531,7 +528,7 @@ function ExpandedBreakdown({
             {canDuplicate && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" aria-label="More recipe actions"><MoreVertical className="h-4 w-4" /></Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={onDuplicate}>

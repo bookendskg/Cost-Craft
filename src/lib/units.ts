@@ -3,7 +3,9 @@
 
 export const WEIGHT_UNITS = ["KG", "Gram"] as const;
 export const VOLUME_UNITS = ["Litre", "ML"] as const;
-export const COUNT_UNITS = ["Piece", "Packet", "Bottle", "Can"] as const;
+// Dozen is a count unit that converts to Piece (×12). Packet/Bottle/Can only
+// convert to themselves.
+export const COUNT_UNITS = ["Piece", "Dozen", "Packet", "Bottle", "Can"] as const;
 
 export const PURCHASE_UNITS = [
   "KG",
@@ -11,6 +13,7 @@ export const PURCHASE_UNITS = [
   "Litre",
   "ML",
   "Piece",
+  "Dozen",
   "Packet",
   "Bottle",
   "Can",
@@ -24,6 +27,9 @@ export const BASE_UNITS = [
   "Bottle",
   "Can",
 ] as const;
+
+/** Units that count in dozens convert to/from a single Piece. */
+const DOZEN_UNITS = new Set(["Piece", "Dozen"]);
 
 export type Unit = (typeof PURCHASE_UNITS)[number];
 
@@ -46,7 +52,8 @@ export function canConvert(from: string, to: string): boolean {
   const t = getUnitFamily(to);
   if (!f || !t) return false;
   if (f !== t) return false;
-  if (f === "count") return from === to;
+  // Count units only convert to themselves, except Piece <-> Dozen.
+  if (f === "count") return from === to || (DOZEN_UNITS.has(from) && DOZEN_UNITS.has(to));
   return true;
 }
 
@@ -58,6 +65,8 @@ export function compatibleUnits(baseUnit: string): string[] {
   const family = getUnitFamily(baseUnit);
   if (family === "weight") return ["Gram", "KG"];
   if (family === "volume") return ["ML", "Litre"];
+  // A Piece-based ingredient may be measured in Piece or Dozen.
+  if (baseUnit === "Piece") return ["Piece", "Dozen"];
   return [baseUnit];
 }
 
@@ -72,5 +81,7 @@ export function getConversionFactor(from: string, to: string): number {
   if (from === "Gram" && to === "KG") return 1 / 1000;
   if (from === "Litre" && to === "ML") return 1000;
   if (from === "ML" && to === "Litre") return 1 / 1000;
+  if (from === "Dozen" && to === "Piece") return 12;
+  if (from === "Piece" && to === "Dozen") return 1 / 12;
   throw new Error(`Invalid unit conversion: ${from} → ${to}`);
 }

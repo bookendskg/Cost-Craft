@@ -1,0 +1,351 @@
+import { useMemo, useState } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Calculator,
+  MoreVertical,
+  Percent,
+  Plus,
+  Sprout,
+  TriangleAlert,
+  Trash2,
+} from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
+import { TableSkeleton } from "@/components/TableSkeleton";
+import { Pagination } from "@/components/Pagination";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { formatINR, formatDate } from "@/lib/utils";
+import { useSession } from "@/lib/auth/session";
+import { can } from "@/lib/auth/permissions";
+import type { IngredientYield, RawMaterial } from "@/lib/data/types";
+import { useMaterials } from "@/features/raw-materials/hooks";
+import { useYields, useDeleteYield } from "./hooks";
+import { YieldForm } from "./YieldForm";
+import { YieldBreakdownDialog } from "./YieldBreakdownDialog";
+import { toast } from "@/components/ui/use-toast";
+
+const PAGE_SIZE = 10;
+type SortKey = "name" | "wastage" | "yield" | "cost";
+
+export function YieldPage() {
+  const user = useSession((s) => s.user)!;
+  const canEdit = can(user.role, "material.edit");
+  const { data: yields = [], isLoading } = useYields();
+  const { data: materials = [] } = useMaterials();
+  const deleteMut = useDeleteYield();
+
+  const matById = useMemo(() => new Map(materials.map((m) => [m.id, m])), [materials]);
+  const categories = useMemo(
+    () => [...new Set(materials.map((m) => m.category))].sort(),
+    [materials],
+  );
+
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
+  const [page, setPage] = useState(1);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<IngredientYield | null>(null);
+  const [breakdownFor, setBreakdownFor] = useState<IngredientYield | null>(null);
+  const [deleting, setDeleting] = useState<IngredientYield | null>(null);
+
+  type Row = IngredientYield & { material: RawMaterial | null };
+  const rows = useMemo<Row[]>(
+    () => yields.map((y) => ({ ...y, material: matById.get(y.ingredient_id) ?? null })),
+    [yields, matById],
+  );
+
+  const filtered = useMemo(() => {
+    const out = rows.filter((r) => {
+      const name = r.material?.ingredient_name ?? "";
+      if (search && !name.toLowerCase().includes(search.toLowerCase())) return false;
+      if (category !== "all" && r.material?.category !== category) return false;
+      return true;
+    });
+    out.sort((a, b) => {
+      let cmp = 0;
+      if (sort.key === "name")
+        cmp = (a.material?.ingredient_name ?? "").localeCompare(b.material?.ingredient_name ?? "");
+      else if (sort.key === "wastage") cmp = a.wastage_percentage - b.wastage_percentage;
+      else if (sort.key === "yield") cmp = a.yield_percentage - b.yield_percentage;
+      else if (sort.key === "cost") cmp = a.yield_adjusted_unit_cost - b.yield_adjusted_unit_cost;
+      return sort.dir === "asc" ? cmp : -cmp;
+    });
+    return out;
+  }, [rows, search, category, sort]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const current = Math.min(page, pageCount);
+  const pageItems = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+
+  // Summary stats
+  const stats = useMemo(() => {
+    const n = yields.length;
+    const avgYield = n ? yields.reduce((s, y) => s + y.yield_percentage, 0) / n : 0;
+    const avgWastage = n ? yields.reduce((s, y) => s + y.wastage_percentage, 0) / n : 0;
+    // Estimated wastage cost = wastage_quantity × original cost per base unit, summed.
+    const wastageCost = yields.reduce((s, y) => s + y.wastage_quantity * y.original_unit_cost, 0);
+    const withYield = new Set(yields.map((y) => y.ingredient_id));
+    const missing = materials.filter((m) => m.status === "active" && !withYield.has(m.id)).length;
+    return { n, avgYield, avgWastage, wastageCost, missing };
+  }, [yields, materials]);
+
+  const toggleSort = (key: SortKey) =>
+    setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "desc" }));
+
+  const SortHead = ({ label, k, className }: { label: string; k: SortKey; className?: string }) => {
+    const active = sort.key === k;
+    return (
+      <TableHead className={className} aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}>
+        <button
+          className="inline-flex items-center gap-1 rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={() => toggleSort(k)}
+          aria-label={`Sort by ${label}`}
+        >
+          {label}
+          {active ? (
+            sort.dir === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
+          ) : (
+            <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+          )}
+        </button>
+      </TableHead>
+    );
+  };
+
+  const openAdd = () => {
+    setEditing(null);
+    setFormOpen(true);
+  };
+
+  return (
+    <>
+      <PageHeader
+        title="Yield Management"
+        description="Effective ingredient cost after cleaning, peeling, trimming and processing loss."
+        actions={
+          canEdit && (
+            <Button variant="accent" onClick={openAdd}>
+              <Plus className="h-4 w-4" /> Add Yield
+            </Button>
+          )
+        }
+      />
+
+      {/* Summary cards */}
+      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <Stat icon={<Sprout className="h-4 w-4" />} label="Ingredients w/ Yield" value={String(stats.n)} />
+        <Stat icon={<Percent className="h-4 w-4" />} label="Avg Yield" value={`${stats.avgYield.toFixed(1)}%`} />
+        <Stat icon={<Percent className="h-4 w-4" />} label="Avg Wastage" value={`${stats.avgWastage.toFixed(1)}%`} />
+        <Stat icon={<Calculator className="h-4 w-4" />} label="Est. Wastage Cost" value={formatINR(stats.wastageCost)} />
+        <Stat
+          icon={<TriangleAlert className="h-4 w-4 text-amber-500" />}
+          label="Missing Yield Data"
+          value={String(stats.missing)}
+        />
+      </div>
+
+      {/* Filters */}
+      <Card className="mb-4 p-4">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Input placeholder="Search ingredients…" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+          <Select value={category} onValueChange={(v) => { setCategory(v); setPage(1); }}>
+            <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select
+            value={`${sort.key}:${sort.dir}`}
+            onValueChange={(v) => {
+              const [key, dir] = v.split(":") as [SortKey, "asc" | "desc"];
+              setSort({ key, dir });
+              setPage(1);
+            }}
+          >
+            <SelectTrigger><SelectValue placeholder="Sort" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name:asc">Name (A–Z)</SelectItem>
+              <SelectItem value="wastage:desc">Highest wastage</SelectItem>
+              <SelectItem value="yield:asc">Lowest yield</SelectItem>
+              <SelectItem value="cost:desc">Highest effective cost</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </Card>
+
+      <Card>
+        {isLoading ? (
+          <TableSkeleton rows={6} cols={6} />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={<Sprout className="h-7 w-7" />}
+            title="No yield data has been added yet"
+            description="Add yield information to calculate the effective usable ingredient cost."
+            action={canEdit && <Button variant="accent" onClick={openAdd}><Plus className="h-4 w-4" /> Add Yield</Button>}
+          />
+        ) : (
+          <>
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <SortHead label="Ingredient" k="name" />
+                    <TableHead>Category</TableHead>
+                    <SortHead label="Wastage %" k="wastage" className="text-right" />
+                    <SortHead label="Yield %" k="yield" className="text-right" />
+                    <TableHead className="text-right">Original Cost</TableHead>
+                    <SortHead label="Yield-Adjusted" k="cost" className="text-right" />
+                    <TableHead>Updated</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pageItems.map((r) => (
+                    <TableRow key={r.id} className="cursor-pointer" onClick={() => setBreakdownFor(r)}>
+                      <TableCell className="font-medium">{r.material?.ingredient_name ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{r.material?.category ?? "—"}</TableCell>
+                      <TableCell className="text-right font-mono">{r.wastage_percentage}%</TableCell>
+                      <TableCell className="text-right font-mono">{r.yield_percentage}%</TableCell>
+                      <TableCell className="text-right font-mono text-muted-foreground">{formatINR(r.original_unit_cost * 1000)}/kg</TableCell>
+                      <TableCell className="text-right font-mono font-semibold">{formatINR(r.yield_adjusted_unit_cost * 1000)}/kg</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{formatDate(r.updated_at)}</TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <RowActions
+                          y={r}
+                          canEdit={canEdit}
+                          onEdit={() => { setEditing(r); setFormOpen(true); }}
+                          onBreakdown={() => setBreakdownFor(r)}
+                          onDelete={() => setDeleting(r)}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile cards */}
+            <ul className="divide-y md:hidden">
+              {pageItems.map((r) => (
+                <li key={r.id} className="flex items-start gap-3 p-4">
+                  <button className="min-w-0 flex-1 text-left" onClick={() => setBreakdownFor(r)}>
+                    <p className="truncate font-medium">{r.material?.ingredient_name ?? "—"}</p>
+                    <p className="text-xs text-muted-foreground">{r.material?.category}</p>
+                    <p className="mt-1 text-sm">
+                      Yield <span className="font-semibold">{r.yield_percentage}%</span> · {formatINR(r.yield_adjusted_unit_cost * 1000)}/kg
+                    </p>
+                  </button>
+                  <RowActions
+                    y={r}
+                    canEdit={canEdit}
+                    onEdit={() => { setEditing(r); setFormOpen(true); }}
+                    onBreakdown={() => setBreakdownFor(r)}
+                    onDelete={() => setDeleting(r)}
+                  />
+                </li>
+              ))}
+            </ul>
+
+            <Pagination page={current} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} label="ingredients" />
+          </>
+        )}
+      </Card>
+
+      <YieldForm open={formOpen} onOpenChange={setFormOpen} record={editing} />
+      <YieldBreakdownDialog
+        record={breakdownFor}
+        material={breakdownFor ? matById.get(breakdownFor.ingredient_id) ?? null : null}
+        open={!!breakdownFor}
+        onOpenChange={(o) => !o && setBreakdownFor(null)}
+      />
+      <ConfirmDialog
+        open={!!deleting}
+        onOpenChange={(o) => !o && setDeleting(null)}
+        title="Delete yield record?"
+        description={`Yield data for "${(deleting && matById.get(deleting.ingredient_id)?.ingredient_name) ?? "this ingredient"}" will be removed. Recipes will fall back to the standard purchase cost.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={async () => {
+          if (!deleting) return;
+          try {
+            await deleteMut.mutateAsync(deleting.id);
+            toast.success("Yield record deleted");
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Delete failed");
+          }
+        }}
+      />
+    </>
+  );
+}
+
+function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <Card className="p-4">
+      <div className="mb-1 flex items-center gap-2 text-sm text-muted-foreground">{icon}{label}</div>
+      <div className="text-2xl font-bold">{value}</div>
+    </Card>
+  );
+}
+
+function RowActions({
+  y,
+  canEdit,
+  onEdit,
+  onBreakdown,
+  onDelete,
+}: {
+  y: IngredientYield & { material: RawMaterial | null };
+  canEdit: boolean;
+  onEdit: () => void;
+  onBreakdown: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label={`Actions for ${y.material?.ingredient_name ?? "yield"}`}>
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onBreakdown}>View Calculation Breakdown</DropdownMenuItem>
+        {canEdit && <DropdownMenuItem onClick={onEdit}>Edit Yield</DropdownMenuItem>}
+        {canEdit && (
+          <DropdownMenuItem onClick={onDelete} className="text-destructive">
+            <Trash2 className="h-4 w-4" /> Delete Yield
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

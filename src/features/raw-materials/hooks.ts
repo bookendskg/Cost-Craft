@@ -64,3 +64,13 @@ export function useSetMaterialStatus() {
     onSuccess: () => invalidateAll(qc),
   });
 }
+
+export function useBulkSetMaterialStatus() {
+  const qc = useQueryClient();
+  const actorId = useActorId();
+  return useMutation({
+    mutationFn: ({ ids, status }: { ids: string[]; status: "active" | "inactive" }) =>
+      materialsRepo.bulkSetStatus(ids, status, actorId),
+    onSuccess: () => invalidateAll(qc),
+  });
+}

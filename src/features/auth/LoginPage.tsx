@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChefHat, Loader2 } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { loginSchema, type LoginValues } from "@/lib/validation/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,29 +95,45 @@ export function LoginPage() {
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
               Sign In
             </Button>
-            <button type="button" className="block w-full text-center text-xs text-muted-foreground hover:underline">
+            <Link
+              to="/forgot-password"
+              className="block w-full text-center text-xs text-muted-foreground hover:underline"
+            >
               Forgot Password?
-            </button>
+            </Link>
           </form>
 
-          <div className="mt-6 border-t pt-4">
-            <p className="mb-2 text-center text-xs text-muted-foreground">
-              Demo accounts (password: password123)
+          {/* Supabase mode: offer account creation (mock mode uses demo accounts). */}
+          {isSupabaseConfigured && (
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <Link to="/signup" className="font-medium text-accent hover:underline">
+                Create one
+              </Link>
             </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {DEMO.map((d) => (
-                <Button
-                  key={d.email}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fillDemo(d.email)}
-                >
-                  {d.role}
-                </Button>
-              ))}
+          )}
+
+          {/* Demo accounts are only useful against the mock layer. */}
+          {!isSupabaseConfigured && (
+            <div className="mt-6 border-t pt-4">
+              <p className="mb-2 text-center text-xs text-muted-foreground">
+                Demo accounts (password: password123)
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {DEMO.map((d) => (
+                  <Button
+                    key={d.email}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fillDemo(d.email)}
+                  >
+                    {d.role}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

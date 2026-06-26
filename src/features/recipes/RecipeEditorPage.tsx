@@ -90,6 +90,7 @@ export function RecipeEditorPage() {
       preparation_time: null,
       serving_size: 1,
       selling_price: null,
+      packaging_cost: 0,
       wastage_pct: 0,
     },
   });
@@ -106,6 +107,7 @@ export function RecipeEditorPage() {
         preparation_time: existing.recipe.preparation_time,
         serving_size: 1, // single-portion recipes
         selling_price: existing.recipe.selling_price,
+        packaging_cost: existing.recipe.packaging_cost ?? 0,
         wastage_pct: existing.recipe.wastage_pct,
       });
       setLines(
@@ -136,6 +138,7 @@ export function RecipeEditorPage() {
     servingSize,
     foodCostPct,
     watch("wastage_pct") || 0,
+    watch("packaging_cost") || 0,
   );
 
   const addLine = () =>
@@ -330,19 +333,31 @@ export function RecipeEditorPage() {
                 The actual menu price. Drives the food cost % shown on the recipe list.
               </p>
             </div>
-            <div className="space-y-1.5">
-              <Label>Wastage (%)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                {...register("wastage_pct", { setValueAs: (v) => (v === "" ? 0 : Number(v)) })}
-              />
-              {formState.errors.wastage_pct && (
-                <p className="text-xs text-destructive">{formState.errors.wastage_pct.message}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Added on top of the raw ingredient cost (e.g. trimming/peeling loss).
-              </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Wastage (%)</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  {...register("wastage_pct", { setValueAs: (v) => (v === "" ? 0 : Number(v)) })}
+                />
+                {formState.errors.wastage_pct && (
+                  <p className="text-xs text-destructive">{formState.errors.wastage_pct.message}</p>
+                )}
+                <p className="text-xs text-muted-foreground">Trimming/peeling loss, on top of cost.</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Packaging (₹/portion)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...register("packaging_cost", { setValueAs: (v) => (v === "" ? 0 : Number(v)) })}
+                />
+                {formState.errors.packaging_cost && (
+                  <p className="text-xs text-destructive">{formState.errors.packaging_cost.message}</p>
+                )}
+                <p className="text-xs text-muted-foreground">Box/container cost per portion.</p>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Description</Label>
@@ -457,13 +472,11 @@ export function RecipeEditorPage() {
         {/* Sticky cost sidebar */}
         <div className="space-y-4">
           <CostSummary
-            totalCost={costing.totalCost}
-            costPerPortion={costing.costPerPortion}
-            suggestedPrice={costing.suggestedPrice}
-            grossProfit={costing.grossProfit}
-            grossMarginPct={costing.grossMarginPct}
+            recipeCost={costing.totalCost}
+            packagingCost={costing.packagingCost}
+            sellingPrice={(watch("selling_price") || 0) > 0 ? (watch("selling_price") as number) : costing.suggestedPrice}
+            isSuggested={!((watch("selling_price") || 0) > 0)}
             foodCostPct={foodCostPct}
-            servingSize={servingSize}
           />
           {costing.hasMissingPrice && (
             <div className="flex items-start gap-2 rounded-md bg-amber-500/10 p-3 text-sm text-amber-700">
@@ -472,11 +485,18 @@ export function RecipeEditorPage() {
             </div>
           )}
           <div className="flex flex-col gap-2">
+            <Button variant="accent" onClick={beginSubmit} disabled={busy}>
+              Submit for Approval
+            </Button>
             <Button variant="outline" onClick={saveDraft} disabled={busy}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />} Save as Draft
             </Button>
-            <Button variant="accent" onClick={beginSubmit} disabled={busy}>
-              Submit for Approval
+            <Button
+              variant="ghost"
+              onClick={() => navigate(isEdit && id ? `/recipes/${id}` : "/recipes")}
+              disabled={busy}
+            >
+              Cancel
             </Button>
           </div>
         </div>

@@ -32,13 +32,16 @@ export async function generateExcelReport(data: ExcelExportData, label: string) 
   // Sheet 1 — Recipe Summary
   const summary = data.recipes.map((r) => {
     const perPortion = r.cost_per_portion ?? 0;
-    const suggested = perPortion > 0 ? round2(perPortion / (data.foodCostPct / 100)) : 0;
+    const packaging = r.packaging_cost ?? 0;
+    const full = round2(perPortion + packaging);
+    const suggested = full > 0 ? round2(full / (data.foodCostPct / 100)) : 0;
     return {
       "Recipe Name": r.recipe_name,
       Category: r.category,
       "Serving Size": r.serving_size,
       "Total Cost": r.total_cost ?? 0,
       "Cost/Portion": perPortion,
+      Packaging: packaging,
       "Suggested Price": suggested,
       Status: r.status,
       "Approved By": name(r.approved_by),

@@ -4,8 +4,9 @@
 // prep's per-unit cost = total_cost ÷ yield (sum of its ingredient grams).
 
 import { calculateCostPerBaseUnit, prepUnitCostFrom } from "../costing";
+import { computeYield } from "../yield";
 import type { MockDb } from "./mock/db";
-import type { Brand, RawMaterial, Recipe, RecipeIngredient, User } from "./types";
+import type { Brand, IngredientYield, RawMaterial, Recipe, RecipeIngredient, User } from "./types";
 
 const SEED_TS = "2026-06-01T09:00:00.000Z";
 const round2 = (n: number) => parseFloat(n.toFixed(2));
@@ -129,6 +130,7 @@ const raw_materials: RawMaterial[] = matDefs.map((d) => {
     ingredient_name: d.name,
     category: d.category,
     supplier_name: null,
+    notes: null,
     purchase_price: pricePerKg,
     purchase_quantity: 1,
     purchase_unit: "KG",
@@ -278,6 +280,7 @@ for (const d of allDefs) {
     serving_size: 1,
     status: d.status,
     selling_price: d.selling ?? null,
+    packaging_cost: 0,
     total_cost: total,
     cost_per_portion: total,
     wastage_pct: WASTAGE_PCT,
@@ -295,9 +298,41 @@ for (const d of allDefs) {
   });
 }
 
+/** A seeded yield record for a 1 kg purchase at the given cost and wastage %. */
+function yieldRow(id: string, ingredient_id: string, purchaseCost: number, wastagePct: number): IngredientYield {
+  const wastageQty = (1000 * wastagePct) / 100;
+  const r = computeYield({ purchaseCost, purchaseQuantity: 1, purchaseUnit: "KG", wastageQty });
+  return {
+    id,
+    ingredient_id,
+    purchase_cost: purchaseCost,
+    purchase_quantity: 1,
+    purchase_unit: "KG",
+    raw_quantity: r.rawQtyBase,
+    raw_unit: "Gram",
+    wastage_quantity: wastageQty,
+    wastage_unit: "Gram",
+    usable_quantity: r.usableQty,
+    wastage_percentage: r.wastagePct,
+    yield_percentage: r.yieldPct,
+    original_unit_cost: r.originalUnitCost,
+    yield_adjusted_unit_cost: r.yieldAdjustedUnitCost,
+    effective_from: SEED_TS.slice(0, 10),
+    notes: null,
+    created_at: SEED_TS,
+    updated_at: SEED_TS,
+    created_by: U_EDITOR,
+  };
+}
+
 export function buildSeed(): MockDb {
   const hoursAgo = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
   return {
+    ingredient_yields: [
+      yieldRow("iy-onion", "m-onion", 150, 20),
+      yieldRow("iy-ginger", "m-ginger", 130, 15),
+      yieldRow("iy-carrot", "m-carrot", 50, 10),
+    ],
     users: structuredClone(users),
     raw_materials: structuredClone(raw_materials),
     recipes: structuredClone(recipes),

@@ -62,12 +62,43 @@ db/migrations/          # SQL schema + RLS (PRD §9) — the contract the mock m
 - The seeded **Chicken Alfredo** recipe reproduces PRD §4.4: total ₹199.50, cost/portion ₹49.88, suggested ₹166.25 at 30% food cost.
 - The **price cascade** (PRD §4.5): raising an ingredient price recalculates every recipe that uses it and records cost history — covered by `src/lib/data/cascade.test.ts`.
 
-## Swapping in Supabase (future)
+## Authentication (Supabase)
 
-The mock layer lives behind `src/lib/data/index.ts`. To go live:
+Real Supabase Auth is **scaffolded and env-gated**. With no env vars set, the app runs
+on the mock auth layer (demo accounts above). Provide both `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY` (see `.env.example`) and the app switches to real login, logout,
+forgot/reset password (email), email verification, and persisted sessions — with **no UI
+changes** (the `profileToUser` mapper in `src/lib/supabase/types.ts` keeps the permission
+layer and every `useSession` reader unchanged).
 
-1. Run `db/migrations/0001_init.sql` against a Supabase project (enables RLS per PRD §9.3).
-2. Add `src/lib/data/supabase/*` repos implementing the same exports as the mock repos.
-3. Flip the export in `src/lib/data/index.ts` to the Supabase repos behind an env flag.
+### Hand-off checklist (to go live with auth)
 
-UI, costing, validation, and the permission layer remain untouched — the client-side permission checks map 1:1 to the Postgres RLS policies.
+1. Create a Supabase project; copy the **Project URL** and **anon public key**.
+2. `cp .env.example .env.local` and fill both `VITE_SUPABASE_*` values (also set them in your
+   host/CI env for deploys). `.env.local` is gitignored.
+3. In the Supabase SQL editor, run `db/migrations/0001_init.sql` (if not already) then
+   `db/migrations/0002_auth_profiles.sql` — this creates the `profiles` table, RLS policies,
+   and the on-signup trigger.
+4. **Bootstrap the first admin:** sign up one account in the app, then run
+   `update public.profiles set role='admin' where email='you@example.com';`
+   (the trigger defaults new users to `viewer`).
+5. Auth → **URL Configuration**: set the Site URL and add a Redirect URL for
+   `<origin>/reset-password` (both `http://localhost:5173/reset-password` for dev and your prod URL).
+6. Auth → **Providers → Email**: for instant self-service signup, turn **off "Confirm email"**
+   (otherwise every signup tries to send a confirmation email, and the built-in mailer is
+   rate-limited / often returns a 500 — configure custom SMTP if you want to keep confirmation on).
+   Optionally customize the reset-password / confirmation templates.
+
+Key files: `src/lib/supabase/{client,types,profile}.ts`, `src/lib/auth/{session,initAuth}.ts`,
+`src/features/auth/{ForgotPassword,ResetPassword}Page.tsx`.
+
+## Swapping in the rest of the data layer (future)
+
+Auth + profiles run on Supabase; the rest of the app data (materials, recipes, etc.) still
+lives behind the mock at `src/lib/data/index.ts`. To migrate it too:
+
+1. Add `src/lib/data/supabase/*` repos implementing the same exports as the mock repos.
+2. Flip the export in `src/lib/data/index.ts` behind the same env flag.
+
+UI, costing, validation, and the permission layer remain untouched — the client-side permission
+checks map 1:1 to the Postgres RLS policies.

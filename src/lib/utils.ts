@@ -14,6 +14,48 @@ export function formatINR(value: number | null | undefined): string {
   })}`;
 }
 
+/** Short, human-friendly label for a unit code (e.g. "KG" → "kg"). */
+const UNIT_LABELS: Record<string, string> = {
+  KG: "kg",
+  Gram: "g",
+  Litre: "L",
+  ML: "ml",
+  Piece: "pcs",
+  Dozen: "dozen",
+  Packet: "pack",
+  Bottle: "bottle",
+  Can: "can",
+};
+export function formatUnit(unit: string): string {
+  return UNIT_LABELS[unit] ?? unit.toLowerCase();
+}
+
+/** Trim trailing zeros and group thousands (e.g. 5000 → "5,000", 1.5 → "1.5"). */
+function formatNumber(n: number): string {
+  return n.toLocaleString("en-IN", { maximumFractionDigits: 3 });
+}
+
+/**
+ * Human-readable quantity + unit. Auto-scales base units up when the amount is a
+ * clean multiple (1000 g → "1 kg", 2000 ml → "2 L") so lists read naturally.
+ * Set `humanize: false` to keep the raw unit.
+ */
+export function formatQuantityWithUnit(
+  qty: number | null | undefined,
+  unit: string,
+  opts: { humanize?: boolean } = {},
+): string {
+  if (qty === null || qty === undefined || Number.isNaN(qty)) return "—";
+  const humanize = opts.humanize ?? true;
+  if (humanize && unit === "Gram" && qty >= 1000) {
+    return `${formatNumber(qty / 1000)} kg`;
+  }
+  if (humanize && unit === "ML" && qty >= 1000) {
+    return `${formatNumber(qty / 1000)} L`;
+  }
+  return `${formatNumber(qty)} ${formatUnit(unit)}`;
+}
+
 /** Format a date string/Date as e.g. "Jun 23, 2026". */
 export function formatDate(value: string | Date | null | undefined): string {
   if (!value) return "—";

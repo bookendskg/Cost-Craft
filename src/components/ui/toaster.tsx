@@ -17,7 +17,7 @@ export function Toaster() {
         <div
           key={t.id}
           className={cn(
-            "pointer-events-auto flex items-start gap-3 rounded-md p-4 shadow-lg",
+            "pointer-events-auto flex animate-toast-in items-start gap-3 rounded-lg p-4 shadow-lg ring-1 ring-black/5",
             variantStyles[t.variant],
           )}
         >
@@ -25,7 +25,18 @@ export function Toaster() {
             <p className="text-sm font-semibold">{t.title}</p>
             {t.description && <p className="mt-1 text-sm opacity-90">{t.description}</p>}
           </div>
-          <button onClick={() => dismiss(t.id)} className="opacity-70 hover:opacity-100">
+          {t.action && (
+            <button
+              onClick={() => {
+                t.action!.onClick();
+                dismiss(t.id);
+              }}
+              className="shrink-0 rounded px-2 py-1 text-sm font-semibold underline-offset-2 hover:underline"
+            >
+              {t.action.label}
+            </button>
+          )}
+          <button onClick={() => dismiss(t.id)} className="opacity-70 hover:opacity-100" aria-label="Dismiss">
             <X className="h-4 w-4" />
           </button>
         </div>

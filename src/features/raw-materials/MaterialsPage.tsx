@@ -1,11 +1,25 @@
-import { useMemo, useState } from "react";
-import { AlertTriangle, MoreVertical, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Columns3,
+  Download,
+  MoreVertical,
+  Plus,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { TableSkeleton } from "@/components/TableSkeleton";
+import { Pagination } from "@/components/Pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -25,18 +39,33 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { formatINR } from "@/lib/utils";
+import { cn, formatINR, formatQuantityWithUnit } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import type { RawMaterial } from "@/lib/data/types";
-import { useMaterials, useSetMaterialStatus } from "./hooks";
+import { useMaterials, useSetMaterialStatus, useBulkSetMaterialStatus } from "./hooks";
 import { useCategories } from "@/features/settings/hooks";
 import { MaterialForm } from "./MaterialForm";
 import { PriceHistoryDialog } from "./PriceHistoryDialog";
+import { exportMaterials } from "./exportMaterials";
 import { toast } from "@/components/ui/use-toast";
+
+type SortKey = "name" | "category" | "price";
+
+const PAGE_SIZE = 10;
+
+const COLUMN_DEFS = [
+  { key: "category", label: "Category" },
+  { key: "supplier", label: "Supplier" },
+  { key: "price", label: "Purchase Price" },
+  { key: "packSize", label: "Pack Size" },
+] as const;
+type ColKey = (typeof COLUMN_DEFS)[number]["key"];
 
 export function MaterialsPage() {
   const user = useSession((s) => s.user)!;
@@ -44,15 +73,29 @@ export function MaterialsPage() {
   const { data: materials = [], isLoading } = useMaterials();
   const { data: categories = [] } = useCategories();
   const setStatus = useSetMaterialStatus();
+  const bulkStatus = useBulkSetMaterialStatus();
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [status, setStatus_] = useState("active");
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
+
+  const pageSize = PAGE_SIZE;
+  const [page, setPage] = useState(1);
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [cols, setCols] = useState<Record<ColKey, boolean>>({
+    category: true,
+    supplier: false,
+    price: true,
+    packSize: true,
+  });
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<RawMaterial | null>(null);
   const [historyFor, setHistoryFor] = useState<RawMaterial | null>(null);
   const [deactivating, setDeactivating] = useState<RawMaterial | null>(null);
+  const [bulkConfirm, setBulkConfirm] = useState<"inactive" | "active" | null>(null);
 
   const filtered = useMemo(() => {
     return materials.filter((m) => {
@@ -63,6 +106,49 @@ export function MaterialsPage() {
     });
   }, [materials, search, category, status]);
 
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      let cmp = 0;
+      if (sort.key === "name") cmp = a.ingredient_name.localeCompare(b.ingredient_name);
+      else if (sort.key === "category")
+        cmp = a.category.localeCompare(b.category) || a.ingredient_name.localeCompare(b.ingredient_name);
+      else if (sort.key === "price") cmp = (a.purchase_price ?? -Infinity) - (b.purchase_price ?? -Infinity);
+      return sort.dir === "asc" ? cmp : -cmp;
+    });
+    return arr;
+  }, [filtered, sort]);
+
+  // Reset paging + selection whenever the visible set changes.
+  useEffect(() => {
+    setPage(1);
+    setSelected(new Set());
+  }, [search, category, status, sort, pageSize]);
+
+  const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const current = Math.min(page, pageCount);
+  const pageItems = sorted.slice((current - 1) * pageSize, current * pageSize);
+
+  const pageIds = pageItems.map((m) => m.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+  const toggleOne = (id: string) =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const toggleAllPage = () =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (allPageSelected) pageIds.forEach((id) => n.delete(id));
+      else pageIds.forEach((id) => n.add(id));
+      return n;
+    });
+
+  const toggleSort = (key: SortKey) =>
+    setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+
   const openAdd = () => {
     setEditing(null);
     setFormOpen(true);
@@ -72,17 +158,122 @@ export function MaterialsPage() {
     setFormOpen(true);
   };
 
+  const doExport = async () => {
+    const list = selected.size > 0 ? sorted.filter((m) => selected.has(m.id)) : sorted;
+    try {
+      await exportMaterials(list, String(list.length));
+      toast.success(`Exported ${list.length} ingredient${list.length === 1 ? "" : "s"}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Export failed");
+    }
+  };
+
+  const runBulk = async (next: "inactive" | "active") => {
+    const ids = [...selected];
+    try {
+      const n = await bulkStatus.mutateAsync({ ids, status: next });
+      setSelected(new Set());
+      toast.success(`${next === "inactive" ? "Deactivated" : "Reactivated"} ${n} ingredient${n === 1 ? "" : "s"}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Bulk update failed");
+    }
+  };
+
+  const priceLabel = (m: RawMaterial) =>
+    m.purchase_price === null ? null : formatINR(m.purchase_price);
+  const sizeLabel = (m: RawMaterial) =>
+    formatQuantityWithUnit(m.purchase_quantity, m.purchase_unit, { humanize: false });
+
+  const renderActions = (m: RawMaterial) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label={`Actions for ${m.ingredient_name}`}>
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {canEdit && <DropdownMenuItem onClick={() => openEdit(m)}>Edit</DropdownMenuItem>}
+        <DropdownMenuItem onClick={() => setHistoryFor(m)}>Price History</DropdownMenuItem>
+        {canEdit &&
+          (m.status === "active" ? (
+            <DropdownMenuItem onClick={() => setDeactivating(m)}>Deactivate</DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              onClick={async () => {
+                try {
+                  await setStatus.mutateAsync({ id: m.id, status: "active" });
+                  toast.success("Ingredient reactivated");
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Reactivate failed");
+                }
+              }}
+            >
+              Reactivate
+            </DropdownMenuItem>
+          ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const SortHead = ({ label, k, className }: { label: string; k: SortKey; className?: string }) => {
+    const active = sort.key === k;
+    return (
+      <TableHead className={className} aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}>
+        <button
+          className="inline-flex items-center gap-1 rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={() => toggleSort(k)}
+          aria-label={`Sort by ${label}`}
+        >
+          {label}
+          {active ? (
+            sort.dir === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
+          ) : (
+            <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+          )}
+        </button>
+      </TableHead>
+    );
+  };
+
   return (
     <>
       <PageHeader
         title="Raw Materials"
         description={canEdit ? "Manage ingredients and their purchase pricing" : "Ingredient prices are managed by an admin."}
         actions={
-          canEdit && (
-            <Button variant="accent" onClick={openAdd}>
-              <Plus className="h-4 w-4" /> Add Ingredient
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={doExport}>
+              <Download className="h-4 w-4" /> Export
             </Button>
-          )
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Columns3 className="h-4 w-4" /> Columns
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {COLUMN_DEFS.map((c) => (
+                  <DropdownMenuItem
+                    key={c.key}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      setCols((prev) => ({ ...prev, [c.key]: !prev[c.key] }));
+                    }}
+                  >
+                    <Checkbox checked={cols[c.key]} className="pointer-events-none" />
+                    {c.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {canEdit && (
+              <Button variant="accent" onClick={openAdd}>
+                <Plus className="h-4 w-4" /> Add Ingredient
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -119,86 +310,143 @@ export function MaterialsPage() {
         </div>
       </Card>
 
+      {/* Bulk action bar */}
+      {canEdit && selected.size > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border bg-muted/50 px-4 py-2.5 text-sm">
+          <span className="font-medium">{selected.size} selected</span>
+          <div className="flex-1" />
+          <Button variant="outline" size="sm" onClick={doExport}>
+            <Download className="h-4 w-4" /> Export
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setBulkConfirm("active")}>
+            <RotateCcw className="h-4 w-4" /> Reactivate
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => setBulkConfirm("inactive")}>
+            <Trash2 className="h-4 w-4" /> Deactivate
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+            Clear
+          </Button>
+        </div>
+      )}
+
       <Card>
         {isLoading ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">Loading…</p>
-        ) : filtered.length === 0 ? (
+          <TableSkeleton rows={6} cols={4} />
+        ) : sorted.length === 0 ? (
           <EmptyState
             title="No ingredients found"
             description="Add your first ingredient to start building recipes."
             action={
-              <Button variant="accent" onClick={openAdd}>
-                <Plus className="h-4 w-4" /> Add Ingredient
-              </Button>
+              canEdit && (
+                <Button variant="accent" onClick={openAdd}>
+                  <Plus className="h-4 w-4" /> Add Ingredient
+                </Button>
+              )
             }
           />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Purchase Price</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((m) => (
-                <TableRow key={m.id} className={m.status === "inactive" ? "opacity-50" : ""}>
-                  <TableCell className="font-medium">
+          <>
+            {/* Desktop / tablet: table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {canEdit && (
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={allPageSelected}
+                          onCheckedChange={toggleAllPage}
+                          aria-label="Select all on page"
+                        />
+                      </TableHead>
+                    )}
+                    <SortHead label="Name" k="name" />
+                    {cols.category && <SortHead label="Category" k="category" />}
+                    {cols.supplier && <TableHead>Supplier</TableHead>}
+                    {cols.price && <SortHead label="Purchase Price" k="price" />}
+                    {cols.packSize && <TableHead>Pack Size</TableHead>}
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pageItems.map((m) => (
+                    <TableRow key={m.id} className={m.status === "inactive" ? "opacity-50" : ""} data-state={selected.has(m.id) ? "selected" : undefined}>
+                      {canEdit && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selected.has(m.id)}
+                            onCheckedChange={() => toggleOne(m.id)}
+                            aria-label={`Select ${m.ingredient_name}`}
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {m.purchase_price === null && (
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                          )}
+                          {m.ingredient_name}
+                        </div>
+                      </TableCell>
+                      {cols.category && <TableCell>{m.category}</TableCell>}
+                      {cols.supplier && <TableCell>{m.supplier_name ?? "—"}</TableCell>}
+                      {cols.price && (
+                        <TableCell>{priceLabel(m) ?? <Badge variant="warning">No Price</Badge>}</TableCell>
+                      )}
+                      {cols.packSize && <TableCell>{sizeLabel(m)}</TableCell>}
+                      <TableCell>{renderActions(m)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile: stacked cards (no horizontal scroll) */}
+            <ul className="divide-y md:hidden">
+              {pageItems.map((m) => (
+                <li
+                  key={m.id}
+                  className={cn("flex items-start gap-3 p-4", m.status === "inactive" && "opacity-50")}
+                >
+                  {canEdit && (
+                    <Checkbox
+                      checked={selected.has(m.id)}
+                      onCheckedChange={() => toggleOne(m.id)}
+                      className="mt-1"
+                      aria-label={`Select ${m.ingredient_name}`}
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       {m.purchase_price === null && (
-                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
                       )}
-                      {m.ingredient_name}
+                      <p className="truncate font-medium">{m.ingredient_name}</p>
                     </div>
-                  </TableCell>
-                  <TableCell>{m.category}</TableCell>
-                  <TableCell>
-                    {m.purchase_price === null ? (
-                      <Badge variant="warning">No Price</Badge>
-                    ) : m.purchase_quantity === 1 ? (
-                      formatINR(m.purchase_price)
-                    ) : (
-                      `${formatINR(m.purchase_price)} / ${m.purchase_quantity}`
-                    )}
-                  </TableCell>
-                  <TableCell>{m.purchase_unit}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {canEdit && <DropdownMenuItem onClick={() => openEdit(m)}>Edit</DropdownMenuItem>}
-                        <DropdownMenuItem onClick={() => setHistoryFor(m)}>
-                          Price History
-                        </DropdownMenuItem>
-                        {canEdit &&
-                          (m.status === "active" ? (
-                            <DropdownMenuItem onClick={() => setDeactivating(m)}>
-                              Deactivate
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={async () => {
-                                await setStatus.mutateAsync({ id: m.id, status: "active" });
-                                toast.success("Ingredient reactivated");
-                              }}
-                            >
-                              Reactivate
-                            </DropdownMenuItem>
-                          ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{m.category}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                      {priceLabel(m) ? (
+                        <span className="font-medium">{priceLabel(m)}</span>
+                      ) : (
+                        <Badge variant="warning">No Price</Badge>
+                      )}
+                      <span className="text-muted-foreground">{sizeLabel(m)}</span>
+                    </div>
+                  </div>
+                  {renderActions(m)}
+                </li>
               ))}
-            </TableBody>
-          </Table>
+            </ul>
+
+            <Pagination
+              page={current}
+              pageSize={pageSize}
+              total={sorted.length}
+              onPageChange={setPage}
+              label="ingredients"
+            />
+          </>
         )}
       </Card>
 
@@ -217,9 +465,29 @@ export function MaterialsPage() {
         destructive
         onConfirm={async () => {
           if (!deactivating) return;
-          await setStatus.mutateAsync({ id: deactivating.id, status: "inactive" });
-          toast.success("Ingredient deactivated");
+          const m = deactivating;
+          try {
+            await setStatus.mutateAsync({ id: m.id, status: "inactive" });
+            toast.success("Ingredient deactivated", undefined, {
+              action: { label: "Undo", onClick: () => setStatus.mutate({ id: m.id, status: "active" }) },
+            });
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Deactivate failed");
+          }
         }}
+      />
+      <ConfirmDialog
+        open={!!bulkConfirm}
+        onOpenChange={(o) => !o && setBulkConfirm(null)}
+        title={bulkConfirm === "inactive" ? `Deactivate ${selected.size} ingredients?` : `Reactivate ${selected.size} ingredients?`}
+        description={
+          bulkConfirm === "inactive"
+            ? "They'll be hidden from new recipes. Existing recipes keep their data."
+            : "They'll be available for new recipes again."
+        }
+        confirmLabel={bulkConfirm === "inactive" ? "Deactivate" : "Reactivate"}
+        destructive={bulkConfirm === "inactive"}
+        onConfirm={() => bulkConfirm && runBulk(bulkConfirm)}
       />
     </>
   );

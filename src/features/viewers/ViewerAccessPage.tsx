@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { TableSkeleton } from "@/components/TableSkeleton";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -40,7 +41,7 @@ export function ViewerAccessPage() {
 
       <Card>
         {isLoading ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">Loading…</p>
+          <TableSkeleton rows={4} cols={4} />
         ) : viewers.length === 0 ? (
           <EmptyState title="No viewers yet" description="Create a user with the Viewer role to grant access." />
         ) : (

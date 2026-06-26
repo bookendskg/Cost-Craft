@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { TableSkeleton } from "@/components/TableSkeleton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,7 +49,7 @@ export function ApprovalsPage() {
 
       <Card>
         {isLoading ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">Loading…</p>
+          <TableSkeleton rows={4} cols={5} />
         ) : pending.length === 0 ? (
           <EmptyState
             icon={<CheckCircle2 className="h-10 w-10" />}
