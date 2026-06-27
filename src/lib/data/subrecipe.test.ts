@@ -3,19 +3,20 @@ import { resetDb } from "./mock/db";
 import { materialsRepo } from "./mock/materials";
 import { recipesRepo } from "./mock/recipes";
 
-// Validates nested (in-house prep) sub-recipes: a menu recipe references prep
-// recipes as components, and a leaf material price change rolls up prep → menu.
+// Validates nested (in-house prep) sub-recipes: a prep recipe references another
+// prep as a component, and a leaf material price change rolls up prep → parent.
+// Uses the Chili Crunch Sauce prep (which contains the Chilli Crisp prep).
 describe("sub-recipe (in-house prep) costing", () => {
   beforeEach(() => {
     resetDb();
   });
 
-  it("Chilli Crunch Pizza references prep recipes as components", async () => {
-    const data = await recipesRepo.getWithIngredients("r-chilli-crunch-pizza");
+  it("Chili Crunch Sauce references another prep as a component", async () => {
+    const data = await recipesRepo.getWithIngredients("r-prep-chili-crunch-sauce");
     expect(data).toBeTruthy();
-    const dough = data!.ingredients.find((i) => i.ingredient_id === "r-prep-pizza-dough");
-    expect(dough?.component_type).toBe("recipe");
-    expect(dough?.subRecipe?.recipe_name).toBe("Pizza Dough");
+    const crisp = data!.ingredients.find((i) => i.ingredient_id === "r-prep-chilli-crisp");
+    expect(crisp?.component_type).toBe("recipe");
+    expect(crisp?.subRecipe?.recipe_name).toBe("Chilli Crisp");
     expect(data!.recipe.total_cost!).toBeGreaterThan(0);
   });
 
@@ -26,25 +27,25 @@ describe("sub-recipe (in-house prep) costing", () => {
   });
 
   it("recipe total includes the wastage % on top of the raw ingredient cost", async () => {
-    const data = await recipesRepo.getWithIngredients("r-aglio-olio");
+    const data = await recipesRepo.getWithIngredients("r-prep-pizza-dough");
     const rawSum = data!.ingredients.reduce((s, i) => s + (i.calculated_cost ?? 0), 0);
     expect(data!.recipe.wastage_pct).toBe(5);
     expect(data!.recipe.total_cost!).toBeCloseTo(rawSum * 1.05, 1);
   });
 
-  it("raising a leaf material price rolls up through the prep to the menu item", async () => {
-    const flour = await materialsRepo.getById("m-00-flour");
-    const doughBefore = (await recipesRepo.getById("r-prep-pizza-dough"))!.total_cost!;
-    const pizzaBefore = (await recipesRepo.getById("r-chilli-crunch-pizza"))!.total_cost!;
+  it("raising a leaf material price rolls up through the prep to the parent", async () => {
+    const chilli = await materialsRepo.getById("m-dried-red-chilli");
+    const crispBefore = (await recipesRepo.getById("r-prep-chilli-crisp"))!.total_cost!;
+    const sauceBefore = (await recipesRepo.getById("r-prep-chili-crunch-sauce"))!.total_cost!;
 
-    // Double the flour price — dough is mostly flour, so both must increase.
+    // Chilli Crisp is mostly dried red chilli (1 kg); raising it must lift both preps.
     await materialsRepo.update(
-      "m-00-flour",
+      "m-dried-red-chilli",
       {
-        ingredient_name: flour!.ingredient_name,
-        category: flour!.category,
-        supplier_name: flour!.supplier_name,
-        purchase_price: flour!.purchase_price! + 200,
+        ingredient_name: chilli!.ingredient_name,
+        category: chilli!.category,
+        supplier_name: chilli!.supplier_name,
+        purchase_price: chilli!.purchase_price! + 500,
         purchase_quantity: 1,
         purchase_unit: "KG",
         base_unit: "Gram",
@@ -52,10 +53,10 @@ describe("sub-recipe (in-house prep) costing", () => {
       "u-admin",
     );
 
-    const doughAfter = (await recipesRepo.getById("r-prep-pizza-dough"))!.total_cost!;
-    const pizzaAfter = (await recipesRepo.getById("r-chilli-crunch-pizza"))!.total_cost!;
+    const crispAfter = (await recipesRepo.getById("r-prep-chilli-crisp"))!.total_cost!;
+    const sauceAfter = (await recipesRepo.getById("r-prep-chili-crunch-sauce"))!.total_cost!;
 
-    expect(doughAfter).toBeGreaterThan(doughBefore);
-    expect(pizzaAfter).toBeGreaterThan(pizzaBefore); // prep → menu roll-up
+    expect(crispAfter).toBeGreaterThan(crispBefore);
+    expect(sauceAfter).toBeGreaterThan(sauceBefore); // prep → prep roll-up
   });
 });

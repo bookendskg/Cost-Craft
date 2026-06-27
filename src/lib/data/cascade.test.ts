@@ -4,27 +4,26 @@ import { materialsRepo } from "./mock/materials";
 import { recipesRepo } from "./mock/recipes";
 
 // Validates the price cascade (PRD §4.5): updating an ingredient price
-// recalculates every recipe that uses it and records cost history.
+// recalculates every recipe that uses it and records cost history. Uses the
+// in-house Pizza Dough prep (which contains 221 g olive oil) as a stable fixture.
 describe("price cascade", () => {
   beforeEach(() => {
     resetDb();
   });
 
-  it("seed Aglio Olio has a positive single-portion cost", async () => {
-    const r = await recipesRepo.getById("r-aglio-olio");
+  it("seed Pizza Dough prep has a positive cost", async () => {
+    const r = await recipesRepo.getById("r-prep-pizza-dough");
     expect(r).toBeTruthy();
     expect(r!.total_cost!).toBeGreaterThan(0);
-    // serving size is 1, so cost per portion equals the total cost.
-    expect(r!.cost_per_portion).toBe(r!.total_cost);
   });
 
   it("raising Olive Oil price cascades to recipes that use it", async () => {
-    const before = (await recipesRepo.getById("r-aglio-olio"))!.total_cost!;
+    const before = (await recipesRepo.getById("r-prep-pizza-dough"))!.total_cost!;
     const oil = await materialsRepo.getById("m-olive-oil");
     const origPrice = oil!.purchase_price!;
     const newPrice = origPrice + 1000;
 
-    // +₹1000/KG = +₹1/g; Aglio Olio uses 15 g → +₹15.00.
+    // +₹1000/KG = +₹1/g; Pizza Dough uses 221 g olive oil ⇒ +₹221 raw, +5% wastage.
     await materialsRepo.update(
       "m-olive-oil",
       {
@@ -39,12 +38,12 @@ describe("price cascade", () => {
       "u-admin",
     );
 
-    const after = (await recipesRepo.getById("r-aglio-olio"))!.total_cost!;
-    // +₹15 raw, then +5% wastage ⇒ ≈ ₹15.75 increase in the recipe total.
-    expect(after - before).toBeGreaterThan(15);
-    expect(after - before).toBeLessThan(16.5);
+    const after = (await recipesRepo.getById("r-prep-pizza-dough"))!.total_cost!;
+    // +₹221 raw, then +5% wastage ⇒ ≈ ₹232 increase in the prep total.
+    expect(after - before).toBeGreaterThan(225);
+    expect(after - before).toBeLessThan(240);
 
-    const history = await recipesRepo.costHistory("r-aglio-olio");
+    const history = await recipesRepo.costHistory("r-prep-pizza-dough");
     expect(history.length).toBe(1);
     expect(history[0].old_total_cost).toBe(before);
     expect(history[0].new_total_cost).toBe(after);

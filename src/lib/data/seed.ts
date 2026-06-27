@@ -4,12 +4,11 @@
 // prep's per-unit cost = total_cost ÷ yield (sum of its ingredient grams).
 
 import { calculateCostPerBaseUnit, prepUnitCostFrom } from "../costing";
-import { computeYield } from "../yield";
 import { COOKBOOK_RECIPES } from "./cookbook";
 import { MASTER_PRICES } from "./masterPrices";
 import { MASTER_DISH_COSTS } from "./masterDishCosts";
 import type { MockDb } from "./mock/db";
-import type { Brand, IngredientYield, RawMaterial, Recipe, RecipeIngredient, User } from "./types";
+import type { Brand, RawMaterial, Recipe, RecipeIngredient, User } from "./types";
 
 /** ₹ per gram for an ingredient from the master costing book (the only price
  *  source), matched by normalised name. Undefined when the book has no price. */
@@ -260,23 +259,9 @@ const prepDefs: RecipeDef[] = [
   ] },
 ];
 
-const menuDefs: RecipeDef[] = [
-  { id: "r-aglio-olio", name: "Aglio Olio", category: "Pasta", brand: "capiche", isPrep: false, description: "Garlic and olive oil spaghetti with chilli and parmesan.", prep: 20, status: "approved", createdBy: U_EDITOR, approvedBy: U_ADMIN, selling: 740, lines: [
-    { m: "m-butter", g: 20 }, { m: "m-garlic-peeled", g: 20 }, { m: "m-olive-oil", g: 15 }, { m: "m-black-pepper", g: 1.5 }, { m: "m-spaghetti", g: 190 }, { m: "m-chilli-flakes", g: 3 }, { m: "m-salt", g: 3 }, { m: "m-parmesan", g: 8 }, { m: "m-green-garlic", g: 4 }, { m: "m-spring-onion-chopped", g: 5 }, { m: "m-parsley", g: 5 }, { m: "m-fried-garlic", g: 5 }, { r: "r-prep-chilli-crisp", g: 5 },
-  ] },
-  { id: "r-pesto-bucatini", name: "Pesto Bucatini", category: "Pasta", brand: "capiche", isPrep: false, description: "Bucatini in a creamy basil pesto with parmesan.", prep: 25, status: "approved", createdBy: U_EDITOR, approvedBy: U_ADMIN, selling: 740, lines: [
-    { m: "m-bucatini", g: 120 }, { m: "m-butter", g: 20 }, { m: "m-olive-oil", g: 5 }, { m: "m-black-pepper", g: 1 }, { m: "m-salt", g: 3 }, { r: "r-prep-pesto-white-base", g: 70 }, { m: "m-parmesan", g: 8 }, { m: "m-chilli-flakes", g: 3 }, { r: "r-prep-hydroponic-pesto", g: 55 }, { m: "m-red-paprika", g: 2 },
-  ] },
-  { id: "r-chilli-crunch-pizza", name: "Chilli Crunch Pizza", category: "Pizza", brand: "capiche", isPrep: false, description: "Wood-fired pizza with burrata, bechamel and chilli crunch.", prep: 18, status: "testing", createdBy: U_EDITOR, selling: 929, lines: [
-    { r: "r-prep-pizza-dough", g: 180 }, { m: "m-mozzarella", g: 60 }, { r: "r-prep-bechamel", g: 50 }, { r: "r-prep-chili-crunch-sauce", g: 100 }, { m: "m-burrata", g: 130 }, { m: "m-black-sesame", g: 6 }, { m: "m-coriander", g: 8 }, { m: "m-spring-onion", g: 8 }, { m: "m-basil", g: 8 }, { m: "m-dill-leaves", g: 8 }, { m: "m-chilli-crisp-oil", g: 8 }, { m: "m-rice-flour", g: 10 },
-  ] },
-  { id: "r-avo-crispy-rice", name: "Avo Crispy Rice", category: "Sushi", brand: "aiko", isPrep: false, description: "Crispy sushi rice with avocado, ponzu wasabi mayo and beetroot.", prep: 15, status: "approved", createdBy: U_EDITOR, approvedBy: U_ADMIN, selling: 840, lines: [
-    { r: "r-prep-sesame-sushi-rice", g: 156 }, { r: "r-prep-ponzu-wasabi-mayo", g: 2 }, { m: "m-gochujang-mayo", g: 4 }, { m: "m-avo-guac", g: 20 }, { r: "r-prep-beetroot", g: 68 }, { m: "m-bagel-seasoning", g: 5 }, { m: "m-white-spring-onion", g: 18 },
-  ] },
-  { id: "r-sl-red-curry", name: "Sri Lankan Red Curry", category: "Mains", brand: "aiko", isPrep: false, description: "Tofu and mushroom red curry in spiced coconut milk.", prep: 35, status: "draft", createdBy: U_EDITOR, selling: 640, lines: [
-    { m: "m-oil", g: 10 }, { m: "m-kashmiri-chilli-powder", g: 2.5 }, { m: "m-kashmiri-red-paste", g: 10 }, { r: "r-prep-sl-red-paste", g: 10 }, { r: "r-prep-tamarind-water", g: 15 }, { m: "m-coconut-milk", g: 200 }, { m: "m-stock-water", g: 100 }, { m: "m-water", g: 50 }, { m: "m-msg", g: 3 }, { m: "m-salt", g: 2 }, { m: "m-white-pepper", g: 2 }, { m: "m-stock-powder", g: 2 }, { r: "r-prep-sl-curry-powder", g: 1 }, { m: "m-tofu", g: 20 }, { m: "m-carrot", g: 20 }, { m: "m-mushroom", g: 20 }, { m: "m-shimeji", g: 20 }, { m: "m-basil", g: 2 }, { m: "m-picked-red-paprika", g: 5 }, { m: "m-slit-onion", g: 2 }, { m: "m-red-chilli-oil", g: 1 }, { m: "m-fried-onion", g: 10 },
-  ] },
-];
+// Menu dishes come from the cookbook import (see cookbook.ts) priced from the
+// master book. The in-house preps above remain as reusable sub-recipes.
+const menuDefs: RecipeDef[] = [];
 
 const WASTAGE_PCT = 5; // standard wastage from the costing sheet
 
@@ -475,66 +460,21 @@ for (const d of allDefs) {
   }
 }
 
-/** A seeded yield record for a 1 kg purchase at the given cost and wastage %. */
-function yieldRow(id: string, ingredient_id: string, purchaseCost: number, wastagePct: number): IngredientYield {
-  const wastageQty = (1000 * wastagePct) / 100;
-  const r = computeYield({ purchaseCost, purchaseQuantity: 1, purchaseUnit: "KG", wastageQty });
-  return {
-    id,
-    ingredient_id,
-    purchase_cost: purchaseCost,
-    purchase_quantity: 1,
-    purchase_unit: "KG",
-    raw_quantity: r.rawQtyBase,
-    raw_unit: "Gram",
-    wastage_quantity: wastageQty,
-    wastage_unit: "Gram",
-    usable_quantity: r.usableQty,
-    wastage_percentage: r.wastagePct,
-    yield_percentage: r.yieldPct,
-    original_unit_cost: r.originalUnitCost,
-    yield_adjusted_unit_cost: r.yieldAdjustedUnitCost,
-    effective_from: SEED_TS.slice(0, 10),
-    notes: null,
-    created_at: SEED_TS,
-    updated_at: SEED_TS,
-    created_by: U_EDITOR,
-  };
-}
-
 export function buildSeed(): MockDb {
-  const hoursAgo = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
-  const dAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
   return {
-    ingredient_yields: [
-      yieldRow("iy-onion", "m-onion", 150, 20),
-      yieldRow("iy-ginger", "m-ginger", 130, 15),
-      yieldRow("iy-carrot", "m-carrot", 50, 10),
-    ],
-    wastage_entries: [
-      // ingredient @ yield-adjusted rate (onion 150/800 = 0.1875/g)
-      { id: "w-1", wastage_date: dAgo(0), brand: "capiche", outlet_id: "capiche-piplod", wastage_type: "Spoilage", item_type: "ingredient", ingredient_id: "m-onion", recipe_id: null, quantity: 500, unit: "Gram", unit_cost: round2(150 / 800), total_cost: round2((150 / 800) * 500), reason: "Soft / sprouted stock", department: "Store", shift: "Morning", entered_by: U_EDITOR, approved_by: null, notes: null, created_at: hoursAgo(3), updated_at: hoursAgo(3) },
-      { id: "w-2", wastage_date: dAgo(1), brand: "aiko", outlet_id: "aiko-pal", wastage_type: "Overproduction", item_type: "recipe", ingredient_id: null, recipe_id: "r-avo-crispy-rice", quantity: 3, unit: "Portion", unit_cost: 76.2, total_cost: round2(76.2 * 3), reason: "Prepped too many for dinner service", department: "Kitchen", shift: "Evening", entered_by: U_ADMIN, approved_by: U_ADMIN, notes: null, created_at: hoursAgo(26), updated_at: hoursAgo(26) },
-      { id: "w-3", wastage_date: dAgo(2), brand: "capiche", outlet_id: "capiche-vesu", wastage_type: "Cooking Wastage", item_type: "recipe", ingredient_id: null, recipe_id: "r-aglio-olio", quantity: 1, unit: "Portion", unit_cost: 74.9, total_cost: 74.9, reason: "Burnt", department: "Kitchen", shift: "Evening", entered_by: U_EDITOR, approved_by: null, notes: null, created_at: hoursAgo(50), updated_at: hoursAgo(50) },
-      { id: "w-4", wastage_date: dAgo(4), brand: "capiche", outlet_id: "capiche-ambli", wastage_type: "Expired Stock", item_type: "ingredient", ingredient_id: "m-ginger", recipe_id: null, quantity: 300, unit: "Gram", unit_cost: round2(130 / 850), total_cost: round2((130 / 850) * 300), reason: "Past shelf life", department: "Store", shift: "Morning", entered_by: U_ADMIN, approved_by: null, notes: null, created_at: hoursAgo(98), updated_at: hoursAgo(98) },
-      { id: "w-5", wastage_date: dAgo(6), brand: "aiko", outlet_id: "aiko-ambli", wastage_type: "Preparation Wastage", item_type: "ingredient", ingredient_id: "m-carrot", recipe_id: null, quantity: 400, unit: "Gram", unit_cost: round2(50 / 900), total_cost: round2((50 / 900) * 400), reason: "Trimming loss above standard", department: "Central Kitchen", shift: "Morning", entered_by: U_EDITOR, approved_by: null, notes: null, created_at: hoursAgo(146), updated_at: hoursAgo(146) },
-    ],
+    // Yield + wastage start empty; seed real entries from the app.
+    ingredient_yields: [],
+    wastage_entries: [],
     users: structuredClone(users),
     raw_materials: structuredClone(raw_materials),
     recipes: structuredClone(recipes),
     recipe_ingredients: structuredClone(recipe_ingredients),
     recipe_cost_history: [],
-    ingredient_price_history: [
-      { id: "iph-1", ingredient_id: "m-olive-oil", old_price: 800, new_price: 867, old_cost_per_base_unit: 0.8, new_cost_per_base_unit: 0.867, changed_by: U_EDITOR, changed_at: hoursAgo(2) },
-      { id: "iph-2", ingredient_id: "m-burrata", old_price: 1100, new_price: 1054, old_cost_per_base_unit: 1.1, new_cost_per_base_unit: 1.054, changed_by: U_EDITOR, changed_at: hoursAgo(26) },
-      { id: "iph-3", ingredient_id: "m-coconut-milk", old_price: 390, new_price: 421, old_cost_per_base_unit: 0.39, new_cost_per_base_unit: 0.421, changed_by: U_ADMIN, changed_at: hoursAgo(28) },
-    ],
+    ingredient_price_history: [],
     recipe_versions: allDefs.map((d) => ({
       id: `${d.id}-v1`, recipe_id: d.id, version_no: 1, snapshot: null, notes: "Initial version", created_by: d.createdBy, created_at: SEED_TS,
     })),
-    user_recipe_views: [
-      { id: "urv-1", user_id: U_VIEWER, recipe_id: "r-avo-crispy-rice", view_type: "aiko", assigned_by: U_ADMIN, assigned_at: SEED_TS },
-    ],
+    user_recipe_views: [],
     audit_logs: [],
     system_settings: [
       { id: "s-foodcost", key: "food_cost_pct", value: "30", updated_by: U_ADMIN, updated_at: SEED_TS },
