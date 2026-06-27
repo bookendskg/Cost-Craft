@@ -184,6 +184,9 @@ export interface RecipeIngredient {
   sort_order: number;
   /** Recipe-specific wastage % override (§10). Null → use the ingredient's standard yield. */
   wastage_override_pct?: number | null;
+  /** Selected cut/prep variant for a vegetable (e.g. "Sliced", "Diced"). Its yield
+   *  drives the yield-adjusted cost; null → use the ingredient as-is. */
+  cut_type?: string | null;
 }
 
 export interface RecipeCostHistory {

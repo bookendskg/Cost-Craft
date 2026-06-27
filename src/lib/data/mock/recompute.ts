@@ -4,7 +4,8 @@
 
 import { calculateIngredientCost, prepUnitCostFrom, round2 } from "../../costing";
 import { canConvert, getConversionFactor } from "../../units";
-import { activeYield, effectiveCostPerBaseUnit } from "../../yield";
+import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "../../yield";
+import { resolveParentAndCut, cutYieldPct } from "../ingredientCuts";
 import type {
   AuditAction,
   AuditEntityType,
@@ -26,7 +27,7 @@ export function prepUnitCost(recipe: Recipe): number {
 /** Cost of one recipe line — a raw material or a sub-recipe (prep). */
 function lineCost(
   db: MockDb,
-  line: { ingredient_id: string; component_type: string; quantity_used: number; unit_used: string; wastage_override_pct?: number | null },
+  line: { ingredient_id: string; component_type: string; quantity_used: number; unit_used: string; wastage_override_pct?: number | null; cut_type?: string | null },
 ): number | null {
   if (line.component_type === "recipe") {
     const sub = db.recipes.find((r) => r.id === line.ingredient_id);
@@ -38,11 +39,26 @@ function lineCost(
   const m = findMaterial(db, line.ingredient_id);
   // Guard the unit pair so an invalid conversion can never throw mid-recompute.
   if (!m || !canConvert(line.unit_used, m.base_unit)) return null;
-  // §9: use the yield-adjusted rate when yield data exists, else the purchase rate.
-  const yieldRec = activeYield(db.ingredient_yields, m.id);
-  const rate = effectiveCostPerBaseUnit(m.cost_per_base_unit, yieldRec, line.wastage_override_pct);
+  // Cut/prep variant (§ cut) takes priority: full cost over the cut's usable yield.
+  const rate = rateForLine(m, line, db);
   if (rate === null) return null; // no price and no yield
   return calculateIngredientCost(rate, line.quantity_used, line.unit_used, m.base_unit);
+}
+
+/** ₹/base-unit for a material line: cut yield → standard yield/override → raw rate. */
+function rateForLine(
+  m: RawMaterial,
+  line: { wastage_override_pct?: number | null; cut_type?: string | null },
+  db: MockDb,
+): number | null {
+  if (line.cut_type) {
+    const { parent } = resolveParentAndCut(m.ingredient_name);
+    const y = parent ? cutYieldPct(parent, line.cut_type) : null;
+    if (y != null) return costForCutYield(m.cost_per_base_unit, y);
+  }
+  // §9: yield-adjusted rate when yield data exists, else the purchase rate.
+  const yieldRec = activeYield(db.ingredient_yields, m.id);
+  return effectiveCostPerBaseUnit(m.cost_per_base_unit, yieldRec, line.wastage_override_pct);
 }
 
 /**

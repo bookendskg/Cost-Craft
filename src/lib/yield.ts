@@ -123,3 +123,14 @@ export function effectiveCostPerBaseUnit(
   if (usable <= 0) return baseUnitCost;
   return yieldRecord.purchase_cost / usable;
 }
+
+/**
+ * Effective ₹/base-unit for a chosen cut/prep: the full purchase cost falls on
+ * the usable portion, so per usable unit = base cost ÷ (yield% / 100). A yield
+ * above 100 (e.g. boiled pasta absorbing water) makes it cheaper per usable unit.
+ */
+export function costForCutYield(baseUnitCost: number | null, cutYieldPct: number): number | null {
+  if (baseUnitCost == null) return null;
+  if (cutYieldPct <= 0) return baseUnitCost;
+  return baseUnitCost / (cutYieldPct / 100);
+}

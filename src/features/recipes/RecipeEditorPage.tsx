@@ -27,8 +27,9 @@ import {
 import { recipeHeaderSchema, type RecipeHeaderValues } from "@/lib/validation/schemas";
 import { compatibleUnits, canConvert } from "@/lib/units";
 import { calculateIngredientCost, prepUnitCostFrom, round2 } from "@/lib/costing";
-import { activeYield, effectiveCostPerBaseUnit } from "@/lib/yield";
-import { formatINR } from "@/lib/utils";
+import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "@/lib/yield";
+import { cutsForName, cutYieldPct, resolveParentAndCut } from "@/lib/data/ingredientCuts";
+import { cn, formatINR } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { BRANDS, type RawMaterial } from "@/lib/data/types";
 import { useMaterials } from "@/features/raw-materials/hooks";
@@ -121,6 +122,7 @@ export function RecipeEditorPage() {
           quantity_used: i.quantity_used,
           unit_used: i.unit_used,
           wastage_override_pct: i.wastage_override_pct ?? null,
+          cut_type: i.cut_type ?? null,
         })),
       );
     } else if (!isEdit) {
@@ -137,6 +139,7 @@ export function RecipeEditorPage() {
       quantity_used: l.quantity_used,
       unit_used: l.unit_used,
       wastage_override_pct: l.wastage_override_pct,
+      cut_type: l.cut_type,
     })),
     materialsById,
     prepsById,
@@ -183,6 +186,7 @@ export function RecipeEditorPage() {
       quantity_used: l.quantity_used,
       unit_used: l.unit_used,
       wastage_override_pct: l.wastage_override_pct ?? null,
+      cut_type: l.cut_type ?? null,
     }));
   };
 
@@ -405,12 +409,19 @@ export function RecipeEditorPage() {
                     const perUnit = prepUnitCostFrom(prep.total_cost ?? 0, prep.yield_quantity, prep.wastage_pct ?? 0);
                     lineCost = round2(perUnit * line.quantity_used);
                   } else if (material && line.quantity_used > 0 && canConvert(line.unit_used, material.base_unit)) {
-                    // §9/§10: yield-adjusted rate (with any recipe-specific wastage override).
-                    const rate = effectiveCostPerBaseUnit(material.cost_per_base_unit, yieldRec, line.wastage_override_pct);
+                    // Cut yield takes priority; else §9/§10 yield-adjusted rate.
+                    const cutY = line.cut_type
+                      ? cutYieldPct(resolveParentAndCut(material.ingredient_name).parent ?? "", line.cut_type)
+                      : null;
+                    const rate =
+                      cutY != null
+                        ? costForCutYield(material.cost_per_base_unit, cutY)
+                        : effectiveCostPerBaseUnit(material.cost_per_base_unit, yieldRec, line.wastage_override_pct);
                     if (rate !== null) {
                       lineCost = calculateIngredientCost(rate, line.quantity_used, line.unit_used, material.base_unit);
                     }
                   }
+                  const cutOptions = material ? cutsForName(material.ingredient_name) : [];
                   const stdWastage = yieldRec?.wastage_percentage ?? 0;
                   const effWastage = line.wastage_override_pct ?? stdWastage;
                   const hasOverride = line.wastage_override_pct != null;
@@ -473,6 +484,35 @@ export function RecipeEditorPage() {
                         </Button>
                       </div>
                     </div>
+                    {/* Cut / prep variant bar — pick how the vegetable is cut; its yield drives the cost. */}
+                    {cutOptions.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 pl-1 text-xs">
+                        <span className="text-muted-foreground">Cut</span>
+                        <button
+                          type="button"
+                          onClick={() => patchLine(line.key, { cut_type: null })}
+                          className={cn(
+                            "rounded-full border px-2 py-0.5 transition-colors",
+                            !line.cut_type ? "border-primary bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:bg-muted",
+                          )}
+                        >
+                          As-is
+                        </button>
+                        {cutOptions.map((c) => (
+                          <button
+                            key={c.cut}
+                            type="button"
+                            onClick={() => patchLine(line.key, { cut_type: c.cut })}
+                            className={cn(
+                              "rounded-full border px-2 py-0.5 transition-colors",
+                              line.cut_type === c.cut ? "border-primary bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:bg-muted",
+                            )}
+                          >
+                            {c.cut} <span className="opacity-60">{c.yieldPct}%</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     {/* §10: recipe-specific wastage override (only for ingredients with yield data) */}
                     {yieldRec && (
                       <div className="flex flex-wrap items-center gap-2 pl-1 text-xs text-muted-foreground">

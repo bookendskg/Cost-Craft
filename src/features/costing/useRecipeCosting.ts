@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { calculateIngredientCost, prepUnitCostFrom, round2, type RecipeCostingResult } from "@/lib/costing";
 import { canConvert, getConversionFactor } from "@/lib/units";
-import { activeYield, effectiveCostPerBaseUnit } from "@/lib/yield";
+import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "@/lib/yield";
+import { resolveParentAndCut, cutYieldPct } from "@/lib/data/ingredientCuts";
 import type { IngredientYield, RawMaterial, Recipe } from "@/lib/data/types";
 
 export interface EditorLine {
@@ -11,6 +12,8 @@ export interface EditorLine {
   unit_used: string;
   /** Recipe-specific wastage % override (§10); null → standard yield. */
   wastage_override_pct?: number | null;
+  /** Selected cut/prep variant; its yield drives the cost when set. */
+  cut_type?: string | null;
 }
 
 export interface CostedLine extends EditorLine {
@@ -65,9 +68,18 @@ export function useRecipeCosting(
         return { ...l, material: null, subRecipe, cost, missingPrice: false, unitMismatch: false };
       }
       const material = materialsById.get(l.ingredient_id) ?? null;
-      const yieldRec = material ? activeYield(yields, material.id) : null;
-      // §9: yield-adjusted rate when yield exists, else the purchase rate.
-      const rate = material ? effectiveCostPerBaseUnit(material.cost_per_base_unit, yieldRec, l.wastage_override_pct) : null;
+      // Cut/prep variant takes priority (full cost over the cut's usable yield);
+      // else §9 yield-adjusted rate when yield exists, else the purchase rate.
+      let rate: number | null = null;
+      if (material) {
+        const cutYield = l.cut_type
+          ? cutYieldPct(resolveParentAndCut(material.ingredient_name).parent ?? "", l.cut_type)
+          : null;
+        rate =
+          cutYield != null
+            ? costForCutYield(material.cost_per_base_unit, cutYield)
+            : effectiveCostPerBaseUnit(material.cost_per_base_unit, activeYield(yields, material.id), l.wastage_override_pct);
+      }
       const missingPrice = !!material && rate === null;
       const unitMismatch = !!material && !canConvert(l.unit_used, material.base_unit);
       const cost =

@@ -32,6 +32,8 @@ export interface RecipeLineInput {
   unit_used: string;
   /** Recipe-specific wastage % override (§10); null/undefined → standard yield. */
   wastage_override_pct?: number | null;
+  /** Selected cut/prep variant; its yield drives the cost when set. */
+  cut_type?: string | null;
 }
 
 function attachMaterials(
@@ -82,6 +84,7 @@ function writeLines(db: MockDb, recipeId: string, lines: RecipeLineInput[]): voi
       calculated_cost: null,
       sort_order: idx,
       wastage_override_pct: line.wastage_override_pct ?? null,
+      cut_type: line.cut_type ?? null,
     });
   });
 }

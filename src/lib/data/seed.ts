@@ -3,8 +3,11 @@
 // (component_type "recipe"); preps are costed from leaf raw materials and a
 // prep's per-unit cost = total_cost ÷ yield (sum of its ingredient grams).
 
-import { calculateCostPerBaseUnit, prepUnitCostFrom } from "../costing";
+import { calculateCostPerBaseUnit, calculateIngredientCost, prepUnitCostFrom } from "../costing";
+import { canConvert } from "../units";
+import { costForCutYield } from "../yield";
 import { COOKBOOK_RECIPES } from "./cookbook";
+import { resolveParentAndCut, cutYieldPct } from "./ingredientCuts";
 import { MASTER_PRICES } from "./masterPrices";
 import { MASTER_DISH_COSTS } from "./masterDishCosts";
 import type { MockDb } from "./mock/db";
@@ -457,6 +460,60 @@ for (const d of allDefs) {
       updated_at: SEED_TS,
       updated_by: U_ADMIN,
     });
+  }
+}
+
+// --- Consolidate cut-specific materials under their parent vegetable ----------
+// A material whose name encodes a known cut ("Sliced Onion", "Onion Rings",
+// "Chopped Spring Onion") is folded into its parent vegetable + a cut_type on the
+// recipe line, so recipes show one "Onion" with a cut option bar. The cut's yield
+// re-prices the line; the now-unused cut-specific material is deactivated.
+{
+  const cnorm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const matById = new Map(raw_materials.map((m) => [m.id, m]));
+  const matByName = new Map(raw_materials.map((m) => [cnorm(m.ingredient_name), m]));
+  const folded = new Set<string>();
+  const foldedRecipes = new Set<string>();
+  for (const line of recipe_ingredients) {
+    if (line.component_type !== "material") continue;
+    const m = matById.get(line.ingredient_id);
+    if (!m) continue;
+    const { parent, cut } = resolveParentAndCut(m.ingredient_name);
+    if (!parent || !cut) continue; // only fold names that encode a known cut
+    const parentMat = matByName.get(parent);
+    if (!parentMat || parentMat.id === m.id) continue;
+    line.ingredient_id = parentMat.id;
+    line.cut_type = cut;
+    const y = cutYieldPct(parent, cut);
+    const rate = y != null ? costForCutYield(parentMat.cost_per_base_unit, y) : parentMat.cost_per_base_unit;
+    line.calculated_cost =
+      rate != null && canConvert(line.unit_used, parentMat.base_unit)
+        ? calculateIngredientCost(rate, line.quantity_used, line.unit_used, parentMat.base_unit)
+        : null;
+    folded.add(m.id);
+    foldedRecipes.add(line.recipe_id);
+  }
+  // Keep totals consistent with the rewritten lines. Recipes pinned to a master
+  // dish cost keep that authoritative making cost; the rest re-sum their lines.
+  for (const rid of foldedRecipes) {
+    const rec = recipes.find((r) => r.id === rid);
+    if (!rec) continue;
+    const dc = dishCostFor(rec.recipe_name);
+    if (dc && dc.making != null) continue;
+    const raw = recipe_ingredients
+      .filter((l) => l.recipe_id === rid)
+      .reduce((s, l) => s + (l.calculated_cost ?? 0), 0);
+    const total = raw > 0 ? round2(raw * (1 + (rec.wastage_pct ?? 0) / 100)) : null;
+    rec.total_cost = total;
+    rec.cost_per_portion = total != null && rec.serving_size > 0 ? round2(total / rec.serving_size) : total;
+  }
+  // Deactivate folded materials no longer referenced by any line.
+  for (const id of folded) {
+    const stillUsed = recipe_ingredients.some((l) => l.component_type === "material" && l.ingredient_id === id);
+    if (!stillUsed) {
+      const mm = matById.get(id);
+      if (mm) mm.status = "inactive";
+    }
   }
 }
 

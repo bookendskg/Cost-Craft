@@ -329,7 +329,12 @@ export function RecipeDetailPage() {
                       const cost = ing.calculated_cost == null ? null : round2(ing.calculated_cost * scale);
                       return (
                         <TableRow key={ing.id}>
-                          <TableCell className="font-medium">{m?.ingredient_name ?? "—"}</TableCell>
+                          <TableCell className="font-medium">
+                            {m?.ingredient_name ?? "—"}
+                            {ing.cut_type && (
+                              <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">{ing.cut_type}</span>
+                            )}
+                          </TableCell>
                           {vis.quantities && <TableCell className="text-right font-mono">{qtyInPurchase}</TableCell>}
                           {vis.quantities && <TableCell className="text-muted-foreground">{displayUnit}</TableCell>}
                           {vis.totalCost && <TableCell className="text-right font-mono font-semibold">{formatINR(cost)}</TableCell>}
