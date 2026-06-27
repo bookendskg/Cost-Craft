@@ -26,15 +26,25 @@ const dishKey = (s: string) =>
     .replace(/[^a-z0-9 ]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-const DISH_KEYS = Object.keys(MASTER_DISH_COSTS);
+const DISH_ENTRIES = Object.keys(MASTER_DISH_COSTS).map((k) => ({
+  k,
+  flat: k.replace(/ /g, ""),
+  tokens: new Set(k.split(" ").filter(Boolean)),
+}));
 const dishCostFor = (name: string): (typeof MASTER_DISH_COSTS)[string] | null => {
   const k = dishKey(name);
   if (MASTER_DISH_COSTS[k]) return MASTER_DISH_COSTS[k];
-  if (k.length >= 5) {
-    const f = DISH_KEYS.find((dk) => dk.length >= 5 && (dk.includes(k) || k.includes(dk)));
-    if (f) return MASTER_DISH_COSTS[f];
-  }
-  return null;
+  const flat = k.replace(/ /g, "");
+  const kt = new Set(k.split(" ").filter(Boolean));
+  // space-insensitive exact, then substring either way, then token-subset.
+  let hit = DISH_ENTRIES.find((e) => e.flat === flat && flat.length >= 5);
+  if (!hit && k.length >= 5) hit = DISH_ENTRIES.find((e) => e.k.length >= 5 && (e.k.includes(k) || k.includes(e.k)));
+  if (!hit && kt.size >= 2)
+    hit = DISH_ENTRIES.find((e) => {
+      const [small, large] = kt.size <= e.tokens.size ? [kt, e.tokens] : [e.tokens, kt];
+      return small.size >= 2 && [...small].every((t) => large.has(t));
+    });
+  return hit ? MASTER_DISH_COSTS[hit.k] : null;
 };
 
 /** Light keyword classifier for cookbook-derived ingredients (display only). */
