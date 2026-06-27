@@ -1,7 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { User } from "../data/types";
-import { authenticate } from "../data";
+import { authenticate, linkFirebaseUser } from "../data";
+import { isFirebaseConfigured, firebaseAuth } from "../firebase/client";
+import { firebaseSignIn, firebaseLogout } from "../firebase/auth";
 import { isSupabaseConfigured, supabase } from "../supabase/client";
 import { hydrateUserFromProfile, stampLastLogin } from "../supabase/profile";
 
@@ -23,6 +25,13 @@ export const useSession = create<SessionState>()(
       async login(email, password) {
         set({ loading: true, error: null });
         try {
+          // Firebase Authentication (preferred). Roles live in the profile store.
+          if (isFirebaseConfigured && firebaseAuth) {
+            const fbUser = await firebaseSignIn(email, password);
+            const user = await linkFirebaseUser(fbUser.uid, fbUser.email ?? email, fbUser.displayName);
+            set({ user, loading: false });
+            return user;
+          }
           if (isSupabaseConfigured && supabase) {
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) throw new Error(friendlyAuthError(error.message));
@@ -42,7 +51,8 @@ export const useSession = create<SessionState>()(
         }
       },
       async logout() {
-        if (isSupabaseConfigured && supabase) await supabase.auth.signOut();
+        if (isFirebaseConfigured && firebaseAuth) await firebaseLogout();
+        else if (isSupabaseConfigured && supabase) await supabase.auth.signOut();
         set({ user: null, error: null });
       },
       setUser(user) {

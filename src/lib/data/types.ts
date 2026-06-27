@@ -104,6 +104,8 @@ export interface User {
   phone?: string | null;
   /** Avatar image as a data URL (mock) or external URL. */
   avatar_url?: string | null;
+  /** Firebase Authentication UID mapped to this profile (set on first sign-in). */
+  firebase_uid?: string | null;
   /** Last successful sign-in timestamp (set by the auth layer). */
   last_login?: string | null;
   /** Saved UI theme preference ('light' | 'dark' | 'capiche' | 'aiko'). */

@@ -100,6 +100,55 @@ export const usersRepo = {
   },
 };
 
+/**
+ * Map a Firebase-authenticated identity to the internal profile (Firebase
+ * migration). Finds the profile by email — preserving the existing role of
+ * seeded/known users — or creates a new one defaulting to Viewer. Stores the
+ * Firebase UID and stamps last_login. Roles always live in this profile store,
+ * never in Firebase. Throws if the account is disabled.
+ */
+export async function linkFirebaseUser(
+  firebaseUid: string,
+  email: string,
+  displayName?: string | null,
+): Promise<User> {
+  return delay(
+    mutate((db) => {
+      let u = db.users.find((x) => x.email.toLowerCase() === email.toLowerCase());
+      if (!u) {
+        u = {
+          id: uid(),
+          name: displayName || email.split("@")[0],
+          email,
+          role: "viewer", // new accounts are Viewer until an admin elevates them
+          status: "active",
+          firebase_uid: firebaseUid,
+          created_at: nowISO(),
+          updated_at: nowISO(),
+          last_login: nowISO(),
+        };
+        db.users.push(u);
+        recordAudit(db, {
+          entity_type: "user",
+          entity_id: u.id,
+          action: "create",
+          new_values: { name: u.name, email: u.email, role: u.role },
+          performed_by: null,
+          notes: `Firebase sign-up ${u.email} (default Viewer)`,
+        });
+      } else {
+        u.firebase_uid = firebaseUid;
+        u.last_login = nowISO();
+        u.updated_at = nowISO();
+      }
+      if (u.status === "inactive") {
+        throw new Error("Your account is disabled. Please contact an administrator.");
+      }
+      return publicUser(u);
+    }),
+  );
+}
+
 /** Mock auth — validates credentials and account status (PRD Module 1). */
 export async function authenticate(email: string, password: string): Promise<User> {
   const db = getDb();

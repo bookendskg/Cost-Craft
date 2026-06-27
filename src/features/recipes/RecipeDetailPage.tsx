@@ -156,13 +156,20 @@ export function RecipeDetailPage() {
 
   return (
     <>
-      {/* Back to parent recipe (when opened from a sub-recipe link) */}
-      {backTo?.fromRecipe && (
+      {/* Back: to the parent recipe when opened from a sub-recipe link, else to the list. */}
+      {backTo?.fromRecipe ? (
         <button
           onClick={() => navigate(`/recipes/${backTo.fromRecipe}`)}
           className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:underline"
         >
           <ArrowLeft className="h-4 w-4" /> Back to {backTo.fromName ?? "recipe"}
+        </button>
+      ) : (
+        <button
+          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/recipes"))}
+          className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back
         </button>
       )}
 

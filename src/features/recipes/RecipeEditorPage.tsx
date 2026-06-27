@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams, useLocation, useBlocker } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { Loader2, Plus, Trash2, AlertTriangle, ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,6 +81,8 @@ export function RecipeEditorPage() {
 
   const [lines, setLines] = useState<GridLine[]>([]);
   const [method, setMethod] = useState("");
+  const [touched, setTouched] = useState(false);
+  const savedRef = useRef(false);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [submitNote, setSubmitNote] = useState("");
   const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null);
@@ -152,11 +154,38 @@ export function RecipeEditorPage() {
     yields,
   );
 
-  const addLine = () =>
+  const addLine = () => {
+    setTouched(true);
     setLines((prev) => [...prev, { key: newKey(), ingredient_id: "", component_type: "material", quantity_used: 0, unit_used: "" }]);
-  const removeLine = (key: string) => setLines((prev) => prev.filter((l) => l.key !== key));
-  const patchLine = (key: string, patch: Partial<GridLine>) =>
+  };
+  const removeLine = (key: string) => {
+    setTouched(true);
+    setLines((prev) => prev.filter((l) => l.key !== key));
+  };
+  const patchLine = (key: string, patch: Partial<GridLine>) => {
+    setTouched(true);
     setLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+  };
+
+  // §12: warn before leaving with unsaved changes (in-app nav + browser unload).
+  const isDirty = (formState.isDirty || touched) && !savedRef.current;
+  const blocker = useBlocker(useCallback(() => isDirty, [isDirty]));
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      if (window.confirm("You have unsaved changes. Are you sure you want to leave without saving?")) blocker.proceed();
+      else blocker.reset();
+    }
+  }, [blocker]);
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
 
   const selectComponent = (key: string, pick: ComponentPick) => {
     if (pick.type === "recipe") {
@@ -207,10 +236,12 @@ export function RecipeEditorPage() {
     try {
       if (isEdit && id) {
         await updateMut.mutateAsync({ id, header, lines: payload });
+        savedRef.current = true;
         toast.success("Recipe saved");
         navigate(`/recipes/${id}`);
       } else {
         const created = await createMut.mutateAsync({ header, lines: payload });
+        savedRef.current = true;
         toast.success("Recipe created");
         navigate(`/recipes/${created.id}`);
       }
@@ -243,6 +274,7 @@ export function RecipeEditorPage() {
         const created = await createMut.mutateAsync({ header, lines: payload });
         recipeId = created.id;
       }
+      savedRef.current = true;
       setPendingRecipeId(recipeId);
       setSubmitOpen(true);
     } catch (e) {
@@ -269,6 +301,9 @@ export function RecipeEditorPage() {
 
   return (
     <>
+      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="-ml-2 mb-1 gap-1.5 text-muted-foreground">
+        <ArrowLeft className="h-4 w-4" /> Back
+      </Button>
       <PageHeader
         title={isEdit ? "Edit Recipe" : "Create Recipe"}
         description={isEdit ? "Editing an approved recipe reverts it to Draft." : undefined}
@@ -385,7 +420,10 @@ export function RecipeEditorPage() {
               <Textarea
                 rows={6}
                 value={method}
-                onChange={(e) => setMethod(e.target.value)}
+                onChange={(e) => {
+                  setMethod(e.target.value);
+                  setTouched(true);
+                }}
                 placeholder="One step per line…"
               />
               <p className="text-xs text-muted-foreground">Preparation steps — one per line; shown as a numbered list.</p>

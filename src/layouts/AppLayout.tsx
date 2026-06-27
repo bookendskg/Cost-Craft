@@ -148,11 +148,17 @@ export function AppLayout() {
           />
           <aside
             className={cn(
-              "absolute left-0 top-0 h-full w-64 animate-slide-in-left shadow-xl",
+              "absolute left-0 top-0 flex h-full w-72 max-w-[85vw] animate-slide-in-left flex-col shadow-xl",
               dark ? "bg-background" : "bg-white",
             )}
           >
-            {sidebar(false)}
+            {user.role !== "viewer" && (
+              <div className="shrink-0 border-b p-3">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Brand</p>
+                <BrandFilter value={brand} onChange={(b) => setBrand(b)} className="w-full" />
+              </div>
+            )}
+            <div className="min-h-0 flex-1 overflow-y-auto">{sidebar(false)}</div>
           </aside>
         </div>
       )}
@@ -206,6 +212,19 @@ export function AppLayout() {
 
           <div className="flex-1" />
 
+          {/* Mobile: brand chip (tap to open the drawer, which holds the selector). */}
+          {user.role !== "viewer" && (
+            <button
+              onClick={() => setMobileOpen(true)}
+              className={cn(
+                "mr-1 rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-wide sm:hidden",
+                brandAccentText(brand),
+              )}
+              aria-label={`Brand ${brandWordmark[brand]} — tap to change`}
+            >
+              {brandWordmark[brand]}
+            </button>
+          )}
           {user.role !== "viewer" && (
             <div className="mr-1 hidden sm:block">
               <BrandFilter value={brand} onChange={setBrand} />

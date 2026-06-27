@@ -10,6 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { signupSchema, type SignupValues } from "@/lib/validation/schemas";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/authError";
+import { isFirebaseConfigured, firebaseAuth } from "@/lib/firebase/client";
+import { firebaseSignUp, firebaseLogout } from "@/lib/firebase/auth";
+import { linkFirebaseUser } from "@/lib/data";
 import { toast } from "@/components/ui/use-toast";
 
 export function SignUpPage() {
@@ -28,8 +31,21 @@ export function SignUpPage() {
 
   const onSubmit = async (values: SignupValues) => {
     setServerError(null);
+    // Firebase (preferred): create the account + send a verification email, then
+    // sign out so the user verifies before signing in. New users default to Viewer.
+    if (isFirebaseConfigured && firebaseAuth) {
+      try {
+        const fbUser = await firebaseSignUp(values.email, values.password);
+        if (fbUser.email) await linkFirebaseUser(fbUser.uid, fbUser.email, values.name);
+        await firebaseLogout();
+        setNeedsConfirm(true);
+      } catch (e) {
+        setServerError(e instanceof Error ? e.message : "Sign-up failed");
+      }
+      return;
+    }
     if (!isSupabaseConfigured || !supabase) {
-      setServerError("Sign-up requires Supabase to be configured.");
+      setServerError("Sign-up is not configured.");
       return;
     }
     const { data, error } = await supabase.auth.signUp({
@@ -45,7 +61,6 @@ export function SignUpPage() {
       setServerError(authErrorMessage(error));
       return;
     }
-    // If email confirmation is ON, there is no active session yet.
     if (data.session) {
       toast.success("Account created");
       navigate("/dashboard", { replace: true });

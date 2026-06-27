@@ -1,3 +1,6 @@
+import { onAuthStateChanged } from "firebase/auth";
+import { isFirebaseConfigured, firebaseAuth } from "../firebase/client";
+import { linkFirebaseUser } from "../data";
 import { isSupabaseConfigured, supabase } from "../supabase/client";
 import { hydrateUserFromProfile, syncThemePref } from "../supabase/profile";
 import { useSession } from "./session";
@@ -26,6 +29,29 @@ async function applyProfile(uid: string) {
  * sign-in, sign-out, password recovery).
  */
 export function initAuth() {
+  // Firebase Authentication (preferred). Hydrates the profile by UID/email on
+  // cold load and on every auth state change (sign-in/out, token refresh).
+  if (isFirebaseConfigured && firebaseAuth) {
+    onAuthStateChanged(firebaseAuth, async (fbUser) => {
+      if (!fbUser) {
+        useSession.getState().setUser(null);
+        return;
+      }
+      try {
+        const user = await linkFirebaseUser(fbUser.uid, fbUser.email ?? "", fbUser.displayName);
+        useSession.getState().setUser(user);
+        const pref = user.theme_pref;
+        if (pref && (VALID_THEMES as string[]).includes(pref)) {
+          useTheme.getState().setTheme(pref as Theme);
+        }
+      } catch (err) {
+        console.error("Failed to map Firebase user:", err);
+        useSession.getState().setUser(null);
+      }
+    });
+    return;
+  }
+
   if (!isSupabaseConfigured || !supabase) return;
 
   supabase.auth.getSession().then(({ data }) => {

@@ -3,7 +3,7 @@
 // same exports and re-export from here behind an env flag — no feature code
 // imports the mock modules directly.
 
-export { usersRepo, authenticate } from "./mock/users";
+export { usersRepo, authenticate, linkFirebaseUser } from "./mock/users";
 export type { CreateUserInput, UpdateUserInput } from "./mock/users";
 
 export { materialsRepo } from "./mock/materials";
