@@ -145,6 +145,11 @@ export interface Recipe {
   description: string | null;
   /** Ordered preparation/cooking steps (from the cookbook METHOD section). */
   method: string[];
+  /** Pizza size variants (§14–§20): a variant points at its master recipe; the
+   *  master itself is the primary (15-inch) and is the only row shown in lists. */
+  parent_recipe_id?: string | null;
+  size_code?: "11_INCH" | "15_INCH" | null;
+  size_label?: string | null;
   /** Recipe photo as a data URL (mock) or external URL. */
   image_url: string | null;
   preparation_time: number | null;

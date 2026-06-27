@@ -7,6 +7,7 @@ import { calculateCostPerBaseUnit, calculateIngredientCost, prepUnitCostFrom } f
 import { canConvert } from "../units";
 import { costForCutYield } from "../yield";
 import { COOKBOOK_RECIPES } from "./cookbook";
+import { PIZZA_RECIPES, PIZZA_SIZE_LABEL, type PizzaSize } from "./pizzas";
 import { resolveParentAndCut, cutYieldPct } from "./ingredientCuts";
 import { MASTER_PRICES } from "./masterPrices";
 import { MASTER_DISH_COSTS } from "./masterDishCosts";
@@ -377,6 +378,9 @@ for (const d of allDefs) {
 
   for (const cb of COOKBOOK_RECIPES) {
     if (existingRecipeNames.has(norm(cb.name))) continue; // never duplicate a seeded dish
+    // Capiche pizzas come from the 11"/15" master sheets (built below) — skip the
+    // single-size cookbook versions so each pizza appears once with both sizes.
+    if (cb.category === "Pizza" && cb.brand === "capiche") continue;
     let totalGrams = 0;
     let rawCost = 0;
     let anyPriced = false;
@@ -516,6 +520,122 @@ for (const d of allDefs) {
       const mm = matById.get(id);
       if (mm) mm.status = "inactive";
     }
+  }
+}
+
+// --- Pizza size variants (Capiche, from the 11"/15" master sheets) -----------
+// One master per pizza (the 15-inch, shown in lists) plus an 11-inch variant
+// linked by parent_recipe_id. Each size carries its own ingredient quantities and
+// cost. Ingredients are priced from the master book; the 15" master takes its
+// authoritative making/selling from the summary, the 11" is costed from its lines.
+{
+  const pnorm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const matByName = new Map(raw_materials.map((m) => [pnorm(m.ingredient_name), m.id]));
+  const cpbuById = new Map(raw_materials.map((m) => [m.id, m.cost_per_base_unit]));
+  const usedMatIds = new Set(raw_materials.map((m) => m.id));
+  const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const purchaseUnitFor = (base: string) => (base === "Gram" ? "KG" : base === "ML" ? "Litre" : "Piece");
+
+  const buildVariant = (
+    id: string,
+    name: string,
+    parentId: string | null,
+    size: PizzaSize,
+    ings: { name: string; qty: number; unit: "Gram" }[],
+    dc: (typeof MASTER_DISH_COSTS)[string] | null,
+  ) => {
+    let totalGrams = 0;
+    let rawCost = 0;
+    let anyPriced = false;
+    ings.forEach((ing, idx) => {
+      let matId = matByName.get(pnorm(ing.name));
+      if (!matId) {
+        let mid = "m-cb-" + slugify(ing.name);
+        while (usedMatIds.has(mid)) mid += "-x";
+        usedMatIds.add(mid);
+        const pg = masterPerGram(ing.name);
+        cpbuById.set(mid, pg ?? null);
+        raw_materials.push({
+          id: mid,
+          ingredient_name: ing.name,
+          category: inferCategory(ing.name),
+          supplier_name: null,
+          notes: null,
+          purchase_price: pg == null ? null : round2(pg * 1000),
+          purchase_quantity: 1,
+          purchase_unit: purchaseUnitFor(ing.unit),
+          base_unit: ing.unit,
+          cost_per_base_unit: pg ?? null,
+          last_price_update: pg == null ? null : SEED_TS.slice(0, 10),
+          status: "active",
+          created_by: U_ADMIN,
+          created_at: SEED_TS,
+        });
+        matByName.set(pnorm(ing.name), mid);
+        matId = mid;
+      }
+      const cpbu = cpbuById.get(matId) ?? null;
+      const lineCost = cpbu == null ? null : round2(ing.qty * cpbu);
+      if (lineCost != null) {
+        rawCost += lineCost;
+        anyPriced = true;
+      }
+      recipe_ingredients.push({
+        id: `${id}-i${idx}`,
+        recipe_id: id,
+        ingredient_id: matId,
+        component_type: "material",
+        quantity_used: ing.qty,
+        unit_used: ing.unit,
+        calculated_cost: lineCost,
+        sort_order: idx,
+      });
+      if (ing.unit === "Gram") totalGrams += ing.qty;
+    });
+    const ingredientTotal = anyPriced ? round2(rawCost * (1 + WASTAGE_PCT / 100)) : null;
+    const making = dc && dc.making != null ? dc.making : ingredientTotal;
+    recipes.push({
+      id,
+      recipe_name: name,
+      category: "Pizza",
+      brand: "capiche",
+      description: null,
+      method: [],
+      parent_recipe_id: parentId,
+      size_code: size,
+      size_label: PIZZA_SIZE_LABEL[size],
+      image_url: null,
+      preparation_time: null,
+      serving_size: 1,
+      status: "approved",
+      selling_price: dc ? dc.selling : null,
+      packaging_cost: dc ? dc.packaging : 0,
+      total_cost: making,
+      cost_per_portion: making,
+      wastage_pct: WASTAGE_PCT,
+      is_prep: false,
+      yield_quantity: round2(totalGrams),
+      yield_unit: "Gram",
+      created_by: U_EDITOR,
+      approved_by: U_ADMIN,
+      approved_at: "2026-06-20T09:30:00.000Z",
+      rejection_note: null,
+      version_no: 1,
+      created_at: SEED_TS,
+      updated_at: SEED_TS,
+      updated_by: U_ADMIN,
+    });
+  };
+
+  for (const pz of PIZZA_RECIPES) {
+    const masterId = "r-pizza-" + slugify(pz.name);
+    const dc = dishCostFor(pz.name);
+    const fifteen = pz.variants["15_INCH"];
+    const eleven = pz.variants["11_INCH"];
+    const masterIngs = fifteen ?? eleven;
+    if (!masterIngs) continue;
+    buildVariant(masterId, pz.name, null, fifteen ? "15_INCH" : "11_INCH", masterIngs, dc);
+    if (fifteen && eleven) buildVariant(`${masterId}-11`, pz.name, masterId, "11_INCH", eleven, null);
   }
 }
 

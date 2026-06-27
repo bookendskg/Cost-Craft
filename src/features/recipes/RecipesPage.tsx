@@ -70,13 +70,27 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
   const globalBrand = useDashboardBrand((s) => s.brand);
   const canSeeCost = user.role !== "viewer" || viewerShowCost(user);
   const recipes = useMemo(() => {
-    const base = allRecipes.filter((r) => (prepMode ? r.is_prep : !r.is_prep));
+    // Exclude size variants — a pizza shows once as its master (§14).
+    const base = allRecipes.filter((r) => (prepMode ? r.is_prep : !r.is_prep) && !r.parent_recipe_id);
     if (user.role === "viewer") {
       const brands = viewerBrands(user);
       return base.filter((r) => r.status === "approved" && brands.includes(r.brand));
     }
     return globalBrand === "all" ? base : base.filter((r) => r.brand === globalBrand);
   }, [allRecipes, prepMode, user, globalBrand]);
+
+  // Available size labels per master recipe (master + its variants), e.g. ["11-inch","15-inch"].
+  const sizesByMaster = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const r of allRecipes) {
+      if (!r.size_label) continue;
+      const masterId = r.parent_recipe_id ?? r.id;
+      const list = m.get(masterId) ?? [];
+      if (!list.includes(r.size_label)) list.push(r.size_label);
+      m.set(masterId, list.sort());
+    }
+    return m;
+  }, [allRecipes]);
   const { data: categories = [] } = useRecipeCategories();
   const { data: foodCostPct = 30 } = useFoodCostPct();
   const { data: settings = [] } = useAllSettings();
@@ -275,6 +289,7 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
                   updatedBy={showUpdatedBy ? usersMap.get(r.updated_by ?? "")?.name ?? null : null}
                   canSeeCost={canSeeCost}
                   brandColored={prepMode}
+                  sizes={sizesByMaster.get(r.id)}
                 />
               ))}
             </div>
@@ -369,6 +384,7 @@ function RecipeRow({
   updatedBy,
   canSeeCost,
   brandColored,
+  sizes,
 }: {
   recipe: Recipe;
   foodCostPct: number;
@@ -384,6 +400,8 @@ function RecipeRow({
   canSeeCost: boolean;
   /** Color the food-cost bar/badge by the active brand instead of by FC tone. */
   brandColored?: boolean;
+  /** Available size labels for a pizza master (e.g. ["11-inch","15-inch"]). */
+  sizes?: string[];
 }) {
   const unitCost = recipe.cost_per_portion ?? 0;
   const menuPrice = menuPriceOf(recipe, foodCostPct);
@@ -415,7 +433,14 @@ function RecipeRow({
           </div>
           <div className="min-w-0">
             <p className="truncate font-semibold">{recipe.recipe_name}</p>
-            <p className="text-xs text-muted-foreground">{recipe.category}</p>
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              {recipe.category}
+              {sizes && sizes.length > 0 && (
+                <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                  {sizes.join(" · ")}
+                </span>
+              )}
+            </p>
             {/* Mobile-only stat line (desktop shows these as columns) */}
             {canSeeCost && (
               <p className="mt-1 font-mono text-xs text-muted-foreground lg:hidden">
