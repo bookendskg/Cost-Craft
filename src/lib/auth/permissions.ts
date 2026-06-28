@@ -176,6 +176,16 @@ export function canViewMasterDashboard(user: User | null): boolean {
   return user.role === "admin" || user.dashboard_access === true;
 }
 
+/**
+ * A self sign-up that an admin hasn't verified yet. Such users are authenticated
+ * but blocked from the app (shown the pending-approval screen). Admins are never
+ * pending. A missing `approved` value means approved (legacy/seed users).
+ */
+export function isPendingApproval(user: User | null): boolean {
+  if (!user) return false;
+  return user.approved === false && user.role !== "admin";
+}
+
 export const HOME_BY_ROLE: Record<Role, string> = {
   admin: "/dashboard",
   rnd: "/dashboard",

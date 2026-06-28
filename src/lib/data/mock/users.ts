@@ -26,6 +26,7 @@ export interface UpdateUserInput {
   accessible_brands?: Brand[];
   show_cost?: boolean;
   dashboard_access?: boolean;
+  approved?: boolean;
 }
 
 /** Strip the mock-only password before handing a user to the UI. */
@@ -58,6 +59,7 @@ export const usersRepo = {
           status: input.status ?? "active",
           assigned_brand: input.assigned_brand ?? null,
           assigned_outlet: input.assigned_outlet ?? null,
+          approved: true, // an admin is creating this account → pre-approved
           last_role_update: nowISO(),
           role_updated_by: actorId,
           password: input.password,
@@ -98,6 +100,7 @@ export const usersRepo = {
         if (patch.accessible_brands !== undefined) u.accessible_brands = patch.accessible_brands;
         if (patch.show_cost !== undefined) u.show_cost = patch.show_cost;
         if (patch.dashboard_access !== undefined) u.dashboard_access = patch.dashboard_access;
+        if (patch.approved !== undefined) u.approved = patch.approved;
         if (roleChanged) {
           u.last_role_update = nowISO();
           u.role_updated_by = actorId;
@@ -159,6 +162,8 @@ export async function linkFirebaseUser(
           // new accounts are Viewer until an admin elevates them — owners are Admin
           role: isOwner ? "admin" : "viewer",
           status: "active",
+          // owners enter immediately; everyone else waits for admin verification
+          approved: isOwner ? true : false,
           firebase_uid: firebaseUid,
           email_verified: emailVerified ?? false,
           last_role_update: isOwner ? nowISO() : null,
@@ -178,9 +183,11 @@ export async function linkFirebaseUser(
       } else {
         u.firebase_uid = firebaseUid;
         if (emailVerified !== undefined) u.email_verified = emailVerified;
-        // Ensure owners are always Admin, even if a prior sign-up made them Viewer.
-        if (isOwner && u.role !== "admin") {
+        // Ensure owners are always Admin + approved, even if a prior sign-up made
+        // them a pending Viewer.
+        if (isOwner && (u.role !== "admin" || u.approved === false)) {
           u.role = "admin";
+          u.approved = true;
           u.last_role_update = nowISO();
           recordAudit(db, {
             entity_type: "user",

@@ -14,6 +14,7 @@ import { isFirebaseConfigured, firebaseAuth } from "@/lib/firebase/client";
 import { firebaseSignUp } from "@/lib/firebase/auth";
 import { linkFirebaseUser } from "@/lib/data";
 import { useSession } from "@/lib/auth/session";
+import { isPendingApproval } from "@/lib/auth/permissions";
 import { toast } from "@/components/ui/use-toast";
 
 export function SignUpPage() {
@@ -46,7 +47,12 @@ export function SignUpPage() {
           fbUser.emailVerified,
         );
         useSession.getState().setUser(user);
-        toast.success("Account created — you're signed in. We've emailed a verification link.");
+        if (isPendingApproval(user)) {
+          toast.success("Account created — awaiting admin verification.");
+        } else {
+          toast.success("Account created — welcome!");
+        }
+        // The auth guard routes pending users to the verification-pending screen.
         navigate("/dashboard", { replace: true });
       } catch (e) {
         setServerError(e instanceof Error ? e.message : "Sign-up failed");

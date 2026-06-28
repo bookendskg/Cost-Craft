@@ -17,6 +17,7 @@ import { useSession } from "@/lib/auth/session";
 import { useTheme } from "@/lib/theme";
 import { usePrefs } from "@/lib/prefs";
 import { navGroupsForRole } from "./nav";
+import { useUsers } from "@/features/users/hooks";
 import { Button } from "@/components/ui/button";
 import { ROLE_LABELS } from "@/lib/data/types";
 import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWordmark } from "@/features/dashboard/brandTheme";
@@ -36,6 +37,9 @@ export function AppLayout() {
   const toggleSidebar = usePrefs((s) => s.toggleSidebar);
   const location = useLocation();
   const palette = useCommandPalette();
+  const isAdmin = user?.role === "admin";
+  const { data: allUsers = [] } = useUsers();
+  const pendingUsers = isAdmin ? allUsers.filter((u) => u.approved === false).length : 0;
 
   // Re-theme the whole app to the active brand (sets --primary/--accent/--ring).
   useEffect(() => {
@@ -88,7 +92,7 @@ export function AppLayout() {
                 title={rail ? item.label : undefined}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    "relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                     rail && "justify-center px-2",
                     isActive
                       ? // Theme-aware active state: primary tint + left indicator, so the
@@ -100,6 +104,19 @@ export function AppLayout() {
               >
                 <item.icon className="h-4 w-4 shrink-0" />
                 {!rail && item.label}
+                {item.to === "/users" && pendingUsers > 0 && (
+                  <span
+                    className={cn(
+                      "rounded-full bg-amber-500 font-bold text-white",
+                      rail
+                        ? "absolute right-1 top-1 h-2 w-2"
+                        : "ml-auto min-w-5 px-1.5 py-0.5 text-center text-[10px] leading-none",
+                    )}
+                    title={`${pendingUsers} awaiting verification`}
+                  >
+                    {!rail && pendingUsers}
+                  </span>
+                )}
               </NavLink>
             ))}
           </div>

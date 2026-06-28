@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BadgeCheck, KeyRound, LayoutDashboard, Mail, MoreVertical, Plus } from "lucide-react";
+import { BadgeCheck, Clock, KeyRound, LayoutDashboard, Mail, MoreVertical, Plus } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/TableSkeleton";
@@ -66,7 +66,9 @@ export function UsersPage() {
         if (search && !`${u.name} ${u.email}`.toLowerCase().includes(search.toLowerCase()))
           return false;
         if (role !== "all" && u.role !== role) return false;
-        if (status !== "all" && u.status !== status) return false;
+        if (status === "pending") {
+          if (u.approved !== false) return false;
+        } else if (status !== "all" && u.status !== status) return false;
         return true;
       }),
     [users, search, role, status],
@@ -101,6 +103,17 @@ export function UsersPage() {
     }
   };
 
+  const approveUser = async (u: User) => {
+    try {
+      await updateMut.mutateAsync({ id: u.id, patch: { approved: true } });
+      toast.success(`${u.name} verified — they can now sign in`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    }
+  };
+
+  const pendingCount = users.filter((u) => u.approved === false).length;
+
   return (
     <>
       <PageHeader
@@ -118,6 +131,19 @@ export function UsersPage() {
           </Button>
         }
       />
+
+      {pendingCount > 0 && (
+        <button
+          onClick={() => setStatus("pending")}
+          className="mb-4 flex w-full items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left text-sm text-amber-700 dark:text-amber-400"
+        >
+          <Clock className="h-4 w-4 shrink-0" />
+          <span className="font-medium">
+            {pendingCount} {pendingCount === 1 ? "user is" : "users are"} awaiting verification.
+          </span>
+          <span className="text-amber-700/70 dark:text-amber-400/70">Review &amp; approve →</span>
+        </button>
+      )}
 
       <Card className="mb-4 p-4">
         <div className="grid gap-3 sm:grid-cols-3">
@@ -139,6 +165,7 @@ export function UsersPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="pending">Pending Verification</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="inactive">Inactive</SelectItem>
             </SelectContent>
@@ -190,9 +217,15 @@ export function UsersPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap items-center gap-1">
-                      <Badge variant={u.status === "active" ? "success" : "secondary"}>
-                        {u.status}
-                      </Badge>
+                      {u.approved === false ? (
+                        <Badge variant="outline" className="gap-1 border-amber-500/50 text-amber-600 dark:text-amber-400">
+                          <Clock className="h-3 w-3" /> Pending
+                        </Badge>
+                      ) : (
+                        <Badge variant={u.status === "active" ? "success" : "secondary"}>
+                          {u.status}
+                        </Badge>
+                      )}
                       {(u.role === "admin" || u.dashboard_access) && (
                         <Badge variant="outline" className="gap-1" title="Can view Master Costing dashboard">
                           <LayoutDashboard className="h-3 w-3" /> Costing
@@ -211,6 +244,11 @@ export function UsersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        {u.approved === false && (
+                          <DropdownMenuItem onClick={() => approveUser(u)} className="text-emerald-600 dark:text-emerald-400">
+                            <BadgeCheck className="h-4 w-4" /> Verify &amp; Approve
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={() => {
                             setEditing(u);

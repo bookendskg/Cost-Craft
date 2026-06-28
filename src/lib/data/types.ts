@@ -124,6 +124,10 @@ export interface User {
   /** Whether this user sees the Master Costing dashboard (cost stats). Admins
    *  always do; other roles only when an admin grants it. */
   dashboard_access?: boolean;
+  /** Self sign-ups start unapproved (false) and can't enter the app until an
+   *  admin verifies them. Owners/admin-created/seed users are approved. A missing
+   *  value means approved (legacy/seed users). */
+  approved?: boolean;
   created_at: string;
   updated_at: string;
 }

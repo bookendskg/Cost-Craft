@@ -1,14 +1,20 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useSession } from "@/lib/auth/session";
+import { isPendingApproval } from "@/lib/auth/permissions";
+import { PendingApprovalPage } from "./PendingApprovalPage";
 import type { Role } from "@/lib/data/types";
 
-/** Requires a logged-in user; otherwise redirect to login. */
+/** Requires a logged-in (and admin-verified) user; otherwise redirect/gate. */
 export function RequireAuth({ children }: { children: ReactNode }) {
   const user = useSession((s) => s.user);
   const location = useLocation();
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+  // Self sign-ups await admin verification before they can use the app.
+  if (isPendingApproval(user)) {
+    return <PendingApprovalPage />;
   }
   return <>{children}</>;
 }
