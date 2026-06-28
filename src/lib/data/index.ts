@@ -1,22 +1,16 @@
 // Active repository set. Mock (localStorage) by default; the USERS repo switches
-// to Supabase (db/migrations/0007 user_profiles + RLS) when VITE_USERS_BACKEND=
-// supabase and Supabase is configured. Other repos remain mock for now (Phase 1).
-// No feature code imports the mock/supabase modules directly — only this barrel.
+// to Supabase (db/migrations/0007 user_profiles + RLS) whenever Supabase is
+// configured — auth and users live together on Supabase. Other repos remain mock
+// for now (Phases 2–3). No feature code imports the mock/supabase modules directly.
 
-import { isSupabaseUsersBackend } from "@/lib/supabase/dataClient";
-import {
-  usersRepo as mockUsersRepo,
-  linkFirebaseUser as mockLinkFirebaseUser,
-} from "./mock/users";
-import { supabaseUsersRepo, linkFirebaseUserSupabase } from "./supabase/users";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { usersRepo as mockUsersRepo } from "./mock/users";
+import { supabaseUsersRepo } from "./supabase/users";
 
 export { authenticate } from "./mock/users";
 export type { CreateUserInput, UpdateUserInput } from "./mock/users";
 
-export const usersRepo = isSupabaseUsersBackend ? supabaseUsersRepo : mockUsersRepo;
-export const linkFirebaseUser = isSupabaseUsersBackend
-  ? linkFirebaseUserSupabase
-  : mockLinkFirebaseUser;
+export const usersRepo = isSupabaseConfigured ? supabaseUsersRepo : mockUsersRepo;
 
 export { materialsRepo } from "./mock/materials";
 export type { MaterialInput } from "./mock/materials";

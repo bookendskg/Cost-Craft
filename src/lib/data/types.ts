@@ -102,9 +102,7 @@ export interface User {
   phone?: string | null;
   /** Avatar image as a data URL (mock) or external URL. */
   avatar_url?: string | null;
-  /** Firebase Authentication UID mapped to this profile (set on first sign-in). */
-  firebase_uid?: string | null;
-  /** Whether the Firebase email is verified (mirrored on sign-in). */
+  /** Whether the user's email is verified (mirrored from Supabase auth on sign-in). */
   email_verified?: boolean;
   /** Brand assignment for Outlet Manager / Staff. */
   assigned_brand?: Brand | null;

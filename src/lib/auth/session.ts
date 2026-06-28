@@ -1,11 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { User } from "../data/types";
-import { authenticate, linkFirebaseUser } from "../data";
-import { isFirebaseConfigured, firebaseAuth } from "../firebase/client";
-import { firebaseSignIn, firebaseLogout } from "../firebase/auth";
+import { authenticate } from "../data";
 import { isSupabaseConfigured, supabase } from "../supabase/client";
-import { hydrateUserFromProfile, stampLastLogin } from "../supabase/profile";
+import { onSignIn } from "../supabase/profile";
 
 interface SessionState {
   user: User | null;
@@ -25,22 +23,15 @@ export const useSession = create<SessionState>()(
       async login(email, password) {
         set({ loading: true, error: null });
         try {
-          // Firebase Authentication (preferred). Roles live in the profile store.
-          if (isFirebaseConfigured && firebaseAuth) {
-            const fbUser = await firebaseSignIn(email, password);
-            const user = await linkFirebaseUser(fbUser.uid, fbUser.email ?? email, fbUser.displayName, fbUser.emailVerified);
-            set({ user, loading: false });
-            return user;
-          }
+          // Supabase Authentication (preferred). Profiles/roles live in user_profiles.
           if (isSupabaseConfigured && supabase) {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) throw new Error(friendlyAuthError(error.message));
-            const user = await hydrateUserFromProfile(data.user.id);
-            stampLastLogin(user.id);
+            const user = await onSignIn(); // stamps last_login + owner promotion + verification
             set({ user, loading: false });
             return user;
           }
-          // ── Mock fallback (unchanged behaviour) ──
+          // ── Mock fallback (local dev without Supabase) ──
           const user = await authenticate(email, password);
           set({ user, loading: false });
           return user;
@@ -51,8 +42,7 @@ export const useSession = create<SessionState>()(
         }
       },
       async logout() {
-        if (isFirebaseConfigured && firebaseAuth) await firebaseLogout();
-        else if (isSupabaseConfigured && supabase) await supabase.auth.signOut();
+        if (isSupabaseConfigured && supabase) await supabase.auth.signOut();
         set({ user: null, error: null });
       },
       setUser(user) {

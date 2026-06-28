@@ -31,8 +31,8 @@ import {
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { toast } from "@/components/ui/use-toast";
 import { OUTLETS, ROLE_LABELS, type User } from "@/lib/data/types";
-import { isFirebaseConfigured } from "@/lib/firebase/client";
-import { firebaseResetPassword } from "@/lib/firebase/auth";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { sendPasswordReset } from "@/lib/supabase/profile";
 import { useUpdateUser, useUsers } from "./hooks";
 import { UserForm } from "./UserForm";
 import { AssignAccessDialog } from "@/features/viewers/AssignAccessDialog";
@@ -87,7 +87,7 @@ export function UsersPage() {
 
   const sendReset = async (u: User) => {
     try {
-      await firebaseResetPassword(u.email);
+      await sendPasswordReset(u.email);
       toast.success(`Password reset email sent to ${u.email}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not send reset email");
@@ -205,9 +205,9 @@ export function UsersPage() {
                         <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" aria-label="Email verified" />
                       )}
                     </div>
-                    {u.firebase_uid && (
-                      <span className="block font-mono text-[10px] text-muted-foreground/70" title={u.firebase_uid}>
-                        UID {u.firebase_uid.slice(0, 12)}…
+                    {u.id && (
+                      <span className="block font-mono text-[10px] text-muted-foreground/70" title={u.id}>
+                        ID {u.id.slice(0, 12)}…
                       </span>
                     )}
                   </TableCell>
@@ -268,7 +268,7 @@ export function UsersPage() {
                             {u.dashboard_access ? "Revoke dashboard access" : "Grant dashboard access"}
                           </DropdownMenuItem>
                         )}
-                        {isFirebaseConfigured && (
+                        {isSupabaseConfigured && (
                           <DropdownMenuItem onClick={() => sendReset(u)}>
                             <Mail className="h-4 w-4" /> Send Password Reset
                           </DropdownMenuItem>

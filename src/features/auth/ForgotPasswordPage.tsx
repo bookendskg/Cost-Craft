@@ -10,8 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { forgotPasswordSchema, type ForgotPasswordValues } from "@/lib/validation/schemas";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/authError";
-import { isFirebaseConfigured, firebaseAuth } from "@/lib/firebase/client";
-import { firebaseResetPassword } from "@/lib/firebase/auth";
 
 export function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
@@ -27,15 +25,6 @@ export function ForgotPasswordPage() {
 
   const onSubmit = async (values: ForgotPasswordValues) => {
     setServerError(null);
-    if (isFirebaseConfigured && firebaseAuth) {
-      try {
-        await firebaseResetPassword(values.email);
-        setSent(true);
-      } catch (e) {
-        setServerError(e instanceof Error ? e.message : "Password reset failed");
-      }
-      return;
-    }
     if (!isSupabaseConfigured || !supabase) {
       setServerError("Password reset is not configured. Contact your admin.");
       return;

@@ -10,9 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { signupSchema, type SignupValues } from "@/lib/validation/schemas";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/authError";
-import { isFirebaseConfigured, firebaseAuth } from "@/lib/firebase/client";
-import { firebaseSignUp } from "@/lib/firebase/auth";
-import { linkFirebaseUser } from "@/lib/data";
+import { onSignIn } from "@/lib/supabase/profile";
 import { useSession } from "@/lib/auth/session";
 import { isPendingApproval } from "@/lib/auth/permissions";
 import { toast } from "@/components/ui/use-toast";
@@ -33,41 +31,19 @@ export function SignUpPage() {
 
   const onSubmit = async (values: SignupValues) => {
     setServerError(null);
-    // Firebase (preferred): create the account, link the profile, and sign the
-    // user straight in. A verification email is sent (optional — it is not a gate),
-    // so anyone can sign up and immediately use the app. New users default to Viewer
-    // unless their email matches a known profile, which keeps that role.
-    if (isFirebaseConfigured && firebaseAuth) {
-      try {
-        const fbUser = await firebaseSignUp(values.email, values.password);
-        const user = await linkFirebaseUser(
-          fbUser.uid,
-          fbUser.email ?? values.email,
-          values.name,
-          fbUser.emailVerified,
-        );
-        useSession.getState().setUser(user);
-        if (isPendingApproval(user)) {
-          toast.success("Account created — awaiting admin verification.");
-        } else {
-          toast.success("Account created — welcome!");
-        }
-        // The auth guard routes pending users to the verification-pending screen.
-        navigate("/dashboard", { replace: true });
-      } catch (e) {
-        setServerError(e instanceof Error ? e.message : "Sign-up failed");
-      }
-      return;
-    }
     if (!isSupabaseConfigured || !supabase) {
       setServerError("Sign-up is not configured.");
       return;
     }
+    // Supabase creates the auth user; a DB trigger creates the profile (Viewer,
+    // pending approval). If email confirmation is OFF a session is returned and we
+    // sign the user straight in (the guard routes them to the pending screen);
+    // otherwise we ask them to confirm their email first.
     const { data, error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
       options: {
-        data: { name: values.name },
+        data: { name: (values.name || "").trim().slice(0, 100) },
         emailRedirectTo: `${window.location.origin}/login`,
       },
     });
@@ -77,8 +53,18 @@ export function SignUpPage() {
       return;
     }
     if (data.session) {
-      toast.success("Account created");
-      navigate("/dashboard", { replace: true });
+      try {
+        const user = await onSignIn();
+        useSession.getState().setUser(user);
+        toast.success(
+          isPendingApproval(user)
+            ? "Account created — awaiting admin verification."
+            : "Account created — welcome!",
+        );
+        navigate("/dashboard", { replace: true });
+      } catch (e) {
+        setServerError(e instanceof Error ? e.message : "Sign-up failed");
+      }
     } else {
       setNeedsConfirm(true);
     }
