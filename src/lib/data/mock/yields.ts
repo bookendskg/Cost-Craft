@@ -1,8 +1,9 @@
 import type { IngredientYield } from "../types";
+import type { ImportSummary } from "../../import/importTypes";
 import { computeYield } from "../../yield";
 import { getUnitFamily } from "../../units";
 import { delay, getDb, mutate, nowISO, todayISO, uid } from "./db";
-import { recordAudit } from "./recompute";
+import { cascadeFromMaterial, recordAudit } from "./recompute";
 
 export interface YieldInput {
   ingredient_id: string;
@@ -13,6 +14,17 @@ export interface YieldInput {
   wastage_quantity: number;
   wastage_unit: string;
   effective_from?: string;
+  notes?: string | null;
+}
+
+/** One row of a yield import — ingredient resolved by name. */
+export interface ImportYieldRow {
+  ingredient_name: string;
+  purchase_cost: number;
+  purchase_quantity: number;
+  purchase_unit: string;
+  wastage_quantity: number;
+  effective_from?: string | null;
   notes?: string | null;
 }
 
@@ -115,6 +127,91 @@ export const yieldsRepo = {
           notes: `Updated yield (${y.yield_percentage}% yield)`,
         });
         return y;
+      }),
+    );
+  },
+
+  /**
+   * Bulk yield import. Ingredients are resolved by name (must already exist).
+   * Upserts by (ingredient, effective_from); recipe costs using each affected
+   * ingredient are recomputed via the yield-adjusted cost cascade.
+   */
+  async importYields(
+    mode: "add" | "update" | "upsert",
+    rows: ImportYieldRow[],
+    actorId: string,
+  ): Promise<ImportSummary> {
+    return delay(
+      mutate((db) => {
+        const S: ImportSummary = { total: 0, imported: 0, updated: 0, skipped: 0, failed: 0, errors: [] };
+        const matByName = new Map(db.raw_materials.map((m) => [m.ingredient_name.toLowerCase(), m]));
+        const affected = new Set<string>();
+        rows.forEach((row, i) => {
+          S.total++;
+          try {
+            const mat = matByName.get(row.ingredient_name.trim().toLowerCase());
+            if (!mat) {
+              S.failed++;
+              S.errors.push({ row: i + 1, message: `Ingredient not found: "${row.ingredient_name}"` });
+              return;
+            }
+            const eff = row.effective_from || todayISO();
+            const input: YieldInput = {
+              ingredient_id: mat.id,
+              purchase_cost: row.purchase_cost,
+              purchase_quantity: row.purchase_quantity,
+              purchase_unit: row.purchase_unit,
+              wastage_quantity: row.wastage_quantity,
+              wastage_unit: baseUnitLabel(row.purchase_unit),
+              effective_from: eff,
+              notes: row.notes ?? null,
+            };
+            const derived = derive(input);
+            if (!(derived.usable_quantity > 0)) {
+              S.failed++;
+              S.errors.push({ row: i + 1, message: `${row.ingredient_name}: wastage exceeds the raw quantity` });
+              return;
+            }
+            const existing = db.ingredient_yields.find(
+              (y) => y.ingredient_id === mat.id && y.effective_from === eff,
+            );
+            if (existing) {
+              if (mode === "add") {
+                S.skipped++;
+                return;
+              }
+              Object.assign(existing, derived, { updated_at: nowISO() });
+              S.updated++;
+            } else {
+              if (mode === "update") {
+                S.skipped++;
+                return;
+              }
+              db.ingredient_yields.push({
+                id: uid(),
+                ...derived,
+                created_at: nowISO(),
+                updated_at: nowISO(),
+                created_by: actorId,
+              });
+              S.imported++;
+            }
+            affected.add(mat.id);
+          } catch (e) {
+            S.failed++;
+            S.errors.push({ row: i + 1, message: e instanceof Error ? e.message : "Failed" });
+          }
+        });
+        for (const id of affected) cascadeFromMaterial(db, id, actorId, "Yield import");
+        recordAudit(db, {
+          entity_type: "ingredient",
+          entity_id: "import",
+          action: "create",
+          new_values: { added: S.imported, updated: S.updated },
+          performed_by: actorId,
+          notes: `Imported yields — ${S.imported} added, ${S.updated} updated`,
+        });
+        return S;
       }),
     );
   },
