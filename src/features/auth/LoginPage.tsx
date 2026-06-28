@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChefHat, Loader2 } from "lucide-react";
+import { ChefHat, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { loginSchema, type LoginValues } from "@/lib/validation/schemas";
@@ -19,9 +19,9 @@ import {
 
 const DEMO = [
   { role: "Admin", email: "rahul@brand.com" },
-  { role: "Editor", email: "priya@brand.com" },
-  { role: "Head Chef", email: "marco@brand.com" },
-  { role: "Chef", email: "sara@brand.com" },
+  { role: "R&D", email: "priya@brand.com" },
+  { role: "Outlet Manager", email: "marco@brand.com" },
+  { role: "Staff", email: "sara@brand.com" },
   { role: "Viewer", email: "amit@brand.com" },
 ];
 
@@ -29,6 +29,7 @@ export function LoginPage() {
   const login = useSession((s) => s.login);
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -76,12 +77,24 @@ export function LoginPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                {...register("password")}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  className="pr-10"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-xs text-destructive">{errors.password.message}</p>
               )}
