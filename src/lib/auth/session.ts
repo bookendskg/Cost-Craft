@@ -28,7 +28,7 @@ export const useSession = create<SessionState>()(
           // Firebase Authentication (preferred). Roles live in the profile store.
           if (isFirebaseConfigured && firebaseAuth) {
             const fbUser = await firebaseSignIn(email, password);
-            const user = await linkFirebaseUser(fbUser.uid, fbUser.email ?? email, fbUser.displayName);
+            const user = await linkFirebaseUser(fbUser.uid, fbUser.email ?? email, fbUser.displayName, fbUser.emailVerified);
             set({ user, loading: false });
             return user;
           }

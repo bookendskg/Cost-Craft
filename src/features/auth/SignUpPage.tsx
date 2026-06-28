@@ -11,8 +11,9 @@ import { signupSchema, type SignupValues } from "@/lib/validation/schemas";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/authError";
 import { isFirebaseConfigured, firebaseAuth } from "@/lib/firebase/client";
-import { firebaseSignUp, firebaseLogout } from "@/lib/firebase/auth";
+import { firebaseSignUp } from "@/lib/firebase/auth";
 import { linkFirebaseUser } from "@/lib/data";
+import { useSession } from "@/lib/auth/session";
 import { toast } from "@/components/ui/use-toast";
 
 export function SignUpPage() {
@@ -31,14 +32,22 @@ export function SignUpPage() {
 
   const onSubmit = async (values: SignupValues) => {
     setServerError(null);
-    // Firebase (preferred): create the account + send a verification email, then
-    // sign out so the user verifies before signing in. New users default to Viewer.
+    // Firebase (preferred): create the account, link the profile, and sign the
+    // user straight in. A verification email is sent (optional — it is not a gate),
+    // so anyone can sign up and immediately use the app. New users default to Viewer
+    // unless their email matches a known profile, which keeps that role.
     if (isFirebaseConfigured && firebaseAuth) {
       try {
         const fbUser = await firebaseSignUp(values.email, values.password);
-        if (fbUser.email) await linkFirebaseUser(fbUser.uid, fbUser.email, values.name);
-        await firebaseLogout();
-        setNeedsConfirm(true);
+        const user = await linkFirebaseUser(
+          fbUser.uid,
+          fbUser.email ?? values.email,
+          values.name,
+          fbUser.emailVerified,
+        );
+        useSession.getState().setUser(user);
+        toast.success("Account created — you're signed in. We've emailed a verification link.");
+        navigate("/dashboard", { replace: true });
       } catch (e) {
         setServerError(e instanceof Error ? e.message : "Sign-up failed");
       }

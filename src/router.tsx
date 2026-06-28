@@ -43,7 +43,7 @@ export const router = createBrowserRouter([
       {
         path: "materials",
         element: (
-          <RequireRole roles={["admin", "editor", "head_chef", "chef"]}>
+          <RequireRole roles={["admin", "rnd", "outlet_manager", "staff"]}>
             <MaterialsPage />
           </RequireRole>
         ),
@@ -52,7 +52,7 @@ export const router = createBrowserRouter([
       {
         path: "yield",
         element: (
-          <RequireRole roles={["admin", "editor", "head_chef", "chef"]}>
+          <RequireRole roles={["admin", "rnd", "outlet_manager", "staff"]}>
             <YieldPage />
           </RequireRole>
         ),
@@ -60,7 +60,7 @@ export const router = createBrowserRouter([
       {
         path: "wastage",
         element: (
-          <RequireRole roles={["admin", "editor", "head_chef", "chef"]}>
+          <RequireRole roles={["admin", "rnd", "outlet_manager", "staff"]}>
             <WastagePage />
           </RequireRole>
         ),
@@ -68,7 +68,7 @@ export const router = createBrowserRouter([
       {
         path: "prep",
         element: (
-          <RequireRole roles={["admin", "editor", "head_chef", "chef"]}>
+          <RequireRole roles={["admin", "rnd", "outlet_manager", "staff"]}>
             <RecipesPage prepMode />
           </RequireRole>
         ),
@@ -76,7 +76,7 @@ export const router = createBrowserRouter([
       {
         path: "recipes/new",
         element: (
-          <RequireRole roles={["admin", "editor"]}>
+          <RequireRole roles={["admin", "rnd"]}>
             <RecipeEditorPage />
           </RequireRole>
         ),
@@ -84,7 +84,7 @@ export const router = createBrowserRouter([
       {
         path: "recipes/:id/edit",
         element: (
-          <RequireRole roles={["admin", "editor"]}>
+          <RequireRole roles={["admin", "rnd"]}>
             <RecipeEditorPage />
           </RequireRole>
         ),
@@ -101,7 +101,7 @@ export const router = createBrowserRouter([
       {
         path: "reports",
         element: (
-          <RequireRole roles={["admin", "editor", "head_chef"]}>
+          <RequireRole roles={["admin", "rnd", "outlet_manager"]}>
             <ReportsPage />
           </RequireRole>
         ),
@@ -109,7 +109,7 @@ export const router = createBrowserRouter([
       {
         path: "viewer-access",
         element: (
-          <RequireRole roles={["admin", "editor", "head_chef"]}>
+          <RequireRole roles={["admin", "rnd", "outlet_manager"]}>
             <ViewerAccessPage />
           </RequireRole>
         ),

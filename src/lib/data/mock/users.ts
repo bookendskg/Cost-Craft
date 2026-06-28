@@ -1,4 +1,4 @@
-import type { Role, User, UserStatus } from "../types";
+import type { Brand, Role, User, UserStatus } from "../types";
 import { delay, getDb, mutate, nowISO, uid } from "./db";
 import { recordAudit } from "./recompute";
 
@@ -7,6 +7,8 @@ export interface CreateUserInput {
   email: string;
   role: Role;
   status?: UserStatus;
+  assigned_brand?: Brand | null;
+  assigned_outlet?: string | null;
   password: string;
 }
 
@@ -15,11 +17,13 @@ export interface UpdateUserInput {
   email?: string;
   role?: Role;
   status?: UserStatus;
+  assigned_brand?: Brand | null;
+  assigned_outlet?: string | null;
   password?: string;
   phone?: string | null;
   avatar_url?: string | null;
   last_login?: string | null;
-  accessible_brands?: import("../types").Brand[];
+  accessible_brands?: Brand[];
   show_cost?: boolean;
 }
 
@@ -51,6 +55,10 @@ export const usersRepo = {
           email: input.email,
           role: input.role,
           status: input.status ?? "active",
+          assigned_brand: input.assigned_brand ?? null,
+          assigned_outlet: input.assigned_outlet ?? null,
+          last_role_update: nowISO(),
+          role_updated_by: actorId,
           password: input.password,
           created_at: nowISO(),
           updated_at: nowISO(),
@@ -75,16 +83,23 @@ export const usersRepo = {
         const u = db.users.find((x) => x.id === id);
         if (!u) throw new Error("User not found");
         const before = { name: u.name, email: u.email, role: u.role, status: u.status };
+        const roleChanged = patch.role !== undefined && patch.role !== u.role;
         if (patch.name !== undefined) u.name = patch.name;
         if (patch.email !== undefined) u.email = patch.email;
         if (patch.role !== undefined) u.role = patch.role;
         if (patch.status !== undefined) u.status = patch.status;
+        if (patch.assigned_brand !== undefined) u.assigned_brand = patch.assigned_brand;
+        if (patch.assigned_outlet !== undefined) u.assigned_outlet = patch.assigned_outlet;
         if (patch.password) u.password = patch.password;
         if (patch.phone !== undefined) u.phone = patch.phone;
         if (patch.avatar_url !== undefined) u.avatar_url = patch.avatar_url;
         if (patch.last_login !== undefined) u.last_login = patch.last_login;
         if (patch.accessible_brands !== undefined) u.accessible_brands = patch.accessible_brands;
         if (patch.show_cost !== undefined) u.show_cost = patch.show_cost;
+        if (roleChanged) {
+          u.last_role_update = nowISO();
+          u.role_updated_by = actorId;
+        }
         u.updated_at = nowISO();
         recordAudit(db, {
           entity_type: "user",
@@ -93,6 +108,7 @@ export const usersRepo = {
           old_values: before,
           new_values: { name: u.name, email: u.email, role: u.role, status: u.status },
           performed_by: actorId,
+          notes: roleChanged ? `Role changed ${before.role} → ${u.role}` : undefined,
         });
         return publicUser(u);
       }),
@@ -111,6 +127,7 @@ export async function linkFirebaseUser(
   firebaseUid: string,
   email: string,
   displayName?: string | null,
+  emailVerified?: boolean,
 ): Promise<User> {
   return delay(
     mutate((db) => {
@@ -123,6 +140,7 @@ export async function linkFirebaseUser(
           role: "viewer", // new accounts are Viewer until an admin elevates them
           status: "active",
           firebase_uid: firebaseUid,
+          email_verified: emailVerified ?? false,
           created_at: nowISO(),
           updated_at: nowISO(),
           last_login: nowISO(),
@@ -138,6 +156,7 @@ export async function linkFirebaseUser(
         });
       } else {
         u.firebase_uid = firebaseUid;
+        if (emailVerified !== undefined) u.email_verified = emailVerified;
         u.last_login = nowISO();
         u.updated_at = nowISO();
       }

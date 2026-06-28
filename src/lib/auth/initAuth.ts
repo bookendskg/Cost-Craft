@@ -38,7 +38,7 @@ export function initAuth() {
         return;
       }
       try {
-        const user = await linkFirebaseUser(fbUser.uid, fbUser.email ?? "", fbUser.displayName);
+        const user = await linkFirebaseUser(fbUser.uid, fbUser.email ?? "", fbUser.displayName, fbUser.emailVerified);
         useSession.getState().setUser(user);
         const pref = user.theme_pref;
         if (pref && (VALID_THEMES as string[]).includes(pref)) {

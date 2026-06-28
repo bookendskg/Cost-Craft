@@ -1,13 +1,13 @@
 // Domain types mirroring PRD §9.2 table specifications.
 // These map 1:1 to the Postgres schema authored in db/migrations.
 
-export type Role = "admin" | "editor" | "head_chef" | "chef" | "viewer";
+export type Role = "admin" | "rnd" | "outlet_manager" | "staff" | "viewer";
 
 export const ROLE_LABELS: Record<Role, string> = {
   admin: "Admin",
-  editor: "Editor",
-  head_chef: "Head Chef",
-  chef: "Chef",
+  rnd: "R&D",
+  outlet_manager: "Outlet Manager",
+  staff: "Staff",
   viewer: "Viewer",
 };
 export type UserStatus = "active" | "inactive";
@@ -106,8 +106,17 @@ export interface User {
   avatar_url?: string | null;
   /** Firebase Authentication UID mapped to this profile (set on first sign-in). */
   firebase_uid?: string | null;
+  /** Whether the Firebase email is verified (mirrored on sign-in). */
+  email_verified?: boolean;
+  /** Brand assignment for Outlet Manager / Staff. */
+  assigned_brand?: Brand | null;
+  /** Outlet assignment (outlet id) for Outlet Manager / Staff. */
+  assigned_outlet?: string | null;
   /** Last successful sign-in timestamp (set by the auth layer). */
   last_login?: string | null;
+  /** When the role was last changed + who changed it (role history). */
+  last_role_update?: string | null;
+  role_updated_by?: string | null;
   /** Saved UI theme preference ('light' | 'dark' | 'capiche' | 'aiko'). */
   theme_pref?: string | null;
   /** Viewer-only: which brands' approved recipes this viewer can see. */

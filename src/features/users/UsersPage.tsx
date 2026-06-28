@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { KeyRound, MoreVertical, Plus } from "lucide-react";
+import { BadgeCheck, KeyRound, Mail, MoreVertical, Plus } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/TableSkeleton";
@@ -30,10 +30,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { toast } from "@/components/ui/use-toast";
-import { ROLE_LABELS, type User } from "@/lib/data/types";
+import { OUTLETS, ROLE_LABELS, type User } from "@/lib/data/types";
+import { isFirebaseConfigured } from "@/lib/firebase/client";
+import { firebaseResetPassword } from "@/lib/firebase/auth";
 import { useUpdateUser, useUsers } from "./hooks";
 import { UserForm } from "./UserForm";
 import { AssignAccessDialog } from "@/features/viewers/AssignAccessDialog";
+
+const outletLabel = (id?: string | null) => {
+  const o = OUTLETS.find((x) => x.id === id);
+  return o ? o.name : null;
+};
+
+const fmtDate = (iso?: string | null) => {
+  if (!iso) return "Never";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+};
 
 export function UsersPage() {
   const { data: users = [], isLoading } = useUsers();
@@ -70,6 +83,15 @@ export function UsersPage() {
     }
   };
 
+  const sendReset = async (u: User) => {
+    try {
+      await firebaseResetPassword(u.email);
+      toast.success(`Password reset email sent to ${u.email}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not send reset email");
+    }
+  };
+
   return (
     <>
       <PageHeader
@@ -97,9 +119,9 @@ export function UsersPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="editor">Editor</SelectItem>
-              <SelectItem value="viewer">Viewer</SelectItem>
+              {(Object.keys(ROLE_LABELS) as (keyof typeof ROLE_LABELS)[]).map((r) => (
+                <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={status} onValueChange={setStatus}>
@@ -127,20 +149,43 @@ export function UsersPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="hidden lg:table-cell">Assigned</TableHead>
+                <TableHead>Account</TableHead>
+                <TableHead className="hidden md:table-cell">Last Login</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((u) => (
+              {filtered.map((u) => {
+                const outlet = outletLabel(u.assigned_outlet);
+                const scoped = u.role === "outlet_manager" || u.role === "staff";
+                return (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      {u.email}
+                      {u.email_verified && (
+                        <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" aria-label="Email verified" />
+                      )}
+                    </div>
+                    {u.firebase_uid && (
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+                        Firebase linked
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>{ROLE_LABELS[u.role]}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-muted-foreground">
+                    {scoped ? outlet ?? "All outlets" : "—"}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={u.status === "active" ? "success" : "secondary"}>
                       {u.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">
+                    {fmtDate(u.last_login)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -163,6 +208,11 @@ export function UsersPage() {
                             <KeyRound className="h-4 w-4" /> Assign Recipe Access
                           </DropdownMenuItem>
                         )}
+                        {isFirebaseConfigured && (
+                          <DropdownMenuItem onClick={() => sendReset(u)}>
+                            <Mail className="h-4 w-4" /> Send Password Reset
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={() =>
                             u.status === "active" ? setDeactivating(u) : setUserStatus(u, "active")
@@ -174,7 +224,8 @@ export function UsersPage() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         )}

@@ -54,30 +54,29 @@ const MATRIX: Record<Role, Capability[]> = {
     "report.excel",
     "audit.view",
   ],
-  editor: [
-    // Ingredients are read-only for editors — only an admin changes them.
+  // R&D (§10): manages recipes, ingredients, pricing, yield; imports costing data.
+  rnd: [
     "material.view",
-    // R&D manages yield data and can record wastage.
+    "material.edit",
     "yield.manage",
     "wastage.create",
     "recipe.create",
+    "recipe.editAll",
     "recipe.duplicate",
     "recipe.submit",
     "recipe.viewAll",
     "viewer.assign",
     "report.excel",
   ],
-  // Head Chef: views everything (recipes, sub-recipes, costs) but can't change
-  // prices/recipes; can grant sharing permissions and record wastage.
-  head_chef: [
+  // Outlet Manager (§10): views the assigned outlet, records/approves outlet wastage.
+  outlet_manager: [
     "material.view",
     "wastage.create",
     "recipe.viewAll",
-    "viewer.assign",
     "report.excel",
   ],
-  // Chef: view-only, but can record operational wastage for their outlet.
-  chef: ["material.view", "wastage.create", "recipe.viewAll"],
+  // Staff (§10): records permitted outlet wastage; limited viewing.
+  staff: ["material.view", "wastage.create", "recipe.viewAll"],
   viewer: [],
 };
 
@@ -86,12 +85,11 @@ export function can(role: Role | undefined, cap: Capability): boolean {
   return MATRIX[role].includes(cap);
 }
 
-/** Can this user edit this specific recipe? Creator or admin (PRD §3.6). */
+/** Can this user edit this specific recipe? Admin/R&D, else the creator. */
 export function canEditRecipe(user: User | null, recipe: Recipe): boolean {
   if (!user) return false;
-  if (user.role === "admin") return true;
-  if (user.role === "editor") return recipe.created_by === user.id;
-  return false;
+  if (user.role === "admin" || user.role === "rnd") return true;
+  return recipe.created_by === user.id;
 }
 
 // --- Viewer view-mode visibility (PRD §14.2) ------------------------------
@@ -170,8 +168,8 @@ export function visibilityForUser(user: User): ViewVisibility {
 
 export const HOME_BY_ROLE: Record<Role, string> = {
   admin: "/dashboard",
-  editor: "/dashboard",
-  head_chef: "/dashboard",
-  chef: "/dashboard",
+  rnd: "/dashboard",
+  outlet_manager: "/dashboard",
+  staff: "/dashboard",
   viewer: "/dashboard",
 };
