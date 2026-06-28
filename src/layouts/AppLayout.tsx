@@ -8,7 +8,6 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
-  Search,
   Sun,
   X,
 } from "lucide-react";
@@ -18,12 +17,12 @@ import { useTheme } from "@/lib/theme";
 import { usePrefs } from "@/lib/prefs";
 import { navGroupsForRole } from "./nav";
 import { useUsers } from "@/features/users/hooks";
+// (global command-palette search removed per request)
 import { Button } from "@/components/ui/button";
 import { ROLE_LABELS } from "@/lib/data/types";
 import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWordmark } from "@/features/dashboard/brandTheme";
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
-import { CommandPalette, useCommandPalette } from "./CommandPalette";
 
 export function AppLayout() {
   const user = useSession((s) => s.user);
@@ -36,7 +35,6 @@ export function AppLayout() {
   const collapsed = usePrefs((s) => s.sidebarCollapsed);
   const toggleSidebar = usePrefs((s) => s.toggleSidebar);
   const location = useLocation();
-  const palette = useCommandPalette();
   const isAdmin = user?.role === "admin";
   const { data: allUsers = [] } = useUsers();
   const pendingUsers = isAdmin ? allUsers.filter((u) => u.approved === false).length : 0;
@@ -206,25 +204,6 @@ export function AppLayout() {
             {collapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
           </Button>
 
-          {/* Menu search trigger */}
-          <button
-            onClick={() => palette.setOpen(true)}
-            className="ml-1 hidden items-center gap-2 rounded-md border bg-background/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted sm:flex"
-          >
-            <Search className="h-4 w-4" />
-            <span>Search…</span>
-            <kbd className="ml-2 rounded border bg-muted px-1.5 text-[10px] font-medium">⌘K</kbd>
-          </button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="sm:hidden"
-            onClick={() => palette.setOpen(true)}
-            aria-label="Search menu"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
-
           <div className="flex-1" />
 
           {/* Mobile: brand chip (tap to open the drawer, which holds the selector). */}
@@ -277,7 +256,6 @@ export function AppLayout() {
         </main>
       </div>
 
-      <CommandPalette role={user.role} open={palette.open} onOpenChange={palette.setOpen} />
     </div>
   );
 }

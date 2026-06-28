@@ -23,7 +23,7 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatINR } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
-import { BRANDS } from "@/lib/data/types";
+import { useDashboardBrand } from "@/features/dashboard/brandTheme";
 import { useRecipes } from "@/features/recipes/hooks";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useUsers } from "@/features/users/hooks";
@@ -46,7 +46,9 @@ export function ReportsPage() {
   const costHistory = useAllCostHistory();
   const priceHistory = useAllPriceHistory();
 
-  const [brand, setBrand] = useState("all");
+  // Reports follow the app-wide brand toggle in the header (All / Capiche / Aiko).
+  const brand = useDashboardBrand((s) => s.brand);
+  const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [category, setCategory] = useState("all");
   const [from, setFrom] = useState("");
@@ -56,6 +58,7 @@ export function ReportsPage() {
     () =>
       recipes.filter((r) => {
         if (brand !== "all" && r.brand !== brand) return false;
+        if (search && !r.recipe_name.toLowerCase().includes(search.toLowerCase())) return false;
         if (status !== "all" && r.status !== status) return false;
         if (category !== "all" && r.category !== category) return false;
         const date = (r.approved_at ?? r.created_at).slice(0, 10);
@@ -63,7 +66,7 @@ export function ReportsPage() {
         if (to && date > to) return false;
         return true;
       }),
-    [recipes, brand, status, category, from, to],
+    [recipes, brand, search, status, category, from, to],
   );
   const ingData = ingredients.data;
   const ingredientsByRecipe = useMemo(() => {
@@ -113,20 +116,12 @@ export function ReportsPage() {
       <Card className="mb-4 p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="space-y-1.5">
-            <Label>Brand</Label>
-            <Select value={brand} onValueChange={setBrand}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Brands</SelectItem>
-                {BRANDS.map((b) => (
-                  <SelectItem key={b.value} value={b.value}>
-                    {b.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Search</Label>
+            <Input
+              placeholder="Search reports by recipe…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Status</Label>
