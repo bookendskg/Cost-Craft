@@ -11,6 +11,7 @@ import { PIZZA_RECIPES, PIZZA_SIZE_LABEL, type PizzaSize } from "./pizzas";
 import { resolveParentAndCut, cutYieldPct } from "./ingredientCuts";
 import { MASTER_PRICES } from "./masterPrices";
 import { MASTER_DISH_COSTS } from "./masterDishCosts";
+import { MASTER_YIELDS } from "./masterYields";
 import type { MockDb } from "./mock/db";
 import type { Brand, IngredientYield, RawMaterial, Recipe, RecipeIngredient, User } from "./types";
 
@@ -670,10 +671,92 @@ for (const d of allDefs) {
   }
 }
 
+// --- Master prep yields (imported from assets/Costing Master sheet.xlsx) ------
+// 84 standard prep yields (Processed / Chopped / Sliced / Boiled / …). Each gets
+// its OWN yield-reference material (m-yield-*) so it shows in Yield Management
+// with the real prep name, WITHOUT touching any existing recipe cost (these
+// materials aren't referenced by recipes). Cost is filled from the base
+// ingredient's price where it matches; otherwise the yield % still shows.
+const masterYieldRows: IngredientYield[] = [];
+{
+  const ynorm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const priceByName = new Map<string, number>();
+  for (const m of raw_materials) {
+    if (m.cost_per_base_unit != null && m.base_unit === "Gram") priceByName.set(ynorm(m.ingredient_name), m.cost_per_base_unit);
+  }
+  const PREP_WORDS =
+    /^(processed|chopped|sliced|thin sliced|cut|diced|julienne|whole|boiled|roasted|dehydrated|dried|slit|grated|minced|peeled|fried)\s+/i;
+  const basePrice = (prep: string): number | undefined => {
+    const direct = masterPerGram(prep) ?? priceByName.get(ynorm(prep));
+    if (direct != null) return direct;
+    const stripped = prep.replace(PREP_WORDS, "").trim();
+    if (stripped && stripped !== prep) {
+      const p = masterPerGram(stripped) ?? priceByName.get(ynorm(stripped));
+      if (p != null) return p;
+      const first = stripped.split(" ")[0];
+      const pf = masterPerGram(first) ?? priceByName.get(ynorm(first));
+      if (pf != null) return pf;
+    }
+    return undefined;
+  };
+  const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const usedIds = new Set(raw_materials.map((m) => m.id));
+  for (const y of MASTER_YIELDS) {
+    let mid = "m-yield-" + slugify(y.name);
+    while (usedIds.has(mid)) mid += "-x";
+    usedIds.add(mid);
+    const perGram = basePrice(y.name); // ₹/g of the base ingredient
+    const raw = y.raw;
+    const usable = y.usable;
+    const wastage = Math.max(0, raw - usable); // boiled/absorption preps: 0 trim loss
+    const yieldPct = round2((usable / raw) * 100);
+    const wastagePct = round2((wastage / raw) * 100);
+    const purchaseCost = perGram != null ? round2(perGram * raw) : 0;
+    raw_materials.push({
+      id: mid,
+      ingredient_name: y.name,
+      category: inferCategory(y.name),
+      supplier_name: null,
+      notes: `Prep yield (${y.section})`,
+      purchase_price: perGram != null ? round2(perGram * 1000) : null,
+      purchase_quantity: 1,
+      purchase_unit: "KG",
+      base_unit: "Gram",
+      cost_per_base_unit: perGram ?? null,
+      last_price_update: perGram != null ? SEED_TS.slice(0, 10) : null,
+      status: "active",
+      created_by: U_ADMIN,
+      created_at: SEED_TS,
+    });
+    masterYieldRows.push({
+      id: "y-" + mid.replace(/^m-yield-/, ""),
+      ingredient_id: mid,
+      purchase_cost: purchaseCost,
+      purchase_quantity: 1,
+      purchase_unit: "KG",
+      raw_quantity: raw,
+      raw_unit: "Gram",
+      wastage_quantity: wastage,
+      wastage_unit: "Gram",
+      usable_quantity: usable,
+      wastage_percentage: wastagePct,
+      yield_percentage: yieldPct,
+      original_unit_cost: raw > 0 ? purchaseCost / raw : 0,
+      yield_adjusted_unit_cost: usable > 0 ? purchaseCost / usable : 0,
+      effective_from: SEED_TS.slice(0, 10),
+      notes: y.section,
+      created_at: SEED_TS,
+      updated_at: SEED_TS,
+      created_by: U_ADMIN,
+    });
+  }
+}
+
 export function buildSeed(): MockDb {
   return {
-    // Standard prep yields seeded (onion/ginger/carrot); wastage starts empty.
-    ingredient_yields: structuredClone(seededYields),
+    // Standard prep yields: 3 demo (onion/ginger/carrot) + 84 imported from the
+    // costing master sheet. Wastage (operational) starts empty.
+    ingredient_yields: structuredClone([...seededYields, ...masterYieldRows]),
     wastage_entries: [],
     users: structuredClone(users),
     raw_materials: structuredClone(raw_materials),

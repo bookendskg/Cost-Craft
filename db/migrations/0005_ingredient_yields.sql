@@ -6,7 +6,7 @@
 create table public.ingredient_yields (
   id                       uuid primary key default gen_random_uuid(),
   ingredient_id            uuid not null references raw_materials(id) on delete cascade,
-  purchase_cost            decimal(10,2) not null check (purchase_cost > 0),
+  purchase_cost            decimal(10,2) not null check (purchase_cost >= 0),
   purchase_quantity        decimal(10,3) not null check (purchase_quantity > 0),
   purchase_unit            text not null,
   raw_quantity             decimal(12,3) not null check (raw_quantity > 0),
