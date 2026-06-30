@@ -213,10 +213,14 @@ export function YieldPage() {
     const avgWastage = n ? yields.reduce((s, y) => s + y.wastage_percentage, 0) / n : 0;
     // Estimated wastage cost = wastage_quantity × original cost per base unit, summed.
     const wastageCost = yields.reduce((s, y) => s + y.wastage_quantity * y.original_unit_cost, 0);
-    const withYield = new Set(yields.map((y) => y.ingredient_id));
-    const missing = materials.filter((m) => m.status === "active" && !withYield.has(m.id)).length;
+    // A yield can be created before its purchase price is known. Flag only those
+    // (NOT every raw material that lacks a yield — that was ~795 rows of noise).
+    const missing = yields.filter((y) => {
+      const m = matById.get(y.ingredient_id);
+      return (y.purchase_cost ?? 0) <= 0 || m == null || m.cost_per_base_unit == null;
+    }).length;
     return { n, avgYield, avgWastage, wastageCost, missing };
-  }, [yields, materials]);
+  }, [yields, matById]);
 
   const toggleSort = (key: SortKey) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "desc" }));
@@ -273,7 +277,7 @@ export function YieldPage() {
         <Stat icon={<Calculator className="h-4 w-4" />} label="Est. Wastage Cost" value={formatINR(stats.wastageCost)} />
         <Stat
           icon={<TriangleAlert className="h-4 w-4 text-amber-500" />}
-          label="Missing Yield Data"
+          label="Yields Missing Price"
           value={String(stats.missing)}
         />
       </div>
