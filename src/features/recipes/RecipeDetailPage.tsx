@@ -12,6 +12,7 @@ import {
   TrendingUp,
   AlertTriangle,
   ImageUp,
+  ImageOff,
   ArrowLeft,
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
@@ -115,6 +116,7 @@ export function RecipeDetailPage() {
     reader.readAsDataURL(file);
   };
 
+  const [removePhotoOpen, setRemovePhotoOpen] = useState(false);
   const [sellingInput, setSellingInput] = useState("");
   const recipeId = data?.recipe?.id;
   const recipeSellingPrice = data?.recipe?.selling_price ?? null;
@@ -279,11 +281,24 @@ export function RecipeDetailPage() {
                   {recipe.status === "approved" ? "Active Recipe" : recipe.status}
                 </span>
                 {editable && (
-                  <label className="absolute bottom-3 right-3 inline-flex cursor-pointer items-center gap-1 rounded bg-black/50 px-2 py-1 text-[11px] font-medium text-white hover:bg-black/70">
-                    <ImageUp className="h-3.5 w-3.5" />
-                    {recipe.image_url ? "Change" : "Add Image"}
-                    <input type="file" accept="image/*" className="hidden" onChange={onImagePick} />
-                  </label>
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
+                    <label className="inline-flex cursor-pointer items-center gap-1 rounded bg-black/50 px-2 py-1 text-[11px] font-medium text-white hover:bg-black/70">
+                      <ImageUp className="h-3.5 w-3.5" />
+                      {recipe.image_url ? "Change" : "Add Image"}
+                      <input type="file" accept="image/*" className="hidden" onChange={onImagePick} />
+                    </label>
+                    {recipe.image_url && (
+                      <button
+                        type="button"
+                        onClick={() => setRemovePhotoOpen(true)}
+                        className="inline-flex items-center gap-1 rounded bg-black/50 px-2 py-1 text-[11px] font-medium text-white hover:bg-red-600/80"
+                        aria-label="Remove recipe photo"
+                      >
+                        <ImageOff className="h-3.5 w-3.5" />
+                        Remove
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
               <div className="flex flex-col justify-between p-5">
@@ -633,6 +648,18 @@ export function RecipeDetailPage() {
         onConfirm={async () => {
           await approveMut.mutateAsync(recipe.id);
           toast.success("Recipe approved");
+        }}
+      />
+
+      <ConfirmDialog
+        open={removePhotoOpen}
+        onOpenChange={setRemovePhotoOpen}
+        title="Remove this recipe photo?"
+        description="The photo will be removed and the placeholder shown. The recipe itself is not affected."
+        confirmLabel="Remove Photo"
+        onConfirm={async () => {
+          await imageMut.mutateAsync({ id: recipe.id, imageUrl: null });
+          toast.success("Recipe photo removed");
         }}
       />
 
