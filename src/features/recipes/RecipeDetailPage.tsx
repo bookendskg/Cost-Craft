@@ -40,9 +40,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { cn, formatDate, formatINR } from "@/lib/utils";
+import { cn, formatDate, formatINR, formatUnit } from "@/lib/utils";
 import { prepUnitCostFrom, round2 } from "@/lib/costing";
-import { canConvert, getConversionFactor } from "@/lib/units";
 
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
 import { BRANDS } from "@/lib/data/types";
@@ -421,18 +420,13 @@ export function RecipeDetailPage() {
                               <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">Prep</span>
                             </TableCell>
                             {vis.quantities && <TableCell className="text-right font-mono">{round3(ing.quantity_used * scale)}</TableCell>}
-                            {vis.quantities && <TableCell className="text-muted-foreground">{ing.unit_used}</TableCell>}
+                            {vis.quantities && <TableCell className="text-muted-foreground">{formatUnit(ing.unit_used)}</TableCell>}
                             {vis.totalCost && <TableCell className="text-right font-mono font-semibold">{formatINR(cost)}</TableCell>}
                           </TableRow>
                         );
                       }
-                      // Display the quantity in the ingredient's purchase unit (KG/Litre):
-                      // e.g. 600 Gram → 0.6 KG. Cost is for the quantity actually used.
-                      const displayUnit = m?.purchase_unit ?? ing.unit_used;
-                      const qtyInPurchase =
-                        m && canConvert(ing.unit_used, m.purchase_unit)
-                          ? round3(ing.quantity_used * scale * getConversionFactor(ing.unit_used, m.purchase_unit))
-                          : round3(ing.quantity_used * scale);
+                      // Show the quantity in the recipe's OWN unit (grams/ml/pcs), e.g.
+                      // 200 g — not converted to the purchase unit (which read as "0.2 KG").
                       // Persisted (yield-adjusted) line cost — single source of truth (§9).
                       const cost = ing.calculated_cost == null ? null : round2(ing.calculated_cost * scale);
                       return (
@@ -443,8 +437,8 @@ export function RecipeDetailPage() {
                               <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">{ing.cut_type}</span>
                             )}
                           </TableCell>
-                          {vis.quantities && <TableCell className="text-right font-mono">{qtyInPurchase}</TableCell>}
-                          {vis.quantities && <TableCell className="text-muted-foreground">{displayUnit}</TableCell>}
+                          {vis.quantities && <TableCell className="text-right font-mono">{round3(ing.quantity_used * scale)}</TableCell>}
+                          {vis.quantities && <TableCell className="text-muted-foreground">{formatUnit(ing.unit_used)}</TableCell>}
                           {vis.totalCost && <TableCell className="text-right font-mono font-semibold">{formatINR(cost)}</TableCell>}
                         </TableRow>
                       );
