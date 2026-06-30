@@ -38,7 +38,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn, formatDateTime, formatINR } from "@/lib/utils";
+import { cn, formatDateTime, formatINR, formatQuantityWithUnit } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
 import { can, canEditRecipe, viewerBrands, viewerShowCost } from "@/lib/auth/permissions";
 import type { Recipe } from "@/lib/data/types";
@@ -76,12 +76,31 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
   const canSeeCost = user.role !== "viewer" || viewerShowCost(user);
   const recipes = useMemo(() => {
     // Exclude size variants — a pizza shows once as its master (§14).
-    const base = allRecipes.filter((r) => (prepMode ? r.is_prep : !r.is_prep) && !r.parent_recipe_id);
+    let base = allRecipes.filter((r) => (prepMode ? r.is_prep : !r.is_prep) && !r.parent_recipe_id);
     if (user.role === "viewer") {
       const brands = viewerBrands(user);
-      return base.filter((r) => r.status === "approved" && brands.includes(r.brand));
+      base = base.filter((r) => r.status === "approved" && brands.includes(r.brand));
+    } else if (globalBrand !== "all") {
+      base = base.filter((r) => r.brand === globalBrand);
     }
-    return globalBrand === "all" ? base : base.filter((r) => r.brand === globalBrand);
+    // Collapse name-variant families (Baby/Mid/Prime Hulk) to ONE entry — the
+    // variant switcher on the detail page reaches the others. Prefer the flagship.
+    const QUAL = /\b(Prime|Mid|Baby|Mini|Small|Large|Regular|Classic|Special|Jumbo)\b/i;
+    const baseKey = (r: (typeof base)[number]) =>
+      r.brand + "|" + r.recipe_name.replace(QUAL, "").replace(/\s+/g, " ").trim().toLowerCase();
+    const famCount = new Map<string, number>();
+    for (const r of base) if (QUAL.test(r.recipe_name)) famCount.set(baseKey(r), (famCount.get(baseKey(r)) ?? 0) + 1);
+    const repAt = new Map<string, number>();
+    const collapsed: typeof base = [];
+    for (const r of base) {
+      if (!QUAL.test(r.recipe_name) || (famCount.get(baseKey(r)) ?? 0) < 2) { collapsed.push(r); continue; }
+      const k = baseKey(r);
+      if (!repAt.has(k)) { repAt.set(k, collapsed.length); collapsed.push(r); }
+      else if (/\bprime\b/i.test(r.recipe_name) && !/\bprime\b/i.test(collapsed[repAt.get(k)!].recipe_name)) {
+        collapsed[repAt.get(k)!] = r; // promote the flagship as the family's single entry
+      }
+    }
+    return collapsed;
   }, [allRecipes, prepMode, user, globalBrand]);
 
   // Available size labels per master recipe (master + its variants), e.g. ["11-inch","15-inch"].
@@ -589,7 +608,7 @@ function ExpandedBreakdown({
 
   // Use the persisted (yield-adjusted) line cost — single source of truth (§9).
   const lines = (data?.ingredients ?? []).map((ing) => ({
-    name: `${ing.material?.ingredient_name ?? "—"} (${ing.quantity_used}${ing.unit_used})`,
+    name: `${ing.material?.ingredient_name ?? "—"} (${formatQuantityWithUnit(ing.quantity_used, ing.unit_used, { humanize: false })})`,
     cost: ing.calculated_cost,
   }));
   const mid = Math.ceil(lines.length / 2);

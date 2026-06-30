@@ -128,7 +128,7 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
       <Card className="overflow-hidden border-0 bg-slate-900 text-white dark:bg-slate-950">
         <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className={cn("rounded-md bg-white/10 px-4 py-2 text-xl font-extrabold tracking-wide", accent)}>
+            <div className={cn("rounded-md bg-white px-4 py-2 text-xl font-extrabold tracking-wide shadow-sm", accent)}>
               {brandWordmark[brand]}
             </div>
             <div>

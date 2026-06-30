@@ -225,7 +225,7 @@ export function RecipeDetailPage() {
               {variantFamily.map((v) => (
                 <button
                   key={v.id}
-                  onClick={() => navigate(`/recipes/${v.id}`)}
+                  onClick={() => navigate(`/recipes/${v.id}`, { replace: true })}
                   className={cn(
                     "rounded-md px-3 py-1 text-sm font-medium transition-colors",
                     v.activeId ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground",
@@ -242,7 +242,7 @@ export function RecipeDetailPage() {
               {sizeFamily.map((s) => (
                 <button
                   key={s.id}
-                  onClick={() => navigate(`/recipes/${s.id}`)}
+                  onClick={() => navigate(`/recipes/${s.id}`, { replace: true })}
                   className={cn(
                     "rounded-md px-3 py-1 text-sm font-medium transition-colors",
                     s.id === recipe.id ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground",
