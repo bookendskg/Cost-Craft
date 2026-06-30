@@ -29,7 +29,7 @@ import { compatibleUnits, canConvert } from "@/lib/units";
 import { calculateIngredientCost, prepUnitCostFrom, round2 } from "@/lib/costing";
 import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "@/lib/yield";
 import { cutsForName, cutYieldPct, resolveParentAndCut } from "@/lib/data/ingredientCuts";
-import { cn, formatINR } from "@/lib/utils";
+import { formatINR } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { BRANDS, type RawMaterial } from "@/lib/data/types";
 import { useMaterials } from "@/features/raw-materials/hooks";
@@ -47,6 +47,9 @@ interface GridLine extends EditorLine {
 
 let keyCounter = 0;
 const newKey = () => `line-${keyCounter++}`;
+
+/** Sentinel for the "no cut / whole" option (Select can't use an empty value). */
+const CUT_ASIS = "__asis__";
 
 export function RecipeEditorPage() {
   const { id } = useParams();
@@ -538,33 +541,26 @@ export function RecipeEditorPage() {
                         </Button>
                       </div>
                     </div>
-                    {/* Cut / prep variant bar — pick how the vegetable is cut; its yield drives the cost. */}
+                    {/* Cut / prep variant — pick how the vegetable is cut; its yield drives the cost. */}
                     {cutOptions.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5 pl-1 text-xs">
-                        <span className="text-muted-foreground">Cut</span>
-                        <button
-                          type="button"
-                          onClick={() => patchLine(line.key, { cut_type: null })}
-                          className={cn(
-                            "rounded-full border px-2 py-0.5 transition-colors",
-                            !line.cut_type ? "border-primary bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:bg-muted",
-                          )}
+                      <div className="flex flex-wrap items-center gap-2 pl-1 text-xs">
+                        <span className="text-muted-foreground">Cut / prep</span>
+                        <Select
+                          value={line.cut_type ?? CUT_ASIS}
+                          onValueChange={(v) => patchLine(line.key, { cut_type: v === CUT_ASIS ? null : v })}
                         >
-                          As-is
-                        </button>
-                        {cutOptions.map((c) => (
-                          <button
-                            key={c.cut}
-                            type="button"
-                            onClick={() => patchLine(line.key, { cut_type: c.cut })}
-                            className={cn(
-                              "rounded-full border px-2 py-0.5 transition-colors",
-                              line.cut_type === c.cut ? "border-primary bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:bg-muted",
-                            )}
-                          >
-                            {c.cut} <span className="opacity-60">{c.yieldPct}%</span>
-                          </button>
-                        ))}
+                          <SelectTrigger className="h-8 w-64">
+                            <SelectValue placeholder="As-is (whole)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={CUT_ASIS}>As-is (whole) — 100% yield</SelectItem>
+                            {cutOptions.map((c) => (
+                              <SelectItem key={c.cut} value={c.cut}>
+                                {c.cut} — {c.yieldPct}% yield
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     )}
                     {/* §10: recipe-specific wastage override (only for ingredients with yield data) */}
