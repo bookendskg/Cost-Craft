@@ -565,27 +565,6 @@ export const recipesRepo = {
     );
   },
 
-  async setPackaging(id: string, packagingCost: number, actorId: string): Promise<Recipe> {
-    return delay(
-      mutate((db) => {
-        const recipe = db.recipes.find((r) => r.id === id);
-        if (!recipe) throw new Error("Recipe not found");
-        if (!(packagingCost >= 0)) throw new Error("Packaging cost must be 0 or more");
-        recipe.packaging_cost = packagingCost;
-        recipe.updated_at = nowISO();
-        recipe.updated_by = actorId;
-        recordAudit(db, {
-          entity_type: "recipe",
-          entity_id: id,
-          action: "update",
-          performed_by: actorId,
-          notes: `Set packaging cost for "${recipe.recipe_name}" to ${packagingCost}`,
-        });
-        return recipe;
-      }),
-    );
-  },
-
   async costHistory(id: string): Promise<RecipeCostHistory[]> {
     return delay(
       getDb()

@@ -711,25 +711,6 @@ export const supabaseRecipesRepo = {
     return recipe;
   },
 
-  async setPackaging(id: string, packagingCost: number, actorId: string): Promise<Recipe> {
-    const { data, error } = await sb()
-      .from("recipes")
-      .update({ packaging_cost: packagingCost, updated_at: nowISO(), updated_by: actorId })
-      .eq("id", id)
-      .select("*")
-      .single();
-    if (error) fail("Set packaging cost", error.message);
-    const recipe = data as Recipe;
-    await audit({
-      entity_type: "recipe",
-      entity_id: id,
-      action: "update",
-      performed_by: actorId,
-      notes: `Set packaging cost for "${recipe.recipe_name}" to ${packagingCost}`,
-    });
-    return recipe;
-  },
-
   async costHistory(id: string): Promise<RecipeCostHistory[]> {
     const { data, error } = await sb()
       .from("recipe_cost_history")

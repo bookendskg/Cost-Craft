@@ -13,7 +13,6 @@ const DashboardPage = lazy(() => import("@/features/dashboard/DashboardPage").th
 const MaterialsPage = lazy(() => import("@/features/raw-materials/MaterialsPage").then((m) => ({ default: m.MaterialsPage })));
 const RecipesPage = lazy(() => import("@/features/recipes/RecipesPage").then((m) => ({ default: m.RecipesPage })));
 const YieldPage = lazy(() => import("@/features/yield/YieldPage").then((m) => ({ default: m.YieldPage })));
-const PackagingPage = lazy(() => import("@/features/packaging/PackagingPage").then((m) => ({ default: m.PackagingPage })));
 const WastagePage = lazy(() => import("@/features/wastage/WastagePage").then((m) => ({ default: m.WastagePage })));
 const RecipeEditorPage = lazy(() => import("@/features/recipes/RecipeEditorPage").then((m) => ({ default: m.RecipeEditorPage })));
 const RecipeDetailPage = lazy(() => import("@/features/recipes/RecipeDetailPage").then((m) => ({ default: m.RecipeDetailPage })));
@@ -55,14 +54,6 @@ export const router = createBrowserRouter([
         element: (
           <RequireRole roles={["admin", "editor", "head_chef"]}>
             <YieldPage />
-          </RequireRole>
-        ),
-      },
-      {
-        path: "packaging",
-        element: (
-          <RequireRole roles={["admin", "editor", "head_chef"]}>
-            <PackagingPage />
           </RequireRole>
         ),
       },
