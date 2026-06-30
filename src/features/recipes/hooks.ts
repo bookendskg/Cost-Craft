@@ -95,6 +95,16 @@ export function useSetSellingPrice() {
   });
 }
 
+export function useSetPackaging() {
+  const qc = useQueryClient();
+  const actorId = useActorId();
+  return useMutation({
+    mutationFn: ({ id, packagingCost }: { id: string; packagingCost: number }) =>
+      recipesRepo.setPackaging(id, packagingCost, actorId),
+    onSuccess: () => invalidate(qc),
+  });
+}
+
 export function useSubmitRecipe() {
   const qc = useQueryClient();
   const actorId = useActorId();

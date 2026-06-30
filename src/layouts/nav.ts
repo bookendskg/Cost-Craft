@@ -11,6 +11,7 @@ import {
   Eye,
   Sprout,
   Trash2,
+  Package,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/lib/data/types";
@@ -34,6 +35,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/recipes", label: "Recipes", icon: BookOpen, group: "Catalog", roles: ["admin", "editor", "head_chef", "chef", "viewer"] },
   { to: "/prep", label: "In-House Prep", icon: ChefHat, group: "Catalog", roles: ["admin", "editor", "head_chef"] },
   { to: "/yield", label: "Yield Management", icon: Sprout, group: "Catalog", roles: ["admin", "editor", "head_chef"] },
+  { to: "/packaging", label: "Packaging Cost", icon: Package, group: "Catalog", roles: ["admin", "editor", "head_chef"] },
   { to: "/wastage", label: "Wastage Management", icon: Trash2, group: "Operations", roles: ["admin", "editor", "head_chef"] },
   { to: "/approvals", label: "Approvals", icon: CheckCircle2, group: "Operations", roles: ["admin"] },
   { to: "/reports", label: "Reports", icon: FileBarChart, group: "Operations", roles: ["admin", "editor", "head_chef"] },
