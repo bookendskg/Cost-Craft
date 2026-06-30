@@ -14,7 +14,7 @@ import { MASTER_DISH_COSTS } from "./masterDishCosts";
 import { MASTER_YIELDS } from "./masterYields";
 import { VEG_FRUIT_PRICES, VEG_FRUIT_ITEMS } from "./vegFruitPrices";
 import { PANKIL_PRICES, PANKIL_ITEMS } from "./pankilPrices";
-import { PRODUCE_ALIASES } from "./produceAliases";
+import { INGREDIENT_ALIASES } from "./ingredientAliases";
 import type { MockDb } from "./mock/db";
 import type { Brand, IngredientYield, RawMaterial, Recipe, RecipeIngredient, User } from "./types";
 
@@ -22,14 +22,16 @@ import type { Brand, IngredientYield, RawMaterial, Recipe, RecipeIngredient, Use
  *  source), matched by normalised name. Undefined when the book has no price. */
 const priceNorm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 // Price precedence (both new files are authoritative, then the older book):
-//   produce alias → produce master → Pankil master → costing book.
-// PRODUCE_ALIASES maps recipe spelling/prep variants ("Alfanso mango") to the
-// canonical produce name ("Alphonso Mango") so they price correctly.
+//   ingredient alias → produce master → Pankil master → costing book.
+// INGREDIENT_ALIASES maps recipe spelling/prep variants ("Alfanso mango",
+// "Mozzarella (shredded)") to the canonical price-master name, resolved against
+// either master.
 const masterPerGram = (name: string): number | undefined => {
   const n = priceNorm(name);
-  const canon = PRODUCE_ALIASES[n];
+  const canon = INGREDIENT_ALIASES[n];
   if (canon) {
-    const aliased = VEG_FRUIT_PRICES[priceNorm(canon)];
+    const cn = priceNorm(canon);
+    const aliased = VEG_FRUIT_PRICES[cn] ?? PANKIL_PRICES[cn];
     if (aliased != null) return aliased;
   }
   return VEG_FRUIT_PRICES[n] ?? PANKIL_PRICES[n] ?? MASTER_PRICES[n];
@@ -768,35 +770,48 @@ const masterYieldRows: IngredientYield[] = [];
   };
   const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   const usedIds = new Set(raw_materials.map((m) => m.id));
+  // Reuse an existing material with the same name instead of creating a duplicate
+  // "m-yield-*" twin (the source of the 14 duplicate Raw Materials entries).
+  const matIdByName = new Map(raw_materials.map((m) => [ynorm(m.ingredient_name), m.id] as const));
+  const seenYieldNames = new Set<string>();
   for (const y of MASTER_YIELDS) {
-    let mid = "m-yield-" + slugify(y.name);
-    while (usedIds.has(mid)) mid += "-x";
-    usedIds.add(mid);
+    if (seenYieldNames.has(ynorm(y.name))) continue; // one yield row per ingredient
+    seenYieldNames.add(ynorm(y.name));
     const perGram = basePrice(y.name); // ₹/g of the base ingredient
+    const existingId = matIdByName.get(ynorm(y.name));
+    let mid: string;
+    if (existingId) {
+      mid = existingId; // attach the yield to the existing material — no duplicate
+    } else {
+      mid = "m-yield-" + slugify(y.name);
+      while (usedIds.has(mid)) mid += "-x";
+      usedIds.add(mid);
+      matIdByName.set(ynorm(y.name), mid);
+      raw_materials.push({
+        id: mid,
+        ingredient_name: y.name,
+        category: inferCategory(y.name),
+        supplier_name: null,
+        notes: `Prep yield (${y.section})`,
+        purchase_price: perGram != null ? round2(perGram * 1000) : null,
+        purchase_quantity: 1,
+        purchase_unit: "KG",
+        base_unit: "Gram",
+        cost_per_base_unit: perGram ?? null,
+        last_price_update: perGram != null ? SEED_TS.slice(0, 10) : null,
+        status: "active",
+        created_by: U_ADMIN,
+        created_at: SEED_TS,
+      });
+    }
     const raw = y.raw;
     const usable = y.usable;
     const wastage = Math.max(0, raw - usable); // boiled/absorption preps: 0 trim loss
     const yieldPct = round2((usable / raw) * 100);
     const wastagePct = round2((wastage / raw) * 100);
     const purchaseCost = perGram != null ? round2(perGram * raw) : 0;
-    raw_materials.push({
-      id: mid,
-      ingredient_name: y.name,
-      category: inferCategory(y.name),
-      supplier_name: null,
-      notes: `Prep yield (${y.section})`,
-      purchase_price: perGram != null ? round2(perGram * 1000) : null,
-      purchase_quantity: 1,
-      purchase_unit: "KG",
-      base_unit: "Gram",
-      cost_per_base_unit: perGram ?? null,
-      last_price_update: perGram != null ? SEED_TS.slice(0, 10) : null,
-      status: "active",
-      created_by: U_ADMIN,
-      created_at: SEED_TS,
-    });
     masterYieldRows.push({
-      id: "y-" + mid.replace(/^m-yield-/, ""),
+      id: "y-" + slugify(y.name),
       ingredient_id: mid,
       purchase_cost: purchaseCost,
       purchase_quantity: 1,
