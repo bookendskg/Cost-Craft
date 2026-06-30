@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   ImageUp,
   ImageOff,
+  ExternalLink,
   ArrowLeft,
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
@@ -345,22 +346,30 @@ export function RecipeDetailPage() {
                         // Sub-recipe (in-house prep) component — double-click to open it.
                         const perUnit = prepUnitCostFrom(sub.total_cost ?? 0, sub.yield_quantity, sub.wastage_pct ?? 0);
                         const cost = round2(perUnit * ing.quantity_used * scale);
+                        const openSub = () =>
+                          navigate(`/recipes/${sub.id}`, {
+                            state: { fromRecipe: recipe.id, fromName: recipe.recipe_name },
+                          });
                         return (
                           <TableRow
                             key={ing.id}
                             className="cursor-pointer"
-                            title="Double-click to open this prep recipe"
-                            onDoubleClick={() =>
-                              navigate(`/recipes/${sub.id}`, {
-                                state: { fromRecipe: recipe.id, fromName: recipe.recipe_name },
-                              })
-                            }
+                            title="Open sub-recipe — tap the name, or double-click the row"
+                            onDoubleClick={openSub}
                           >
                             <TableCell className="font-medium">
-                              <span className="inline-flex items-center gap-1.5 text-emerald-700 underline decoration-dotted underline-offset-2">
+                              {/* Tappable on mobile + clickable on desktop; row also double-clicks. */}
+                              <button
+                                type="button"
+                                onClick={openSub}
+                                className="inline-flex items-center gap-1.5 text-emerald-700 underline decoration-dotted underline-offset-2 hover:text-emerald-900"
+                                title="View sub-recipe"
+                                aria-label={`View sub-recipe ${sub.recipe_name}`}
+                              >
                                 <UtensilsCrossed className="h-3.5 w-3.5" />
                                 {sub.recipe_name}
-                              </span>
+                                <ExternalLink className="h-3 w-3 opacity-70" />
+                              </button>
                               <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">Prep</span>
                             </TableCell>
                             {vis.quantities && <TableCell className="text-right font-mono">{round3(ing.quantity_used * scale)}</TableCell>}

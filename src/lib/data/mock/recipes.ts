@@ -85,7 +85,29 @@ function snapshotVersion(
   });
 }
 
+/** Does `startId` (transitively) use `targetId` as a sub-recipe component? */
+function recipeReaches(db: MockDb, startId: string, targetId: string, seen = new Set<string>()): boolean {
+  if (startId === targetId) return true;
+  if (seen.has(startId)) return false;
+  seen.add(startId);
+  return db.recipe_ingredients.some(
+    (ri) =>
+      ri.recipe_id === startId &&
+      ri.component_type === "recipe" &&
+      recipeReaches(db, ri.ingredient_id, targetId, seen),
+  );
+}
+
 function writeLines(db: MockDb, recipeId: string, lines: RecipeLineInput[]): void {
+  // §19 circular-reference guard: reject self-links and any sub-recipe that
+  // (directly or transitively) already depends on this recipe.
+  for (const l of lines) {
+    if ((l.component_type ?? "material") !== "recipe") continue;
+    if (l.ingredient_id === recipeId || recipeReaches(db, l.ingredient_id, recipeId)) {
+      const name = db.recipes.find((r) => r.id === l.ingredient_id)?.recipe_name ?? "that recipe";
+      throw new Error(`Circular sub-recipe link: "${name}" already depends on this recipe.`);
+    }
+  }
   db.recipe_ingredients = db.recipe_ingredients.filter((ri) => ri.recipe_id !== recipeId);
   lines.forEach((line, idx) => {
     db.recipe_ingredients.push({
