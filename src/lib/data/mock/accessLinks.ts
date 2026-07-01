@@ -43,12 +43,13 @@ function effectiveStatus(link: RecipeAccessLink, now = Date.now()): AccessLinkSt
 
 /** Remove every financial field before a shared/public payload leaves the layer (§19). */
 function stripFinancials(recipe: Recipe, ingredients: RecipeIngredientWithMaterial[]) {
-  const r: Recipe = { ...recipe, total_cost: 0, cost_per_portion: 0, packaging_cost: 0, selling_price: null };
+  // wastage_pct is a costing parameter (§19) — strip it alongside the money fields.
+  const r: Recipe = { ...recipe, total_cost: 0, cost_per_portion: 0, packaging_cost: 0, selling_price: null, wastage_pct: 0 };
   const ings = ingredients.map((i) => ({
     ...i,
     calculated_cost: null,
     material: i.material ? { ...i.material, cost_per_base_unit: null, purchase_price: null } : null,
-    subRecipe: i.subRecipe ? { ...i.subRecipe, total_cost: 0, cost_per_portion: 0, selling_price: null } : null,
+    subRecipe: i.subRecipe ? { ...i.subRecipe, total_cost: 0, cost_per_portion: 0, packaging_cost: 0, selling_price: null, wastage_pct: 0 } : null,
   }));
   return { recipe: r, ingredients: ings };
 }

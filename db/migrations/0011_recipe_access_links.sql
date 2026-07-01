@@ -96,8 +96,8 @@ begin
     'access_type', v_link.access_type,
     'granted_by_name', v_link.granted_by_name,
     'brand', v_recipe.brand,
-    -- Strip financial columns server-side — they never leave the database.
-    'recipe', (to_jsonb(v_recipe) - 'total_cost' - 'cost_per_portion' - 'packaging_cost' - 'selling_price'),
+    -- Strip financial + costing columns server-side — they never leave the database.
+    'recipe', (to_jsonb(v_recipe) - 'total_cost' - 'cost_per_portion' - 'packaging_cost' - 'selling_price' - 'wastage_pct'),
     'ingredients', coalesce((
       select jsonb_agg(jsonb_build_object(
         'id', ri.id,

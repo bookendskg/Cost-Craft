@@ -111,22 +111,26 @@ export function ReportsPage() {
         },
         `${brandLabel}_${new Date().toISOString().slice(0, 10)}`,
       );
-      // Audit only after the workbook is generated.
-      recordExport.mutate({
-        exported_by_user_id: user?.id ?? null,
-        exporter_name_snapshot: user?.name ?? "Unknown",
-        exporter_email_snapshot: user?.email ?? null,
-        exporter_role_snapshot: user?.role ?? "viewer",
-        export_type: "recipe_report",
-        entity_type: "report",
-        entity_id: null,
-        recipe_name_snapshot: null,
-        report_name: `${brandLabel} Recipe Report`,
-        brand_id: brand === "all" ? null : brand,
-        outlet_id: null,
-        filters_used: JSON.stringify({ status, category, from, to, count: filtered.length }),
-        file_format: "xlsx",
-      });
+      // Audit only after the workbook is generated (awaited; audit failure ≠ export failure).
+      try {
+        await recordExport.mutateAsync({
+          exported_by_user_id: user?.id ?? null,
+          exporter_name_snapshot: user?.name ?? "Unknown",
+          exporter_email_snapshot: user?.email ?? null,
+          exporter_role_snapshot: user?.role ?? "viewer",
+          export_type: "recipe_report",
+          entity_type: "report",
+          entity_id: null,
+          recipe_name_snapshot: null,
+          report_name: `${brandLabel} Recipe Report`,
+          brand_id: brand === "all" ? null : brand,
+          outlet_id: null,
+          filters_used: JSON.stringify({ status, category, from, to, count: filtered.length }),
+          file_format: "xlsx",
+        });
+      } catch (auditErr) {
+        if (import.meta.env.DEV) console.error("Audit record failed", auditErr);
+      }
       toast.success("Excel report downloaded");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");
@@ -156,21 +160,25 @@ export function ReportsPage() {
         filtersText,
         exporter: user ? { name: user.name, role: user.role } : undefined,
       });
-      recordExport.mutate({
-        exported_by_user_id: user?.id ?? null,
-        exporter_name_snapshot: user?.name ?? "Unknown",
-        exporter_email_snapshot: user?.email ?? null,
-        exporter_role_snapshot: user?.role ?? "viewer",
-        export_type: "recipe_report",
-        entity_type: "report",
-        entity_id: null,
-        recipe_name_snapshot: null,
-        report_name: `${brandLabel} Recipe Report`,
-        brand_id: brand === "all" ? null : brand,
-        outlet_id: null,
-        filters_used: JSON.stringify({ status, category, from, to, count: filtered.length }),
-        file_format: "pdf",
-      });
+      try {
+        await recordExport.mutateAsync({
+          exported_by_user_id: user?.id ?? null,
+          exporter_name_snapshot: user?.name ?? "Unknown",
+          exporter_email_snapshot: user?.email ?? null,
+          exporter_role_snapshot: user?.role ?? "viewer",
+          export_type: "recipe_report",
+          entity_type: "report",
+          entity_id: null,
+          recipe_name_snapshot: null,
+          report_name: `${brandLabel} Recipe Report`,
+          brand_id: brand === "all" ? null : brand,
+          outlet_id: null,
+          filters_used: JSON.stringify({ status, category, from, to, count: filtered.length }),
+          file_format: "pdf",
+        });
+      } catch (auditErr) {
+        if (import.meta.env.DEV) console.error("Audit record failed", auditErr);
+      }
       toast.success("PDF exported successfully.");
     } catch (e) {
       if (import.meta.env.DEV) console.error("Report PDF failed", e);

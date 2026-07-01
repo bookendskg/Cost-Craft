@@ -32,8 +32,10 @@ alter table public.export_history enable row level security;
 drop policy if exists "export_history_insert" on public.export_history;
 create policy "export_history_insert" on public.export_history
   for insert with check (auth.uid() = exported_by_user_id or exported_by_user_id is null);
+-- Admins read all; every user may read their own export rows.
 drop policy if exists "export_history_read_admin" on public.export_history;
 create policy "export_history_read_admin" on public.export_history
   for select using (
-    exists (select 1 from public.user_profiles p where p.id = auth.uid() and p.role = 'admin')
+    exported_by_user_id = auth.uid()
+    or exists (select 1 from public.user_profiles p where p.id = auth.uid() and p.role = 'admin')
   );

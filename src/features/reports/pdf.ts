@@ -14,6 +14,9 @@ export interface PdfExporter {
   role: string;
 }
 
+/** Quantity as a clean string — trims float artifacts to ≤3 decimals (e.g. 0.30000004 → 0.3). */
+const qtyStr = (n: number) => String(Math.round(n * 1000) / 1000);
+
 /** Current date/time formatted in the operating timezone (Asia/Kolkata / IST). */
 function istStamp() {
   const now = new Date();
@@ -77,7 +80,7 @@ export async function generateRecipePdf(
         : !isSub && m && m.cost_per_base_unit !== null && canConvert(ing.unit_used, m.base_unit)
           ? calculateIngredientCost(m.cost_per_base_unit, ing.quantity_used, ing.unit_used, m.base_unit)
           : null;
-    const row = [String(idx + 1), name, String(ing.quantity_used), formatUnit(ing.unit_used)];
+    const row = [String(idx + 1), name, qtyStr(ing.quantity_used), formatUnit(ing.unit_used)];
     if (showUnitCost) row.push(isSub ? "—" : formatINR(m?.cost_per_base_unit ?? null));
     if (showCost) row.push(formatINR(cost));
     body.push(row);

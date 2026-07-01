@@ -36,21 +36,26 @@ export function RecipePdfButton({
             exporter: user ? { name: user.name, role: user.role } : undefined,
           });
           // Audit only AFTER the file is generated — never for a failed export.
-          recordExport.mutate({
-            exported_by_user_id: user?.id ?? null,
-            exporter_name_snapshot: user?.name ?? "Unknown",
-            exporter_email_snapshot: user?.email ?? null,
-            exporter_role_snapshot: user?.role ?? "viewer",
-            export_type: "single_recipe",
-            entity_type: "recipe",
-            entity_id: recipe.id,
-            recipe_name_snapshot: recipe.recipe_name,
-            report_name: null,
-            brand_id: recipe.brand,
-            outlet_id: null,
-            filters_used: null,
-            file_format: "pdf",
-          });
+          // Awaited so the record is persisted; a failed audit doesn't fail the export.
+          try {
+            await recordExport.mutateAsync({
+              exported_by_user_id: user?.id ?? null,
+              exporter_name_snapshot: user?.name ?? "Unknown",
+              exporter_email_snapshot: user?.email ?? null,
+              exporter_role_snapshot: user?.role ?? "viewer",
+              export_type: "single_recipe",
+              entity_type: "recipe",
+              entity_id: recipe.id,
+              recipe_name_snapshot: recipe.recipe_name,
+              report_name: null,
+              brand_id: recipe.brand,
+              outlet_id: null,
+              filters_used: null,
+              file_format: "pdf",
+            });
+          } catch (auditErr) {
+            if (import.meta.env.DEV) console.error("Audit record failed", auditErr);
+          }
           toast.success("PDF exported successfully.");
         } catch (e) {
           if (import.meta.env.DEV) console.error("PDF export failed", e);
