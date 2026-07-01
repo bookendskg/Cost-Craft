@@ -4,17 +4,12 @@
 // is added these checks are backed by RLS, not replaced.
 
 import {
-  BRANDS,
-  OUTLETS,
-  type Brand,
-  type Outlet,
+  type OutletRecord,
   type Recipe,
   type Role,
   type User,
   type ViewType,
 } from "../data/types";
-
-const ALL_BRANDS: Brand[] = BRANDS.map((b) => b.value);
 
 export type Capability =
   // user management
@@ -44,7 +39,15 @@ export type Capability =
   | "report.excel"
   | "audit.view"
   // role & permission management (Super Admin only)
-  | "role.manage";
+  | "role.manage"
+  // brand & outlet management (Super Admin only)
+  | "brand.create"
+  | "brand.edit"
+  | "brand.archive"
+  | "outlet.create"
+  | "outlet.edit"
+  | "outlet.change_brand"
+  | "outlet.archive";
 
 const MATRIX: Record<Role, Capability[]> = {
   // Super Admin: everything, plus exclusive role/permission management.
@@ -66,6 +69,13 @@ const MATRIX: Record<Role, Capability[]> = {
     "report.excel",
     "audit.view",
     "role.manage",
+    "brand.create",
+    "brand.edit",
+    "brand.archive",
+    "outlet.create",
+    "outlet.edit",
+    "outlet.change_brand",
+    "outlet.archive",
   ],
   admin: [
     "user.manage",
@@ -156,6 +166,13 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
   "report.excel": "Export reports",
   "audit.view": "View audit / price changes",
   "role.manage": "Manage roles & permissions",
+  "brand.create": "Create brands",
+  "brand.edit": "Edit brands",
+  "brand.archive": "Archive brands",
+  "outlet.create": "Create outlets",
+  "outlet.edit": "Edit outlets",
+  "outlet.change_brand": "Move outlet to another brand",
+  "outlet.archive": "Archive outlets",
 };
 
 /** Roles that are read-only (treated like a Viewer everywhere). */
@@ -223,8 +240,8 @@ export function visibilityFor(
  * Brands a viewer can see. Default (unset) is EVERYTHING — a viewer gets full
  * access until an editor/admin restricts them to specific brands.
  */
-export function viewerBrands(user: User | null): Brand[] {
-  return user?.accessible_brands ?? ALL_BRANDS;
+export function viewerBrands(user: User | null, allBrandIds: string[]): string[] {
+  return userBrands(user, allBrandIds);
 }
 
 /** Viewers see costs by default; an editor/admin can turn this off. */
@@ -233,9 +250,9 @@ export function viewerShowCost(user: User | null): boolean {
 }
 
 /** A viewer/chef can see a recipe if it's approved and in one of their brands. */
-export function viewerCanAccess(user: User | null, recipe: Recipe): boolean {
+export function viewerCanAccess(user: User | null, recipe: Recipe, allBrandIds: string[]): boolean {
   if (!user || !isReadOnlyRole(user.role)) return false;
-  return recipe.status === "approved" && viewerBrands(user).includes(recipe.brand);
+  return recipe.status === "approved" && viewerBrands(user, allBrandIds).includes(recipe.brand);
 }
 
 /** Visibility for any user: staff roles see all; viewer/chef per their show_cost grant. */
@@ -269,25 +286,64 @@ export function isPendingApproval(user: User | null): boolean {
 // accessible_brands grant.
 
 /** Brands a user may act within (for scoping selectors + data). */
-export function userBrands(user: User | null): Brand[] {
+export function userBrands(user: User | null, allBrandIds: string[]): string[] {
   if (!user) return [];
-  if (isReadOnlyRole(user.role)) return user.accessible_brands ?? ALL_BRANDS;
-  return ALL_BRANDS; // admin, editor, head_chef
+  if (user.role === "super_admin") return allBrandIds; // §13 full access, ignores scope
+  switch (user.brand_scope) {
+    case "ALL_BRANDS":
+      return allBrandIds;
+    case "SELECTED_BRANDS":
+      return user.selected_brand_ids ?? [];
+    case "ASSIGNED_BRAND":
+      return user.assigned_brand ? [user.assigned_brand] : [];
+  }
+  // No explicit scope → legacy behaviour.
+  if (isReadOnlyRole(user.role)) return user.accessible_brands ?? allBrandIds;
+  return allBrandIds; // admin, editor, head_chef see every brand
 }
 
-/** Outlets a user may act within (all for staff roles; brand-scoped for viewer/chef). */
-export function accessibleOutlets(user: User | null): Outlet[] {
+/** Outlets a user may see (all for staff roles; brand-scoped for viewer/chef).
+ *  Not status-filtered, so historical records for inactive/archived outlets stay
+ *  visible — new-entry selectors filter to active themselves. Callers pass the
+ *  live outlet list (loaded from the brands/outlets repo). */
+export function accessibleOutlets(
+  user: User | null,
+  outlets: OutletRecord[],
+  allBrandIds: string[],
+): OutletRecord[] {
   if (!user) return [];
-  const brands = userBrands(user);
-  return OUTLETS.filter((o) => brands.includes(o.brand));
+  if (user.role === "super_admin") return outlets; // §13 full access, ignores scope
+  const brands = userBrands(user, allBrandIds);
+  switch (user.outlet_scope) {
+    case "NO_OUTLET_ACCESS":
+      return [];
+    case "ALL_OUTLETS":
+      return outlets;
+    case "ALL_OUTLETS_IN_BRAND":
+      return outlets.filter((o) => brands.includes(o.brand_id));
+    case "SELECTED_OUTLETS": {
+      const ids = new Set(user.selected_outlet_ids ?? []);
+      return outlets.filter((o) => ids.has(o.id));
+    }
+    case "ASSIGNED_OUTLET":
+      return outlets.filter((o) => o.id === user.assigned_outlet);
+  }
+  // No explicit scope → legacy: staff see all; viewer/chef are brand-scoped.
+  if (!isReadOnlyRole(user.role)) return outlets;
+  return outlets.filter((o) => brands.includes(o.brand_id));
 }
 
-export function canAccessOutlet(user: User | null, outletId: string): boolean {
-  return accessibleOutlets(user).some((o) => o.id === outletId);
+export function canAccessOutlet(
+  user: User | null,
+  outletId: string,
+  outlets: OutletRecord[],
+  allBrandIds: string[],
+): boolean {
+  return accessibleOutlets(user, outlets, allBrandIds).some((o) => o.id === outletId);
 }
 
-export function canAccessBrand(user: User | null, brand: Brand): boolean {
-  return userBrands(user).includes(brand);
+export function canAccessBrand(user: User | null, brand: string, allBrandIds: string[]): boolean {
+  return userBrands(user, allBrandIds).includes(brand);
 }
 
 export const HOME_BY_ROLE: Record<Role, string> = {

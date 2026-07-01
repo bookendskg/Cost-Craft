@@ -24,6 +24,7 @@ const AuditPage = lazy(() => import("@/features/audit/AuditPage").then((m) => ({
 const ExportHistoryPage = lazy(() => import("@/features/exports/ExportHistoryPage").then((m) => ({ default: m.ExportHistoryPage })));
 const AccessHistoryPage = lazy(() => import("@/features/share/AccessHistoryPage").then((m) => ({ default: m.AccessHistoryPage })));
 const RolesPage = lazy(() => import("@/features/roles/RolesPage").then((m) => ({ default: m.RolesPage })));
+const BrandsOutletsPage = lazy(() => import("@/features/brands/BrandsOutletsPage").then((m) => ({ default: m.BrandsOutletsPage })));
 const SettingsPage = lazy(() => import("@/features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const SharedRecipePage = lazy(() => import("@/features/share/SharedRecipePage").then((m) => ({ default: m.SharedRecipePage })));
@@ -157,6 +158,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireRole roles={["super_admin"]}>
             <RolesPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "brands",
+        element: (
+          <RequireRole roles={["super_admin"]}>
+            <BrandsOutletsPage />
           </RequireRole>
         ),
       },

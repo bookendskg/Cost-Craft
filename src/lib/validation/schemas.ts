@@ -55,11 +55,20 @@ export const userSchema = z.object({
   email: z.string().min(1, "Email is required").email("Enter a valid email"),
   role: z.enum(["super_admin", "admin", "editor", "head_chef", "chef", "viewer"]),
   status: z.enum(["active", "inactive"]),
-  assigned_brand: z.enum(["capiche", "aiko"]).nullable().optional(),
+  assigned_brand: z.string().nullable().optional(),
   assigned_outlet: z.string().nullable().optional(),
+  brand_scope: z.enum(["ALL_BRANDS", "SELECTED_BRANDS", "ASSIGNED_BRAND"]).nullable().optional(),
+  selected_brand_ids: z.array(z.string()).optional(),
+  outlet_scope: z
+    .enum(["ALL_OUTLETS", "ALL_OUTLETS_IN_BRAND", "SELECTED_OUTLETS", "ASSIGNED_OUTLET", "NO_OUTLET_ACCESS"])
+    .nullable()
+    .optional(),
+  selected_outlet_ids: z.array(z.string()).optional(),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Za-z]/, "Include at least one letter")
+    .regex(/[0-9]/, "Include at least one number")
     .optional()
     .or(z.literal("")),
 });
@@ -95,7 +104,7 @@ export type MaterialValues = z.infer<typeof materialSchema>;
 export const recipeHeaderSchema = z.object({
   recipe_name: z.string().min(1, "Recipe name is required"),
   category: z.string().min(1, "Category is required"),
-  brand: z.enum(["capiche", "aiko"], { required_error: "Brand is required" }),
+  brand: z.string().min(1, "Brand is required"),
   description: z.string().optional().or(z.literal("")),
   preparation_time: z
     .number({ invalid_type_error: "Enter a valid time" })
@@ -151,7 +160,7 @@ export type YieldValues = z.infer<typeof yieldSchema>;
 export const wastageSchema = z
   .object({
     wastage_date: z.string().min(1, "Date is required"),
-    brand: z.enum(["capiche", "aiko"]),
+    brand: z.string().min(1, "Select a brand"),
     outlet_id: z.string().min(1, "Select an outlet"),
     wastage_type: z.enum(WASTAGE_TYPES),
     item_type: z.enum(["ingredient", "recipe"]),
@@ -186,3 +195,30 @@ export const recipeLineSchema = z.object({
   unit_used: z.string().min(1),
 });
 export type RecipeLineValues = z.infer<typeof recipeLineSchema>;
+
+// --- Brands & outlets (Super-Admin managed) --------------------------------
+export const brandSchema = z.object({
+  name: z.string().min(1, "Brand name is required"),
+  brand_code: z.string().min(1, "Brand code is required"),
+  display_name: z.string().optional().or(z.literal("")),
+  accent_color: z.string().optional().or(z.literal("")),
+  status: z.enum(["active", "inactive", "archived"]),
+  notes: z.string().optional().or(z.literal("")),
+});
+export type BrandValues = z.infer<typeof brandSchema>;
+
+export const outletSchema = z.object({
+  brand_id: z.string().min(1, "Select a brand"),
+  name: z.string().min(1, "Outlet name is required"),
+  outlet_code: z.string().min(1, "Outlet code is required"),
+  city: z.string().optional().or(z.literal("")),
+  state: z.string().optional().or(z.literal("")),
+  address: z.string().optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  email: z.string().email("Enter a valid email").optional().or(z.literal("")),
+  opening_date: z.string().optional().or(z.literal("")),
+  timezone: z.string().optional().or(z.literal("")),
+  status: z.enum(["active", "inactive", "archived"]),
+  notes: z.string().optional().or(z.literal("")),
+});
+export type OutletValues = z.infer<typeof outletSchema>;

@@ -1,14 +1,26 @@
-import type { Brand, Role, User, UserStatus } from "../types";
+import type { BrandScope, OutletScope, Role, User, UserStatus } from "../types";
 import { delay, getDb, mutate, nowISO, uid } from "./db";
 import { recordAudit } from "./recompute";
+
+const MAX_SUPER_ADMINS = 5;
+const MAX_SUPER_MSG =
+  "A maximum of 5 active Super Admin users is allowed. Remove or demote an existing Super Admin before assigning another.";
+const isActiveSuperAdmin = (u: User) => u.role === "super_admin" && u.status === "active" && u.approved !== false;
+const OWNER_EMAILS = ["reservation.bookends@gmail.com", "moin.bookends@gmail.com"];
+const isOwnerEmail = (email: string) => OWNER_EMAILS.includes(email.toLowerCase());
 
 export interface CreateUserInput {
   name: string;
   email: string;
   role: Role;
   status?: UserStatus;
-  assigned_brand?: Brand | null;
+  assigned_brand?: string | null;
   assigned_outlet?: string | null;
+  brand_scope?: BrandScope | null;
+  selected_brand_ids?: string[];
+  outlet_scope?: OutletScope | null;
+  selected_outlet_ids?: string[];
+  accessible_brands?: string[];
   password: string;
 }
 
@@ -17,13 +29,17 @@ export interface UpdateUserInput {
   email?: string;
   role?: Role;
   status?: UserStatus;
-  assigned_brand?: Brand | null;
+  assigned_brand?: string | null;
   assigned_outlet?: string | null;
+  brand_scope?: BrandScope | null;
+  selected_brand_ids?: string[];
+  outlet_scope?: OutletScope | null;
+  selected_outlet_ids?: string[];
   password?: string;
   phone?: string | null;
   avatar_url?: string | null;
   last_login?: string | null;
-  accessible_brands?: Brand[];
+  accessible_brands?: string[];
   show_cost?: boolean;
   dashboard_access?: boolean;
   approved?: boolean;
@@ -55,6 +71,14 @@ export const usersRepo = {
         if (input.role === "super_admin" && db.users.find((x) => x.id === actorId)?.role !== "super_admin") {
           throw new Error("Only a Super Admin can create a Super Admin");
         }
+        // §14/§16 at most 5 active Super Admins (owner emails are always allowed).
+        if (
+          input.role === "super_admin" &&
+          !isOwnerEmail(input.email) &&
+          db.users.filter(isActiveSuperAdmin).length >= MAX_SUPER_ADMINS
+        ) {
+          throw new Error(MAX_SUPER_MSG);
+        }
         const user: User = {
           id: uid(),
           name: input.name,
@@ -63,6 +87,11 @@ export const usersRepo = {
           status: input.status ?? "active",
           assigned_brand: input.assigned_brand ?? null,
           assigned_outlet: input.assigned_outlet ?? null,
+          brand_scope: input.brand_scope ?? null,
+          selected_brand_ids: input.selected_brand_ids,
+          outlet_scope: input.outlet_scope ?? null,
+          selected_outlet_ids: input.selected_outlet_ids,
+          accessible_brands: input.accessible_brands,
           approved: true, // an admin is creating this account → pre-approved
           last_role_update: nowISO(),
           role_updated_by: actorId,
@@ -117,12 +146,28 @@ export const usersRepo = {
         if ((demotingSuper || disablingSuper) && db.users.filter(isActiveSuper).length <= 1) {
           throw new Error("This action cannot be completed because the system must retain at least one active Super Admin.");
         }
+        // §14/§16 at most 5 active Super Admins — blocks a 6th via promotion OR
+        // reactivation. Owner emails are exempt so an owner is never locked out.
+        const willBeSuper = (patch.role ?? u.role) === "super_admin";
+        const willBeActive = (patch.status ?? u.status) === "active" && (patch.approved ?? u.approved) !== false;
+        const becomingActiveSuper = willBeSuper && willBeActive && !isActiveSuperAdmin(u);
+        if (
+          becomingActiveSuper &&
+          !isOwnerEmail(u.email) &&
+          db.users.filter((x) => x.id !== id && isActiveSuperAdmin(x)).length >= MAX_SUPER_ADMINS
+        ) {
+          throw new Error(MAX_SUPER_MSG);
+        }
         if (patch.name !== undefined) u.name = patch.name;
         if (patch.email !== undefined) u.email = patch.email;
         if (patch.role !== undefined) u.role = patch.role;
         if (patch.status !== undefined) u.status = patch.status;
         if (patch.assigned_brand !== undefined) u.assigned_brand = patch.assigned_brand;
         if (patch.assigned_outlet !== undefined) u.assigned_outlet = patch.assigned_outlet;
+        if (patch.brand_scope !== undefined) u.brand_scope = patch.brand_scope;
+        if (patch.selected_brand_ids !== undefined) u.selected_brand_ids = patch.selected_brand_ids;
+        if (patch.outlet_scope !== undefined) u.outlet_scope = patch.outlet_scope;
+        if (patch.selected_outlet_ids !== undefined) u.selected_outlet_ids = patch.selected_outlet_ids;
         if (patch.password) u.password = patch.password;
         if (patch.phone !== undefined) u.phone = patch.phone;
         if (patch.avatar_url !== undefined) u.avatar_url = patch.avatar_url;

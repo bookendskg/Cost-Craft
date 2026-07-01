@@ -3246,4 +3246,301 @@ insert into public.ingredient_yields (id, ingredient_id, purchase_cost, purchase
 ('b1f04892-009d-464d-b71b-2b6b08de2695', 'cc88b3b6-c76d-40b5-8d1e-10686966b3a9', 45.39, 1, 'KG', 534, 'Gram', 404, 'Gram', 130, 75.66, 24.34, 0.085, 0.34915384615384615, '2026-06-01', 'Julienne', '2026-06-01T09:00:00.000Z', '2026-06-01T09:00:00.000Z')
 on conflict (id) do nothing;
 
+-- ===========================================================================
+-- 0012_brands_outlets.sql — dynamic Brands & Outlets (Super-Admin managed).
+-- Spliced into the one-shot setup so a fresh project gets brands/outlets too.
+-- ===========================================================================
+
+create table if not exists public.brands (
+  id               text primary key default gen_random_uuid()::text,
+  name             text not null,
+  normalized_name  text not null,
+  brand_code       text not null,
+  display_name     text not null default '',
+  accent_color     text,
+  logo_url         text,
+  status           text not null default 'active' check (status in ('active','inactive','archived')),
+  notes            text,
+  created_by       text,
+  created_at       timestamptz not null default now(),
+  updated_by       text,
+  updated_at       timestamptz not null default now()
+);
+create unique index if not exists brands_normalized_name_key on public.brands (normalized_name);
+create unique index if not exists brands_brand_code_key      on public.brands (brand_code);
+create index        if not exists brands_status_idx          on public.brands (status);
+
+insert into public.brands (id, name, normalized_name, brand_code, display_name, accent_color, status, created_at, updated_at) values
+  ('capiche', 'Capiche', 'capiche', 'CAP',  'Capiche', '#ed1c24', 'active', now(), now()),
+  ('aiko',    'Aiko',    'aiko',    'AIKO', 'Aiko',    '#d4a017', 'active', now(), now())
+on conflict (id) do nothing;
+
+alter table public.outlets
+  add column if not exists brand_id        text,
+  add column if not exists normalized_name text,
+  add column if not exists outlet_code     text,
+  add column if not exists city            text,
+  add column if not exists state           text,
+  add column if not exists address         text,
+  add column if not exists phone           text,
+  add column if not exists email           text,
+  add column if not exists opening_date    date,
+  add column if not exists timezone        text not null default 'Asia/Kolkata',
+  add column if not exists status          text not null default 'active',
+  add column if not exists manager_user_id text,
+  add column if not exists notes           text,
+  add column if not exists created_by      text,
+  add column if not exists created_at      timestamptz not null default now(),
+  add column if not exists updated_by      text,
+  add column if not exists updated_at      timestamptz not null default now();
+
+alter table public.outlets drop constraint if exists outlets_brand_check;
+alter table public.outlets alter column brand drop not null;
+alter table public.outlets drop constraint if exists outlets_status_check;
+alter table public.outlets add constraint outlets_status_check check (status in ('active','inactive','archived'));
+
+update public.outlets set brand_id        = brand                        where brand_id is null;
+update public.outlets set normalized_name = lower(name)                  where normalized_name is null;
+update public.outlets set outlet_code     = upper(replace(id, '-', '_')) where outlet_code is null or outlet_code = '';
+
+alter table public.outlets drop constraint if exists outlets_brand_id_fkey;
+alter table public.outlets add constraint outlets_brand_id_fkey
+  foreign key (brand_id) references public.brands(id) on delete restrict;
+create index if not exists outlets_brand_idx  on public.outlets (brand_id);
+create index if not exists outlets_status_idx on public.outlets (status);
+
+alter table public.recipes drop constraint if exists recipes_brand_check;
+alter table public.recipes drop constraint if exists recipes_brand_fkey;
+alter table public.recipes add constraint recipes_brand_fkey
+  foreign key (brand) references public.brands(id) on delete restrict;
+
+alter table public.wastage_entries drop constraint if exists wastage_entries_brand_check;
+alter table public.wastage_entries drop constraint if exists wastage_entries_brand_fkey;
+alter table public.wastage_entries add constraint wastage_entries_brand_fkey
+  foreign key (brand) references public.brands(id) on delete restrict;
+
+alter table public.user_profiles drop constraint if exists user_profiles_assigned_brand_check;
+alter table public.user_profiles drop constraint if exists user_profiles_assigned_brand_fkey;
+alter table public.user_profiles add constraint user_profiles_assigned_brand_fkey
+  foreign key (assigned_brand) references public.brands(id) on delete set null;
+
+alter table public.export_history drop constraint if exists export_history_brand_id_check;
+alter table public.export_history drop constraint if exists export_history_brand_id_fkey;
+alter table public.export_history add constraint export_history_brand_id_fkey
+  foreign key (brand_id) references public.brands(id) on delete set null;
+
+alter table public.recipe_access_links drop constraint if exists recipe_access_links_granted_to_brand_id_check;
+alter table public.recipe_access_links drop constraint if exists recipe_access_links_granted_to_brand_id_fkey;
+alter table public.recipe_access_links add constraint recipe_access_links_granted_to_brand_id_fkey
+  foreign key (granted_to_brand_id) references public.brands(id) on delete set null;
+
+alter table public.user_recipe_views drop constraint if exists user_recipe_views_view_type_check;
+
+alter table public.brands enable row level security;
+drop policy if exists brands_read  on public.brands;
+drop policy if exists brands_write on public.brands;
+create policy brands_read  on public.brands for select to authenticated using (true);
+create policy brands_write on public.brands for all to authenticated
+  using (public.app_role() = 'super_admin') with check (public.app_role() = 'super_admin');
+
+alter table public.outlets enable row level security;
+drop policy if exists outlets_write on public.outlets;
+create policy outlets_write on public.outlets for all to authenticated
+  using (public.app_role() = 'super_admin') with check (public.app_role() = 'super_admin');
+
+-- ===========================================================================
+-- 0013_role_scopes.sql — per-user brand & outlet access scopes (§19–§20).
+-- ===========================================================================
+alter table public.user_profiles
+  add column if not exists brand_scope         text,
+  add column if not exists selected_brand_ids  text[],
+  add column if not exists outlet_scope         text,
+  add column if not exists selected_outlet_ids  text[];
+
+alter table public.user_profiles drop constraint if exists user_profiles_brand_scope_check;
+alter table public.user_profiles add constraint user_profiles_brand_scope_check
+  check (brand_scope is null or brand_scope in ('ALL_BRANDS','SELECTED_BRANDS','ASSIGNED_BRAND'));
+
+alter table public.user_profiles drop constraint if exists user_profiles_outlet_scope_check;
+alter table public.user_profiles add constraint user_profiles_outlet_scope_check
+  check (outlet_scope is null or outlet_scope in ('ALL_OUTLETS','ALL_OUTLETS_IN_BRAND','SELECTED_OUTLETS','ASSIGNED_OUTLET','NO_OUTLET_ACCESS'));
+
+-- ===========================================================================
+-- 0014_super_admin_limits.sql — protected Super Admin count (§14–§17).
+-- ===========================================================================
+create or replace function public.prevent_super_admin_limits()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  active_supers int;
+  owners text[] := array['reservation.bookends@gmail.com','moin.bookends@gmail.com'];
+begin
+  perform pg_advisory_xact_lock(hashtext('user_profiles_super_admin_limit'));
+
+  if TG_OP = 'INSERT' then
+    if new.role = 'super_admin' and new.status = 'active' and coalesce(new.approved, true)
+       and lower(coalesce(new.email, '')) <> all(owners) then
+      select count(*) into active_supers from public.user_profiles
+        where role = 'super_admin' and status = 'active' and coalesce(approved, true);
+      if active_supers >= 5 then
+        raise exception 'A maximum of 5 active Super Admin users is allowed. Remove or demote an existing Super Admin before assigning another.';
+      end if;
+    end if;
+    return new;
+  end if;
+
+  if (new.role = 'super_admin' and new.status = 'active' and coalesce(new.approved, true))
+     and not (old.role = 'super_admin' and old.status = 'active' and coalesce(old.approved, true))
+     and lower(coalesce(new.email, '')) <> all(owners) then
+    select count(*) into active_supers from public.user_profiles
+      where id <> new.id and role = 'super_admin' and status = 'active' and coalesce(approved, true);
+    if active_supers >= 5 then
+      raise exception 'A maximum of 5 active Super Admin users is allowed. Remove or demote an existing Super Admin before assigning another.';
+    end if;
+  end if;
+
+  if (old.role = 'super_admin' and old.status = 'active' and coalesce(old.approved, true))
+     and not (new.role = 'super_admin' and new.status = 'active' and coalesce(new.approved, true)) then
+    select count(*) into active_supers from public.user_profiles
+      where id <> new.id and role = 'super_admin' and status = 'active' and coalesce(approved, true);
+    if active_supers < 1 then
+      raise exception 'This action cannot be completed because the system must retain at least one active Super Admin.';
+    end if;
+  end if;
+
+  return new;
+end $$;
+
+drop trigger if exists trg_user_profiles_super_admin_limits on public.user_profiles;
+create trigger trg_user_profiles_super_admin_limits
+  before insert or update on public.user_profiles
+  for each row execute function public.prevent_super_admin_limits();
+
+-- ===========================================================================
+-- 0015_rbac_and_integrity_fixes.sql — RBAC (super_admin) + integrity fixes.
+-- (create-or-replace overrides the earlier definitions in this transaction.)
+-- ===========================================================================
+create or replace function public.is_app_admin()
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.user_profiles
+    where id = auth.uid() and role in ('admin','super_admin') and status = 'active'
+  )
+$$;
+
+create or replace function public.is_app_super_admin()
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.user_profiles
+    where id = auth.uid() and role = 'super_admin' and status = 'active'
+  )
+$$;
+
+create or replace function public.prevent_super_admin_limits()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  active_supers int;
+  owners text[] := array['reservation.bookends@gmail.com','moin.bookends@gmail.com'];
+  target_is_owner boolean;
+begin
+  perform pg_advisory_xact_lock(hashtext('user_profiles_super_admin_limit'));
+  target_is_owner := lower(coalesce(new.email, '')) = any(owners);
+
+  if TG_OP = 'INSERT' then
+    if new.role = 'super_admin' then
+      if not target_is_owner and not public.is_app_super_admin() then
+        raise exception 'Only a Super Admin can manage Super Admin users';
+      end if;
+      if new.status = 'active' and coalesce(new.approved, true) and not target_is_owner then
+        select count(*) into active_supers from public.user_profiles
+          where role = 'super_admin' and status = 'active' and coalesce(approved, true);
+        if active_supers >= 5 then
+          raise exception 'A maximum of 5 active Super Admin users is allowed. Remove or demote an existing Super Admin before assigning another.';
+        end if;
+      end if;
+    end if;
+    return new;
+  end if;
+
+  if not target_is_owner
+     and (new.role = 'super_admin'
+          or (old.role = 'super_admin'
+              and row(new.role, new.status, new.approved) is distinct from row(old.role, old.status, old.approved)))
+     and not public.is_app_super_admin() then
+    raise exception 'Only a Super Admin can manage Super Admin users';
+  end if;
+
+  if (new.role = 'super_admin' and new.status = 'active' and coalesce(new.approved, true))
+     and not (old.role = 'super_admin' and old.status = 'active' and coalesce(old.approved, true))
+     and not target_is_owner then
+    select count(*) into active_supers from public.user_profiles
+      where id <> new.id and role = 'super_admin' and status = 'active' and coalesce(approved, true);
+    if active_supers >= 5 then
+      raise exception 'A maximum of 5 active Super Admin users is allowed. Remove or demote an existing Super Admin before assigning another.';
+    end if;
+  end if;
+
+  if (old.role = 'super_admin' and old.status = 'active' and coalesce(old.approved, true))
+     and not (new.role = 'super_admin' and new.status = 'active' and coalesce(new.approved, true)) then
+    select count(*) into active_supers from public.user_profiles
+      where id <> new.id and role = 'super_admin' and status = 'active' and coalesce(approved, true);
+    if active_supers < 1 then
+      raise exception 'This action cannot be completed because the system must retain at least one active Super Admin.';
+    end if;
+  end if;
+
+  return new;
+end $$;
+
+drop trigger if exists trg_user_profiles_super_admin_limits on public.user_profiles;
+create trigger trg_user_profiles_super_admin_limits
+  before insert or update on public.user_profiles
+  for each row execute function public.prevent_super_admin_limits();
+
+create unique index if not exists outlets_outlet_code_key    on public.outlets (outlet_code);
+create unique index if not exists outlets_brand_normname_key on public.outlets (brand_id, normalized_name);
+
+create or replace function public.resolve_share_link(p_token text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_hash   text := encode(digest(p_token, 'sha256'), 'hex');
+  v_link   public.recipe_access_links%rowtype;
+  v_recipe public.recipes%rowtype;
+  v_status text;
+begin
+  select * into v_link from public.recipe_access_links where token_hash = v_hash;
+  if not found then return jsonb_build_object('status', 'REVOKED'); end if;
+  if v_link.revoked_at is not null then v_status := 'REVOKED';
+  elsif v_link.expires_at <= now() then v_status := 'EXPIRED';
+  else v_status := 'ACTIVE'; end if;
+  update public.recipe_access_links set status = v_status where id = v_link.id;
+  if v_status <> 'ACTIVE' then return jsonb_build_object('status', v_status); end if;
+  select * into v_recipe from public.recipes where id = v_link.recipe_id;
+  if not found then return jsonb_build_object('status', 'REVOKED'); end if;
+  update public.recipe_access_links set access_count = access_count + 1, last_accessed_at = now() where id = v_link.id;
+  return jsonb_build_object(
+    'status', 'ACTIVE',
+    'access_type', v_link.access_type,
+    'granted_by_name', v_link.granted_by_name,
+    'brand', coalesce((select display_name from public.brands where id = v_recipe.brand),
+                      (select name from public.brands where id = v_recipe.brand),
+                      v_recipe.brand),
+    'recipe', (to_jsonb(v_recipe) - 'total_cost' - 'cost_per_portion' - 'packaging_cost' - 'selling_price' - 'wastage_pct'),
+    'ingredients', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', ri.id,
+        'component_type', ri.component_type,
+        'quantity_used', ri.quantity_used,
+        'unit_used', ri.unit_used,
+        'sub_recipe', (ri.component_type = 'recipe'),
+        'ingredient_name', case when ri.component_type = 'recipe' then sr.recipe_name else rm.ingredient_name end
+      ) order by ri.sort_order)
+      from public.recipe_ingredients ri
+      left join public.raw_materials rm on rm.id = ri.ingredient_id and ri.component_type <> 'recipe'
+      left join public.recipes sr on sr.id = ri.ingredient_id and ri.component_type = 'recipe'
+      where ri.recipe_id = v_recipe.id
+    ), '[]'::jsonb)
+  );
+end;
+$$;
+
 commit;

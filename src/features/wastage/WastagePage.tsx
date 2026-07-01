@@ -34,9 +34,10 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatINR, formatDate } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
 import { accessibleOutlets, can, canAccessOutlet, userBrands } from "@/lib/auth/permissions";
-import { BRANDS, OUTLETS, WASTAGE_TYPES, outletById, type Brand, type WastageEntry } from "@/lib/data/types";
+import { WASTAGE_TYPES, type WastageEntry } from "@/lib/data/types";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useRecipes } from "@/features/recipes/hooks";
+import { useBrands, useOutlets } from "@/features/brands/hooks";
 import { useWastage, useDeleteWastage } from "./hooks";
 import { WastageForm } from "./WastageForm";
 import { toast } from "@/components/ui/use-toast";
@@ -46,8 +47,11 @@ const PAGE_SIZE = 10;
 export function WastagePage() {
   const user = useSession((s) => s.user)!;
   const canEdit = can(user.role, "wastage.create");
-  const myBrands = userBrands(user);
-  const myOutlets = accessibleOutlets(user);
+  const { data: brands = [] } = useBrands();
+  const allBrandIds = brands.map((b) => b.id);
+  const myBrands = userBrands(user, allBrandIds);
+  const { data: outlets = [] } = useOutlets();
+  const myOutlets = accessibleOutlets(user, outlets, allBrandIds);
   const { data: entries = [], isLoading, error } = useWastage();
   const { data: materials = [] } = useMaterials();
   const { data: recipes = [] } = useRecipes();
@@ -55,6 +59,7 @@ export function WastagePage() {
 
   const matById = useMemo(() => new Map(materials.map((m) => [m.id, m.ingredient_name])), [materials]);
   const recById = useMemo(() => new Map(recipes.map((r) => [r.id, r.recipe_name])), [recipes]);
+  const outletName = useMemo(() => new Map(outlets.map((o) => [o.id, o.name])), [outlets]);
   const itemName = (w: WastageEntry) =>
     w.item_type === "recipe" ? recById.get(w.recipe_id ?? "") ?? "—" : matById.get(w.ingredient_id ?? "") ?? "—";
 
@@ -73,7 +78,7 @@ export function WastagePage() {
   const filtered = useMemo(() => {
     return entries.filter((w) => {
       // §11/§12 outlet roles only ever see their permitted outlets' wastage.
-      if (!canAccessOutlet(user, w.outlet_id)) return false;
+      if (!canAccessOutlet(user, w.outlet_id, outlets, allBrandIds)) return false;
       if (brand !== "all" && w.brand !== brand) return false;
       if (outlet !== "all" && w.outlet_id !== outlet) return false;
       if (type !== "all" && w.wastage_type !== type) return false;
@@ -88,7 +93,7 @@ export function WastagePage() {
       return true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, brand, outlet, type, from, to, search, matById, recById, user]);
+  }, [entries, brand, outlet, type, from, to, search, matById, recById, user, outlets, allBrandIds]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, pageCount);
@@ -134,19 +139,23 @@ export function WastagePage() {
       todayCost,
       monthCost,
       totalCost,
-      topOutlet: top(byOutletMap) ? outletById(top(byOutletMap)[0])?.name ?? "—" : "—",
+      topOutlet: top(byOutletMap) ? outletName.get(top(byOutletMap)[0]) ?? "—" : "—",
       topItem: topItem ? topItem[0] : "—",
       topRecipe: topRecipe ? topRecipe[0] : "—",
       pctOfInventory: inventoryValue > 0 ? (totalCost / inventoryValue) * 100 : 0,
-      byOutlet: OUTLETS.map((o) => ({ name: o.name.replace(/^(Capiche|Aiko) /, ""), cost: Math.round(byOutletMap.get(o.id) ?? 0) })),
+      byOutlet: myOutlets
+        .filter((o) => o.status === "active" || (byOutletMap.get(o.id) ?? 0) > 0)
+        .map((o) => ({ name: o.name.replace(/^(Capiche|Aiko) /, ""), cost: Math.round(byOutletMap.get(o.id) ?? 0) })),
       byType: toData(byTypeMap, (k) => k.replace(" Wastage", "")),
-      byBrand: BRANDS.map((b) => ({ name: b.label, cost: Math.round(byBrandMap.get(b.value) ?? 0) })),
+      byBrand: brands
+        .filter((b) => b.status === "active" || (byBrandMap.get(b.id) ?? 0) > 0)
+        .map((b) => ({ name: b.name, cost: Math.round(byBrandMap.get(b.id) ?? 0) })),
       byReason: toData(byReasonMap),
       topItems: toData(ingredientMap),
       daily,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, materials, matById, recById]);
+  }, [filtered, materials, matById, recById, outlets, brands]);
 
   const resetPage = () => setPage(1);
 
@@ -205,14 +214,14 @@ export function WastagePage() {
             <SelectTrigger><SelectValue placeholder="Brand" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Brands</SelectItem>
-              {BRANDS.filter((b) => myBrands.includes(b.value)).map((b) => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
+              {brands.filter((b) => b.status === "active" && myBrands.includes(b.id)).map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={outlet} onValueChange={(v) => { setOutlet(v); resetPage(); }}>
             <SelectTrigger><SelectValue placeholder="Outlet" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Outlets</SelectItem>
-              {myOutlets.filter((o) => brand === "all" || o.brand === (brand as Brand)).map((o) => (
+              {myOutlets.filter((o) => brand === "all" || o.brand_id === brand).map((o) => (
                 <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
               ))}
             </SelectContent>
@@ -264,7 +273,7 @@ export function WastagePage() {
                   {pageItems.map((w) => (
                     <TableRow key={w.id}>
                       <TableCell className="whitespace-nowrap text-sm">{formatDate(w.wastage_date)}</TableCell>
-                      <TableCell className="text-sm">{outletById(w.outlet_id)?.name ?? w.outlet_id}</TableCell>
+                      <TableCell className="text-sm">{outletName.get(w.outlet_id) ?? w.outlet_id}</TableCell>
                       <TableCell><Badge variant="outline">{w.wastage_type.replace(" Wastage", "")}</Badge></TableCell>
                       <TableCell className="font-medium">{itemName(w)}</TableCell>
                       <TableCell className="text-right font-mono">{w.quantity} {w.unit}</TableCell>
@@ -283,7 +292,7 @@ export function WastagePage() {
                 <li key={w.id} className="flex items-start gap-3 p-4">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{itemName(w)}</p>
-                    <p className="text-xs text-muted-foreground">{outletById(w.outlet_id)?.name} · {formatDate(w.wastage_date)}</p>
+                    <p className="text-xs text-muted-foreground">{outletName.get(w.outlet_id) ?? w.outlet_id} · {formatDate(w.wastage_date)}</p>
                     <p className="mt-1 text-sm"><Badge variant="outline" className="mr-2">{w.wastage_type.replace(" Wastage", "")}</Badge>{w.quantity} {w.unit} · <span className="font-semibold">{formatINR(w.total_cost)}</span></p>
                   </div>
                   {canEdit && <RowActions onEdit={() => { setEditing(w); setFormOpen(true); }} onDelete={() => setDeleting(w)} />}

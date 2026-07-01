@@ -46,7 +46,7 @@ import { cn, formatDate, formatINR, formatUnit } from "@/lib/utils";
 import { prepUnitCostFrom, round2 } from "@/lib/costing";
 
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
-import { BRANDS } from "@/lib/data/types";
+import { useBrands } from "@/features/brands/hooks";
 import { useSession } from "@/lib/auth/session";
 import { can, canEditRecipe, viewerCanAccess, visibilityForUser } from "@/lib/auth/permissions";
 import { toast } from "@/components/ui/use-toast";
@@ -81,6 +81,8 @@ export function RecipeDetailPage() {
 
   const { data, isLoading } = useRecipe(id);
   const { data: allRecipes = [] } = useRecipes();
+  const { data: brandRecords = [] } = useBrands();
+  const allBrandIds = brandRecords.map((b) => b.id);
   const { data: foodCostPct = 30 } = useFoodCostPct();
   const { map: usersMap } = useUsersMap();
 
@@ -173,7 +175,7 @@ export function RecipeDetailPage() {
       : recipe.recipe_name;
 
   // Viewer access enforcement — by granted brand (PRD §14).
-  if (user.role === "viewer" && !viewerCanAccess(user, recipe)) {
+  if (user.role === "viewer" && !viewerCanAccess(user, recipe, allBrandIds)) {
     return (
       <EmptyState
         icon={<Lock className="h-10 w-10" />}
@@ -197,7 +199,7 @@ export function RecipeDetailPage() {
   const fullCpp = fullCostPerPortion(recipe); // food cost + packaging
   const menuPrice = menuPriceOf(recipe, foodCostPct);
   const marginPct = menuPrice > 0 ? round2(((menuPrice - fullCpp) / menuPrice) * 100) : 0;
-  const brandLabel = BRANDS.find((b) => b.value === recipe.brand)?.label ?? recipe.brand;
+  const brandLabel = brandRecords.find((b) => b.id === recipe.brand)?.name ?? recipe.brand;
 
   const actualFc = menuPrice > 0 ? round2((fullCpp / menuPrice) * 100) : foodCostPct;
   const efficiency = Math.max(0, Math.min(100, Math.round((foodCostPct / Math.max(actualFc, 1)) * 100)));

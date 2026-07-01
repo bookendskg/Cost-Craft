@@ -1,4 +1,4 @@
-import type { Brand, Role, User, UserStatus } from "@/lib/data/types";
+import type { BrandScope, OutletScope, Role, User, UserStatus } from "@/lib/data/types";
 
 /** A row in the Supabase `public.user_profiles` table (see db/migrations/0007). */
 export interface ProfileRow {
@@ -11,9 +11,13 @@ export interface ProfileRow {
   email_verified: boolean;
   phone: string | null;
   avatar_url: string | null;
-  assigned_brand: Brand | null;
+  assigned_brand: string | null;
   assigned_outlet: string | null;
-  accessible_brands: Brand[] | null;
+  accessible_brands: string[] | null;
+  brand_scope: string | null;
+  selected_brand_ids: string[] | null;
+  outlet_scope: string | null;
+  selected_outlet_ids: string[] | null;
   show_cost: boolean | null;
   dashboard_access: boolean;
   theme_pref: string | null; // 'light' | 'dark' | 'capiche' | 'aiko'
@@ -43,6 +47,10 @@ export function profileToUser(p: ProfileRow): User {
     assigned_brand: p.assigned_brand,
     assigned_outlet: p.assigned_outlet,
     accessible_brands: p.accessible_brands ?? undefined,
+    brand_scope: (p.brand_scope as BrandScope | null) ?? null,
+    selected_brand_ids: p.selected_brand_ids ?? undefined,
+    outlet_scope: (p.outlet_scope as OutletScope | null) ?? null,
+    selected_outlet_ids: p.selected_outlet_ids ?? undefined,
     show_cost: p.show_cost ?? undefined,
     dashboard_access: p.dashboard_access,
     theme_pref: p.theme_pref,

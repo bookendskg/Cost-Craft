@@ -36,10 +36,8 @@ import { useSession } from "@/lib/auth/session";
 import { accessibleOutlets, userBrands } from "@/lib/auth/permissions";
 import { applicableUnitCost } from "@/lib/data";
 import {
-  BRANDS,
   DEPARTMENTS,
   WASTAGE_TYPES,
-  type Brand,
   type WastageEntry,
 } from "@/lib/data/types";
 import { cn, formatINR } from "@/lib/utils";
@@ -47,6 +45,7 @@ import { todayISO } from "@/lib/data/mock/db";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useRecipes } from "@/features/recipes/hooks";
 import { useYields } from "@/features/yield/hooks";
+import { useBrands, useOutlets } from "@/features/brands/hooks";
 import { useCreateWastage, useUpdateWastage } from "./hooks";
 import { toast } from "@/components/ui/use-toast";
 
@@ -69,12 +68,16 @@ export function WastageForm({
   const isEdit = !!record;
 
   const sessionUser = useSession((s) => s.user);
+  const { data: brands = [] } = useBrands();
+  const { data: outlets = [] } = useOutlets();
+  const allBrandIds = brands.map((b) => b.id);
   // §11/§12 outlet roles can only file wastage for their permitted outlets.
-  const myBrands = userBrands(sessionUser);
-  const myOutlets = accessibleOutlets(sessionUser);
-  const defBrand = (myBrands[0] as Brand) ?? "capiche";
+  const myBrands = userBrands(sessionUser, allBrandIds);
+  const myOutlets = accessibleOutlets(sessionUser, outlets, allBrandIds);
+  const activeOutlets = myOutlets.filter((o) => o.status === "active");
+  const defBrand = myBrands[0] ?? "";
   const defOutlet =
-    (myOutlets.find((o) => o.brand === defBrand) ?? myOutlets[0])?.id ?? "capiche-piplod";
+    (activeOutlets.find((o) => o.brand_id === defBrand) ?? activeOutlets[0])?.id ?? "";
 
   const menuRecipes = recipes.filter((r) => !r.is_prep);
 
@@ -151,9 +154,9 @@ export function WastageForm({
   const unitCost = watch("unit_cost");
   const total = quantity > 0 && unitCost >= 0 ? quantity * unitCost : 0;
 
-  const onBrand = (b: Brand) => {
+  const onBrand = (b: string) => {
     setValue("brand", b);
-    const next = myOutlets.filter((o) => o.brand === b);
+    const next = activeOutlets.filter((o) => o.brand_id === b);
     setValue("outlet_id", next[0]?.id ?? "");
   };
 
@@ -235,18 +238,20 @@ export function WastageForm({
               </Select>
             </Field>
             <Field label="Brand *">
-              <Select value={brand} onValueChange={(v) => onBrand(v as Brand)} disabled={myBrands.length <= 1}>
+              <Select value={brand} onValueChange={(v) => onBrand(v)} disabled={myBrands.length <= 1}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {BRANDS.filter((b) => myBrands.includes(b.value)).map((b) => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
+                  {brands.filter((b) => b.status === "active" && myBrands.includes(b.id)).map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </Field>
             <Field label="Outlet *" error={formState.errors.outlet_id?.message}>
-              <Select value={watch("outlet_id")} onValueChange={(v) => setValue("outlet_id", v)} disabled={myOutlets.length <= 1}>
+              <Select value={watch("outlet_id")} onValueChange={(v) => setValue("outlet_id", v)} disabled={activeOutlets.length <= 1}>
                 <SelectTrigger><SelectValue placeholder="Select outlet" /></SelectTrigger>
                 <SelectContent>
-                  {myOutlets.filter((o) => o.brand === brand).map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                  {myOutlets
+                    .filter((o) => o.brand_id === brand && (o.status === "active" || o.id === watch("outlet_id")))
+                    .map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </Field>

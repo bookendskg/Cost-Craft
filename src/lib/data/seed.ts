@@ -16,7 +16,7 @@ import { VEG_FRUIT_PRICES, VEG_FRUIT_ITEMS } from "./vegFruitPrices";
 import { PANKIL_PRICES, PANKIL_ITEMS } from "./pankilPrices";
 import { INGREDIENT_ALIASES } from "./ingredientAliases";
 import type { MockDb } from "./mock/db";
-import type { Brand, IngredientYield, RawMaterial, Recipe, RecipeIngredient, User } from "./types";
+import type { Brand, BrandRecord, IngredientYield, OutletRecord, RawMaterial, Recipe, RecipeIngredient, User } from "./types";
 
 /** ₹ per gram for an ingredient from the master costing book (the only price
  *  source), matched by normalised name. Undefined when the book has no price. */
@@ -900,6 +900,44 @@ const masterYieldRows: IngredientYield[] = [];
   }
 }
 
+// --- Brands & outlets (Super-Admin managed) --------------------------------
+// Seeded to preserve the legacy ids ("capiche"/"aiko", "capiche-piplod" …) so
+// every existing brand/outlet reference in recipes, users and wastage resolves.
+const brands: BrandRecord[] = [
+  { id: "capiche", name: "Capiche", normalized_name: "capiche", brand_code: "CAP", display_name: "Capiche", accent_color: "#ed1c24", logo_url: null, status: "active", notes: null, created_by: U_ADMIN, created_at: SEED_TS, updated_by: U_ADMIN, updated_at: SEED_TS },
+  { id: "aiko", name: "Aiko", normalized_name: "aiko", brand_code: "AIKO", display_name: "Aiko", accent_color: "#d4a017", logo_url: null, status: "active", notes: null, created_by: U_ADMIN, created_at: SEED_TS, updated_by: U_ADMIN, updated_at: SEED_TS },
+];
+
+const OUTLET_SEED: { id: string; brand_id: string; name: string; code: string; city: string }[] = [
+  { id: "capiche-piplod", brand_id: "capiche", name: "Capiche Piplod", code: "CAP-PIP", city: "Surat" },
+  { id: "capiche-vesu", brand_id: "capiche", name: "Capiche Vesu", code: "CAP-VES", city: "Surat" },
+  { id: "capiche-ambli", brand_id: "capiche", name: "Capiche Ambli", code: "CAP-AMB", city: "Ahmedabad" },
+  { id: "capiche-university", brand_id: "capiche", name: "Capiche University", code: "CAP-UNI", city: "Surat" },
+  { id: "aiko-pal", brand_id: "aiko", name: "Aiko Pal", code: "AIKO-PAL", city: "Surat" },
+  { id: "aiko-ambli", brand_id: "aiko", name: "Aiko Ambli", code: "AIKO-AMB", city: "Ahmedabad" },
+];
+const outlets: OutletRecord[] = OUTLET_SEED.map((o) => ({
+  id: o.id,
+  brand_id: o.brand_id,
+  name: o.name,
+  normalized_name: o.name.toLowerCase(),
+  outlet_code: o.code,
+  city: o.city,
+  state: "Gujarat",
+  address: null,
+  phone: null,
+  email: null,
+  opening_date: null,
+  timezone: "Asia/Kolkata",
+  status: "active",
+  manager_user_id: null,
+  notes: null,
+  created_by: U_ADMIN,
+  created_at: SEED_TS,
+  updated_by: U_ADMIN,
+  updated_at: SEED_TS,
+}));
+
 export function buildSeed(): MockDb {
   return {
     // Standard prep yields: 3 demo (onion/ginger/carrot) + 84 imported from the
@@ -942,5 +980,7 @@ export function buildSeed(): MockDb {
     ],
     export_history: [],
     recipe_access_links: [],
+    brands: structuredClone(brands),
+    outlets: structuredClone(outlets),
   };
 }

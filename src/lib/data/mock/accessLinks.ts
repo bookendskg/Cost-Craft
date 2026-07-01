@@ -9,7 +9,6 @@
 import type {
   AccessLinkStatus,
   AccessType,
-  Brand,
   Recipe,
   RecipeAccessLink,
   RecipeIngredientWithMaterial,
@@ -62,7 +61,7 @@ export interface CreateLinkInput {
   granted_to_user_id?: string | null;
   granted_to_email?: string | null;
   granted_to_role?: Role | null;
-  granted_to_brand_id?: Brand | null;
+  granted_to_brand_id?: string | null;
   granted_to_outlet_id?: string | null;
   access_type: AccessType;
 }
@@ -71,7 +70,7 @@ export interface ResolvedLink {
   status: AccessLinkStatus;
   access_type?: AccessType;
   granted_by_name?: string;
-  brand?: Brand;
+  brand?: string;
   recipe?: Recipe;
   ingredients?: RecipeIngredientWithMaterial[];
 }
@@ -138,7 +137,7 @@ export const accessLinksRepo = {
           status,
           access_type: link.access_type,
           granted_by_name: link.granted_by_name,
-          brand: recipe.brand,
+          brand: db.brands.find((b) => b.id === recipe.brand)?.name ?? recipe.brand,
           recipe: stripped.recipe,
           ingredients: stripped.ingredients,
         };

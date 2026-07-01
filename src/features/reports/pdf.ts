@@ -5,7 +5,8 @@ import type { TDocumentDefinitions } from "pdfmake/interfaces";
 import { calculateIngredientCost, round2 } from "@/lib/costing";
 import { canConvert } from "@/lib/units";
 import { formatINR, formatUnit } from "@/lib/utils";
-import { BRANDS, ROLE_LABELS, type Recipe, type RecipeIngredientWithMaterial, type Role } from "@/lib/data/types";
+import { ROLE_LABELS, type Recipe, type RecipeIngredientWithMaterial, type Role } from "@/lib/data/types";
+import { brandLabel as resolveBrandLabel } from "@/lib/data/brandCache";
 import type { ViewVisibility } from "@/lib/auth/permissions";
 
 /** Who exported + when — stamped by the caller from the authenticated session. */
@@ -50,7 +51,7 @@ export async function generateRecipePdf(
   recipe: Recipe,
   ingredients: RecipeIngredientWithMaterial[],
   foodCostPct: number,
-  opts: { visibility?: ViewVisibility; exporter?: PdfExporter } = {},
+  opts: { visibility?: ViewVisibility; exporter?: PdfExporter; brandLabel?: string } = {},
 ) {
   const { visibility, exporter } = opts;
   // Financial fields are dropped here (before generation), not merely hidden in UI —
@@ -59,8 +60,10 @@ export async function generateRecipePdf(
   const showUnitCost = visibility ? visibility.unitCosts : true;
   const showPrice = visibility ? visibility.sellingPrice : true;
 
-  // Brand comes from the stored recipe.brand — never from on-screen text.
-  const brandLabel = BRANDS.find((b) => b.value === recipe.brand)?.label ?? recipe.brand;
+  // Brand comes from the stored recipe.brand — never from on-screen text. A caller
+  // (e.g. the public share page, which can't read the brands table) may pass the
+  // resolved label directly.
+  const brandLabel = opts.brandLabel ?? resolveBrandLabel(recipe.brand);
   const stamp = istStamp();
 
   const headRow = ["#", "Ingredient", "Qty", "Unit"];

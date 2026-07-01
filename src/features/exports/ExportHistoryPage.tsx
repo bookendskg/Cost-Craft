@@ -8,10 +8,11 @@ import { TableSkeleton } from "@/components/TableSkeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { BRANDS, ROLE_LABELS, type Role } from "@/lib/data/types";
+import { ROLE_LABELS, type Role } from "@/lib/data/types";
 import { useExportHistory } from "./hooks";
+import { useBrands } from "@/features/brands/hooks";
+import { brandLabel } from "@/lib/data/brandCache";
 
-const brandLabel = (b: string | null) => (b ? BRANDS.find((x) => x.value === b)?.label ?? b : "—");
 const fmtIST = (iso: string, part: "date" | "time") =>
   new Date(iso).toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -23,6 +24,7 @@ const fmtIST = (iso: string, part: "date" | "time") =>
 /** §10 Export History — every successful export (who / what / brand / format / when, IST). */
 export function ExportHistoryPage() {
   const { data: rows = [], isLoading, isError } = useExportHistory();
+  const { data: brands = [] } = useBrands();
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
   const [format, setFormat] = useState("all");
@@ -88,7 +90,7 @@ export function ExportHistoryPage() {
             <SelectTrigger><SelectValue placeholder="Brand" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Brands</SelectItem>
-              {BRANDS.map((b) => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
+              {brands.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={status} onValueChange={setStatus}>

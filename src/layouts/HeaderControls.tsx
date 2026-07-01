@@ -10,7 +10,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
-import { BRANDS, ROLE_LABELS, type User } from "@/lib/data/types";
+import { ROLE_LABELS, type User } from "@/lib/data/types";
+import { allBrandIds, brandLabel } from "@/lib/data/brandCache";
 
 /** Initials fallback for users without an avatar. */
 function initials(name: string) {
@@ -43,8 +44,8 @@ export function Avatar({ user, className }: { user: User; className?: string }) 
 /** "Branch" line on the profile menu — maps to the app's brand concept. */
 function branchLabel(user: User): string | null {
   if (user.role === "viewer") {
-    const brands = user.accessible_brands ?? BRANDS.map((b) => b.value);
-    return brands.map((b) => BRANDS.find((x) => x.value === b)?.label ?? b).join(", ");
+    const ids = user.accessible_brands ?? allBrandIds();
+    return ids.map(brandLabel).join(", ");
   }
   return null;
 }

@@ -20,6 +20,10 @@ import { exportsRepo as mockExportsRepo } from "./mock/exports";
 import { supabaseExportsRepo } from "./supabase/exports";
 import { accessLinksRepo as mockAccessLinksRepo } from "./mock/accessLinks";
 import { supabaseAccessLinksRepo } from "./supabase/accessLinks";
+import { brandsRepo as mockBrandsRepo } from "./mock/brands";
+import { supabaseBrandsRepo } from "./supabase/brands";
+import { outletsRepo as mockOutletsRepo } from "./mock/outlets";
+import { supabaseOutletsRepo } from "./supabase/outlets";
 
 export { authenticate } from "./mock/users";
 export { applicableUnitCost } from "./mock/wastage";
@@ -28,6 +32,8 @@ export type { MaterialInput } from "./mock/materials";
 export type { YieldInput, ImportYieldRow } from "./mock/yields";
 export type { WastageInput } from "./mock/wastage";
 export type { RecipeHeaderInput, RecipeLineInput, ImportRecipeLine } from "./mock/recipes";
+export type { BrandInput } from "./mock/brands";
+export type { OutletInput } from "./mock/outlets";
 
 export const usersRepo = isSupabaseConfigured ? supabaseUsersRepo : mockUsersRepo;
 export const materialsRepo = isSupabaseDataBackend ? supabaseMaterialsRepo : mockMaterialsRepo;
@@ -38,6 +44,9 @@ export const exportsRepo = isSupabaseDataBackend ? supabaseExportsRepo : mockExp
 // Share links: mock mode enforces expiry client-side; the Supabase path resolves
 // tokens through the SECURITY DEFINER resolve_share_link RPC (server-enforced, 0011).
 export const accessLinksRepo = isSupabaseDataBackend ? supabaseAccessLinksRepo : mockAccessLinksRepo;
+// Brands & outlets: dynamically-managed master data (Super-Admin only).
+export const brandsRepo = isSupabaseDataBackend ? supabaseBrandsRepo : mockBrandsRepo;
+export const outletsRepo = isSupabaseDataBackend ? supabaseOutletsRepo : mockOutletsRepo;
 
 export { viewsRepo, settingsRepo, auditRepo } from "./mock/misc";
 export type { AuditFilter } from "./mock/misc";

@@ -1,5 +1,4 @@
 import type {
-  Brand,
   ComponentType,
   Recipe,
   RecipeCostHistory,
@@ -26,7 +25,7 @@ export interface ImportRecipeLine {
 export interface RecipeHeaderInput {
   recipe_name: string;
   category: string;
-  brand: Brand;
+  brand: string;
   description?: string | null;
   method?: string[];
   preparation_time?: number | null;

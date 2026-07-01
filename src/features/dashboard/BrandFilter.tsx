@@ -1,22 +1,19 @@
 import { cn } from "@/lib/utils";
-import { BRANDS, type Brand } from "@/lib/data/types";
+import { useBrands } from "@/features/brands/hooks";
 
-export type BrandSelection = Brand | "all";
+/** A brand id, or the special "all" selection. */
+export type BrandSelection = string;
 
-const OPTIONS: { value: BrandSelection; label: string }[] = [
-  { value: "all", label: "All Brands" },
-  ...BRANDS,
-];
-
-// Active chip is painted in that brand's own colour.
-const ACTIVE: Record<BrandSelection, string> = {
+// The built-in brands have hand-tuned active chip colours; a dynamically-added
+// brand's chip is painted from its own accent colour (inline) instead.
+const KNOWN_ACTIVE: Record<string, string> = {
   all: "bg-[#1b35a8] text-white shadow",
   capiche: "bg-[#ed1c24] text-white shadow",
   aiko: "bg-[#e8b923] text-slate-900 shadow",
 };
 
-/** Segmented All / Capiche / Aiko brand switcher. `className="w-full"` makes it
- *  a full-width, equal-segment control for mobile drawers. */
+/** Segmented All / <brands…> switcher. `className="w-full"` makes it a full-width,
+ *  equal-segment control for mobile drawers. Brands load dynamically. */
 export function BrandFilter({
   value,
   onChange,
@@ -26,22 +23,36 @@ export function BrandFilter({
   onChange: (value: BrandSelection) => void;
   className?: string;
 }) {
+  const { data: brands = [] } = useBrands();
+  const options = [
+    { id: "all", name: "All Brands", accent: null as string | null },
+    ...brands
+      .filter((b) => b.status === "active")
+      .map((b) => ({ id: b.id, name: b.name, accent: b.accent_color })),
+  ];
   const fullWidth = className?.includes("w-full");
   return (
     <div className={cn("inline-flex rounded-lg border bg-muted p-1", fullWidth && "flex w-full", className)}>
-      {OPTIONS.map((o) => (
-        <button
-          key={o.value}
-          onClick={() => onChange(o.value)}
-          className={cn(
-            "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-            fullWidth && "flex-1",
-            value === o.value ? ACTIVE[o.value] : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
+      {options.map((o) => {
+        const active = value === o.id;
+        const known = KNOWN_ACTIVE[o.id];
+        return (
+          <button
+            key={o.id}
+            onClick={() => onChange(o.id)}
+            className={cn(
+              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              fullWidth && "flex-1",
+              active
+                ? known ?? "text-white shadow"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+            style={active && !known && o.accent ? { backgroundColor: o.accent, color: "#fff" } : undefined}
+          >
+            {o.name}
+          </button>
+        );
+      })}
     </div>
   );
 }

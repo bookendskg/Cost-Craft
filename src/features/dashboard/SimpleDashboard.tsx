@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
 import { viewerCanAccess } from "@/lib/auth/permissions";
 import { useRecipes } from "@/features/recipes/hooks";
+import { useBrands } from "@/features/brands/hooks";
 import { brandWordmark, brandAccentText } from "./brandTheme";
 import type { BrandSelection } from "./BrandFilter";
 
@@ -20,6 +21,8 @@ export function SimpleDashboard({ brand }: { brand: BrandSelection }) {
   const navigate = useNavigate();
   const user = useSession((s) => s.user);
   const { data: recipes = [], isLoading } = useRecipes();
+  const { data: brands = [] } = useBrands();
+  const allBrandIds = useMemo(() => brands.map((b) => b.id), [brands]);
 
   const data = useMemo(() => {
     const visible = recipes.filter((r) => {
@@ -27,7 +30,7 @@ export function SimpleDashboard({ brand }: { brand: BrandSelection }) {
       if (brand !== "all" && r.brand !== brand) return false;
       // Viewers only see approved recipes in their permitted brands; other roles
       // without dashboard access can still browse the full catalogue.
-      if (user?.role === "viewer") return viewerCanAccess(user, r);
+      if (user?.role === "viewer") return viewerCanAccess(user, r, allBrandIds);
       return true;
     });
     const categories = new Map<string, number>();
@@ -39,7 +42,7 @@ export function SimpleDashboard({ brand }: { brand: BrandSelection }) {
       total: visible.length,
       categories: [...categories.entries()].sort((a, b) => a[0].localeCompare(b[0])),
     };
-  }, [recipes, brand, user]);
+  }, [recipes, brand, user, allBrandIds]);
 
   const accent = brandAccentText(brand);
   const firstName = user?.name?.split(" ")[0] ?? "there";
@@ -51,11 +54,11 @@ export function SimpleDashboard({ brand }: { brand: BrandSelection }) {
         <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className={cn("rounded-md bg-white px-4 py-2 text-xl font-extrabold tracking-wide shadow-sm", accent)}>
-              {brandWordmark[brand]}
+              {brandWordmark(brand)}
             </div>
             <div>
               <p className="text-base font-bold sm:text-lg">Welcome back, {firstName}</p>
-              <p className="text-xs text-slate-300">Browse the {brandWordmark[brand]} recipe catalogue</p>
+              <p className="text-xs text-slate-300">Browse the {brandWordmark(brand)} recipe catalogue</p>
             </div>
           </div>
           <Button variant="secondary" onClick={() => navigate("/recipes")} className="shrink-0">
@@ -68,7 +71,7 @@ export function SimpleDashboard({ brand }: { brand: BrandSelection }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Stat icon={<UtensilsCrossed className="h-4 w-4" />} label="Dishes" value={isLoading ? "—" : String(data.total)} accent={accent} />
         <Stat icon={<LayoutGrid className="h-4 w-4" />} label="Categories" value={isLoading ? "—" : String(data.categories.length)} accent={accent} />
-        <Stat icon={<BookOpen className="h-4 w-4" />} label="Brand" value={brandWordmark[brand]} accent={accent} />
+        <Stat icon={<BookOpen className="h-4 w-4" />} label="Brand" value={brandWordmark(brand)} accent={accent} />
       </div>
 
       {/* Category overview (counts only — no costs) */}

@@ -124,7 +124,7 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
     };
   }, [recipes, brand, weightByRecipe]);
 
-  const title = `${brandWordmark[brand]} MASTER COSTING`;
+  const title = `${brandWordmark(brand)} MASTER COSTING`;
   const accent = brandAccentText(brand);
 
   return (
@@ -134,7 +134,7 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
         <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className={cn("rounded-md bg-white px-4 py-2 text-xl font-extrabold tracking-wide shadow-sm", accent)}>
-              {brandWordmark[brand]}
+              {brandWordmark(brand)}
             </div>
             <div>
               <p className="text-base font-bold sm:text-lg">{title}</p>
@@ -197,7 +197,7 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
             <div className="p-10 text-center">
               <p className="font-semibold">No menu items costed yet</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Add recipes with a making cost and selling price to populate the {brandWordmark[brand]} master costing.
+                Add recipes with a making cost and selling price to populate the {brandWordmark(brand)} master costing.
               </p>
             </div>
           ) : (

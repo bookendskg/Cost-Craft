@@ -14,6 +14,7 @@ import {
   FileClock,
   Link2,
   ShieldCheck,
+  Store,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/lib/data/types";
@@ -49,6 +50,7 @@ export const NAV_ITEMS: NavItem[] = [
   // Super-Admin-only. navForRole shows all items to super_admin, and no other role
   // has "super_admin" in its list, so this stays hidden from regular Admin.
   { to: "/roles", label: "Roles & Permissions", icon: ShieldCheck, group: "Admin", roles: ["super_admin"] },
+  { to: "/brands", label: "Brands & Outlets", icon: Store, group: "Admin", roles: ["super_admin"] },
 ];
 
 export function navForRole(role: Role): NavItem[] {

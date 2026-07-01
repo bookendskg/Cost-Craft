@@ -24,6 +24,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { formatINR } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { useDashboardBrand } from "@/features/dashboard/brandTheme";
+import { brandLabel as resolveBrandLabel } from "@/lib/data/brandCache";
 import { useRecipes } from "@/features/recipes/hooks";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useUsers } from "@/features/users/hooks";
@@ -88,7 +89,7 @@ export function ReportsPage() {
     });
     return map;
   }, [ingData]);
-  const brandLabel = brand === "all" ? "AllBrands" : brand === "capiche" ? "Capiche" : "Aiko";
+  const brandLabel = brand === "all" ? "AllBrands" : resolveBrandLabel(brand);
 
   const exportExcel = async () => {
     setIsExporting(true);

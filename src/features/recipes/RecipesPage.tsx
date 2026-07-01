@@ -47,6 +47,7 @@ import { useRecipeCategories, useFoodCostPct, useAllSettings } from "@/features/
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useUsersMap } from "@/features/users/hooks";
 import { useDashboardBrand } from "@/features/dashboard/brandTheme";
+import { useBrands } from "@/features/brands/hooks";
 import { useDuplicateRecipe, useRecipe, useRecipes } from "./hooks";
 import {
   FC_TONE_STYLES,
@@ -72,13 +73,15 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
   const user = useSession((s) => s.user)!;
   const navigate = useNavigate();
   const { data: allRecipes = [], isLoading } = useRecipes();
+  const { data: brandList = [] } = useBrands();
+  const allBrandIds = useMemo(() => brandList.map((b) => b.id), [brandList]);
   const globalBrand = useDashboardBrand((s) => s.brand);
   const canSeeCost = user.role !== "viewer" || viewerShowCost(user);
   const recipes = useMemo(() => {
     // Exclude size variants — a pizza shows once as its master (§14).
     let base = allRecipes.filter((r) => (prepMode ? r.is_prep : !r.is_prep) && !r.parent_recipe_id);
     if (user.role === "viewer") {
-      const brands = viewerBrands(user);
+      const brands = viewerBrands(user, allBrandIds);
       base = base.filter((r) => r.status === "approved" && brands.includes(r.brand));
     } else if (globalBrand !== "all") {
       base = base.filter((r) => r.brand === globalBrand);
@@ -107,7 +110,7 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
       collapsed[idx] = { ...r, recipe_name: r.recipe_name.replace(QUAL, "").replace(/\s+/g, " ").trim() };
     }
     return collapsed;
-  }, [allRecipes, prepMode, user, globalBrand]);
+  }, [allRecipes, prepMode, user, globalBrand, allBrandIds]);
 
   // Available size labels per master recipe (master + its variants), e.g. ["11-inch","15-inch"].
   const sizesByMaster = useMemo(() => {

@@ -10,9 +10,11 @@ import { TableSkeleton } from "@/components/TableSkeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { BRANDS, type AccessType } from "@/lib/data/types";
+import { type AccessType } from "@/lib/data/types";
 import { useSession } from "@/lib/auth/session";
 import { useRecipes } from "@/features/recipes/hooks";
+import { useBrands } from "@/features/brands/hooks";
+import { brandLabel } from "@/lib/data/brandCache";
 import { useAccessLinks, useRevokeAccessLink } from "@/features/exports/accessHooks";
 
 const ACCESS_LABELS: Record<AccessType, string> = {
@@ -20,13 +22,13 @@ const ACCESS_LABELS: Record<AccessType, string> = {
   DOWNLOAD_PDF: "Download PDF",
   VIEW_AND_DOWNLOAD: "View & download",
 };
-const brandLabel = (b: string | null) => (b ? BRANDS.find((x) => x.value === b)?.label ?? b : "—");
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" }) : "—");
 
 /** §17 Access History — all shared recipe links (Given By / Given To / status), with revoke. */
 export function AccessHistoryPage() {
   const { data: links = [], isLoading, isError } = useAccessLinks();
   const { data: recipes = [] } = useRecipes();
+  const { data: brands = [] } = useBrands();
   const user = useSession((s) => s.user);
   const revoke = useRevokeAccessLink();
   const [search, setSearch] = useState("");
@@ -78,7 +80,7 @@ export function AccessHistoryPage() {
             <SelectTrigger><SelectValue placeholder="Brand" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Brands</SelectItem>
-              {BRANDS.map((b) => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
+              {brands.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>

@@ -31,8 +31,9 @@ import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "@/lib/yi
 import { cutsForName, cutYieldPct, resolveParentAndCut } from "@/lib/data/ingredientCuts";
 import { formatINR } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
-import { BRANDS, type RawMaterial } from "@/lib/data/types";
+import { type RawMaterial } from "@/lib/data/types";
 import { useMaterials } from "@/features/raw-materials/hooks";
+import { useBrands } from "@/features/brands/hooks";
 import { useYields } from "@/features/yield/hooks";
 import { useFoodCostPct, useRecipeCategories } from "@/features/settings/hooks";
 import { useRecipeCosting, type EditorLine } from "@/features/costing/useRecipeCosting";
@@ -61,6 +62,7 @@ export function RecipeEditorPage() {
   const { data: materials = [] } = useMaterials();
   const { data: yields = [] } = useYields();
   const { data: allRecipes = [] } = useRecipes();
+  const { data: brands = [] } = useBrands();
   const { data: categories = [] } = useRecipeCategories();
   const { data: foodCostPct = 30 } = useFoodCostPct();
   const { data: existing, isLoading: loadingRecipe } = useRecipe(id);
@@ -333,9 +335,9 @@ export function RecipeEditorPage() {
                   <SelectValue placeholder="Select brand" />
                 </SelectTrigger>
                 <SelectContent>
-                  {BRANDS.map((b) => (
-                    <SelectItem key={b.value} value={b.value}>
-                      {b.label}
+                  {brands.filter((b) => b.status === "active").map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

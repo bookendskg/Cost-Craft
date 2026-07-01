@@ -1,4 +1,4 @@
-import type { Brand, Department, RawMaterial, Recipe, WastageEntry, WastageType } from "../types";
+import type { Department, RawMaterial, Recipe, WastageEntry, WastageType } from "../types";
 import { round2 } from "../../costing";
 import { activeYield, effectiveCostPerBaseUnit } from "../../yield";
 import { delay, getDb, mutate, nowISO, uid } from "./db";
@@ -6,7 +6,7 @@ import { recordAudit } from "./recompute";
 
 export interface WastageInput {
   wastage_date: string;
-  brand: Brand;
+  brand: string;
   outlet_id: string;
   wastage_type: WastageType;
   item_type: "ingredient" | "recipe";

@@ -23,6 +23,8 @@ import { ROLE_LABELS } from "@/lib/data/types";
 import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWordmark } from "@/features/dashboard/brandTheme";
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
+import { useBrands } from "@/features/brands/hooks";
+import { primeBrandCache } from "@/lib/data/brandCache";
 
 export function AppLayout() {
   const user = useSession((s) => s.user);
@@ -31,6 +33,7 @@ export function AppLayout() {
   const navigate = useNavigate();
   const brand = useDashboardBrand((s) => s.brand);
   const setBrand = useDashboardBrand((s) => s.setBrand);
+  const { data: brandRecords = [] } = useBrands();
   const [mobileOpen, setMobileOpen] = useState(false);
   const collapsed = usePrefs((s) => s.sidebarCollapsed);
   const toggleSidebar = usePrefs((s) => s.toggleSidebar);
@@ -39,10 +42,12 @@ export function AppLayout() {
   const { data: allUsers = [] } = useUsers();
   const pendingUsers = isAdmin ? allUsers.filter((u) => u.approved === false).length : 0;
 
-  // Re-theme the whole app to the active brand (sets --primary/--accent/--ring).
+  // Prime the brand cache (label/accent lookups) and re-theme the whole app to the
+  // active brand. Re-runs when brands load so a newly-added brand's accent applies.
   useEffect(() => {
+    primeBrandCache(brandRecords);
     applyBrand(brand);
-  }, [brand]);
+  }, [brand, brandRecords]);
 
   // On logout the shell unmounts — drop the brand class so the auth pages fall
   // back to the neutral BOOKENDS-blue base instead of a stale brand accent.
@@ -213,9 +218,9 @@ export function AppLayout() {
               "mr-1 rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-wide sm:hidden",
               brandAccentText(brand),
             )}
-            aria-label={`Brand ${brandWordmark[brand]} — tap to change`}
+            aria-label={`Brand ${brandWordmark(brand)} — tap to change`}
           >
-            {brandWordmark[brand]}
+            {brandWordmark(brand)}
           </button>
           <div className="mr-1 hidden sm:block">
             <BrandFilter value={brand} onChange={setBrand} />
@@ -235,9 +240,9 @@ export function AppLayout() {
             >
               <span
                 className={cn("select-none whitespace-nowrap font-black leading-none tracking-tighter opacity-[0.05]", brandAccentText(brand))}
-                style={{ fontSize: `${Math.min(22, 92 / brandWordmark[brand].length)}vw` }}
+                style={{ fontSize: `${Math.min(22, 92 / brandWordmark(brand).length)}vw` }}
               >
-                {brandWordmark[brand]}
+                {brandWordmark(brand)}
               </span>
             </div>
           )}

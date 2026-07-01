@@ -61,6 +61,10 @@ export const supabaseUsersRepo = {
     if (patch.status !== undefined) row.status = patch.status;
     if (patch.assigned_brand !== undefined) row.assigned_brand = patch.assigned_brand;
     if (patch.assigned_outlet !== undefined) row.assigned_outlet = patch.assigned_outlet;
+    if (patch.brand_scope !== undefined) row.brand_scope = patch.brand_scope;
+    if (patch.selected_brand_ids !== undefined) row.selected_brand_ids = patch.selected_brand_ids;
+    if (patch.outlet_scope !== undefined) row.outlet_scope = patch.outlet_scope;
+    if (patch.selected_outlet_ids !== undefined) row.selected_outlet_ids = patch.selected_outlet_ids;
     if (patch.phone !== undefined) row.phone = patch.phone;
     if (patch.avatar_url !== undefined) row.avatar_url = patch.avatar_url;
     if (patch.last_login !== undefined) row.last_login = patch.last_login;

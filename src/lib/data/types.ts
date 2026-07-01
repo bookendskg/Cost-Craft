@@ -40,6 +40,56 @@ export const OUTLETS: Outlet[] = [
 export const outletById = (id: string): Outlet | undefined => OUTLETS.find((o) => o.id === id);
 export const outletsForBrand = (brand: Brand): Outlet[] => OUTLETS.filter((o) => o.brand === brand);
 
+/** Lifecycle status for a dynamically-managed brand or outlet (§10). Archived
+ *  records are retained for history but hidden from new operations. */
+export type BrandOutletStatus = "active" | "inactive" | "archived";
+
+/** A dynamically-managed restaurant brand (Super-Admin only). The two seeded
+ *  brands reuse the legacy ids "capiche"/"aiko" so every existing brand reference
+ *  (recipes, users, wastage, exports, share links) keeps resolving unchanged. */
+export interface BrandRecord {
+  id: string;
+  name: string;
+  /** Lower-cased, whitespace-collapsed name used for duplicate detection. */
+  normalized_name: string;
+  brand_code: string;
+  display_name: string;
+  /** Accent/text colour (hex). Seeds: Capiche #ed1c24, Aiko gold. */
+  accent_color: string | null;
+  logo_url: string | null;
+  status: BrandOutletStatus;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_by: string | null;
+  updated_at: string;
+}
+
+/** A dynamically-managed outlet under a brand (Super-Admin only). The six seeded
+ *  outlets reuse the legacy ids ("capiche-piplod" …) so wastage/outlet references
+ *  keep resolving unchanged. */
+export interface OutletRecord {
+  id: string;
+  brand_id: string;
+  name: string;
+  normalized_name: string;
+  outlet_code: string;
+  city: string | null;
+  state: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  opening_date: string | null;
+  timezone: string;
+  status: BrandOutletStatus;
+  manager_user_id: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_by: string | null;
+  updated_at: string;
+}
+
 /** Operational wastage taxonomy (§13). */
 export const WASTAGE_TYPES = [
   "Raw Material Wastage",
@@ -68,7 +118,8 @@ export type Department = (typeof DEPARTMENTS)[number];
 export interface WastageEntry {
   id: string;
   wastage_date: string;
-  brand: Brand;
+  /** Brand id (dynamic — see the brands table). */
+  brand: string;
   outlet_id: string;
   wastage_type: WastageType;
   /** Whether a raw ingredient or a finished recipe was wasted. */
@@ -91,6 +142,16 @@ export interface WastageEntry {
   updated_at: string;
 }
 
+/** §20 Controlled brand-access scope for a user/role. */
+export type BrandScope = "ALL_BRANDS" | "SELECTED_BRANDS" | "ASSIGNED_BRAND";
+/** §20 Controlled outlet-access scope for a user/role. */
+export type OutletScope =
+  | "ALL_OUTLETS"
+  | "ALL_OUTLETS_IN_BRAND"
+  | "SELECTED_OUTLETS"
+  | "ASSIGNED_OUTLET"
+  | "NO_OUTLET_ACCESS";
+
 export interface User {
   id: string;
   name: string;
@@ -105,10 +166,16 @@ export interface User {
   avatar_url?: string | null;
   /** Whether the user's email is verified (mirrored from Supabase auth on sign-in). */
   email_verified?: boolean;
-  /** Brand assignment for Outlet Manager / Staff. */
-  assigned_brand?: Brand | null;
+  /** Brand assignment (brand id) for Outlet Manager / Staff. */
+  assigned_brand?: string | null;
   /** Outlet assignment (outlet id) for Outlet Manager / Staff. */
   assigned_outlet?: string | null;
+  /** §19–§20 brand access scope. Unset → legacy (staff: all; viewer: accessible_brands). */
+  brand_scope?: BrandScope | null;
+  selected_brand_ids?: string[];
+  /** §19–§20 outlet access scope. Unset → legacy (staff: all; viewer/chef: brand-scoped). */
+  outlet_scope?: OutletScope | null;
+  selected_outlet_ids?: string[];
   /** Last successful sign-in timestamp (set by the auth layer). */
   last_login?: string | null;
   /** When the role was last changed + who changed it (role history). */
@@ -116,8 +183,8 @@ export interface User {
   role_updated_by?: string | null;
   /** Saved UI theme preference ('light' | 'dark' | 'capiche' | 'aiko'). */
   theme_pref?: string | null;
-  /** Viewer-only: which brands' approved recipes this viewer can see. */
-  accessible_brands?: Brand[];
+  /** Viewer-only: which brand ids' approved recipes this viewer can see. */
+  accessible_brands?: string[];
   /** Viewer-only: whether this viewer sees costs/pricing (else Capiche-style). */
   show_cost?: boolean;
   /** Whether this user sees the Master Costing dashboard (cost stats). Admins
@@ -154,7 +221,8 @@ export interface Recipe {
   id: string;
   recipe_name: string;
   category: string;
-  brand: Brand;
+  /** Brand id (dynamic — see the brands table). */
+  brand: string;
   description: string | null;
   /** Ordered preparation/cooking steps (from the cookbook METHOD section). */
   method: string[];
@@ -282,7 +350,7 @@ export interface UserRecipeView {
   assigned_at: string;
 }
 
-export type AuditEntityType = "recipe" | "ingredient" | "user";
+export type AuditEntityType = "recipe" | "ingredient" | "user" | "brand" | "outlet";
 export type AuditAction = "create" | "update" | "delete" | "approve" | "reject" | "submit";
 
 export interface AuditLog {
@@ -325,7 +393,7 @@ export interface RecipeAccessLink {
   granted_to_user_id: string | null;
   granted_to_email: string | null;
   granted_to_role: Role | null;
-  granted_to_brand_id: Brand | null;
+  granted_to_brand_id: string | null;
   granted_to_outlet_id: string | null;
   access_type: AccessType;
   created_at: string;
@@ -350,7 +418,7 @@ export interface ExportHistory {
   entity_id: string | null;
   recipe_name_snapshot: string | null;
   report_name: string | null;
-  brand_id: Brand | null;
+  brand_id: string | null;
   outlet_id: string | null;
   filters_used: string | null;
   file_format: ExportFormat;

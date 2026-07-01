@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatUnit } from "@/lib/utils";
-import { BRANDS } from "@/lib/data/types";
 import type { ViewVisibility } from "@/lib/auth/permissions";
 import { generateRecipePdf } from "@/features/reports/pdf";
 import { toast } from "@/components/ui/use-toast";
@@ -48,7 +47,7 @@ export function SharedRecipePage() {
 
   const recipe = data.recipe;
   const ingredients = data.ingredients ?? [];
-  const brandLabel = BRANDS.find((b) => b.value === recipe.brand)?.label ?? recipe.brand;
+  const brandLabel = data.brand || recipe.brand;
   const canDownload = data.access_type === "DOWNLOAD_PDF" || data.access_type === "VIEW_AND_DOWNLOAD";
   const method = (recipe.method ?? []).filter((s) => s.trim());
 
@@ -126,6 +125,7 @@ export function SharedRecipePage() {
                     await generateRecipePdf(recipe, ingredients, 30, {
                       visibility: NO_FINANCIALS,
                       exporter: { name: `Shared by ${data.granted_by_name}`, role: "viewer" },
+                      brandLabel: data.brand || undefined,
                     });
                     toast.success("PDF exported successfully.");
                   } catch {
