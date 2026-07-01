@@ -940,5 +940,6 @@ export function buildSeed(): MockDb {
         updated_by: U_ADMIN, updated_at: SEED_TS,
       },
     ],
+    export_history: [],
   };
 }

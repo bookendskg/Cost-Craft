@@ -16,6 +16,8 @@ import { wastageRepo as mockWastageRepo } from "./mock/wastage";
 import { supabaseWastageRepo } from "./supabase/wastage";
 import { recipesRepo as mockRecipesRepo } from "./mock/recipes";
 import { supabaseRecipesRepo } from "./supabase/recipes";
+import { exportsRepo as mockExportsRepo } from "./mock/exports";
+import { supabaseExportsRepo } from "./supabase/exports";
 
 export { authenticate } from "./mock/users";
 export { applicableUnitCost } from "./mock/wastage";
@@ -30,9 +32,11 @@ export const materialsRepo = isSupabaseDataBackend ? supabaseMaterialsRepo : moc
 export const yieldsRepo = isSupabaseDataBackend ? supabaseYieldsRepo : mockYieldsRepo;
 export const wastageRepo = isSupabaseDataBackend ? supabaseWastageRepo : mockWastageRepo;
 export const recipesRepo = isSupabaseDataBackend ? supabaseRecipesRepo : mockRecipesRepo;
+export const exportsRepo = isSupabaseDataBackend ? supabaseExportsRepo : mockExportsRepo;
 
 export { viewsRepo, settingsRepo, auditRepo } from "./mock/misc";
 export type { AuditFilter } from "./mock/misc";
+export type { ExportRecordInput } from "./mock/exports";
 
 export { resetDb } from "./mock/db";
 export * from "./types";

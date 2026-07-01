@@ -21,6 +21,7 @@ const ReportsPage = lazy(() => import("@/features/reports/ReportsPage").then((m)
 const UsersPage = lazy(() => import("@/features/users/UsersPage").then((m) => ({ default: m.UsersPage })));
 const ViewerAccessPage = lazy(() => import("@/features/viewers/ViewerAccessPage").then((m) => ({ default: m.ViewerAccessPage })));
 const AuditPage = lazy(() => import("@/features/audit/AuditPage").then((m) => ({ default: m.AuditPage })));
+const ExportHistoryPage = lazy(() => import("@/features/exports/ExportHistoryPage").then((m) => ({ default: m.ExportHistoryPage })));
 const SettingsPage = lazy(() => import("@/features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 
@@ -127,6 +128,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireRole roles={["admin"]}>
             <AuditPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "exports",
+        element: (
+          <RequireRole roles={["admin"]}>
+            <ExportHistoryPage />
           </RequireRole>
         ),
       },

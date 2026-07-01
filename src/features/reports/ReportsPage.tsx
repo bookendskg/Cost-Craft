@@ -28,6 +28,8 @@ import { useRecipes } from "@/features/recipes/hooks";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useUsers } from "@/features/users/hooks";
 import { useRecipeCategories, useFoodCostPct } from "@/features/settings/hooks";
+import { useSession } from "@/lib/auth/session";
+import { useRecordExport } from "@/features/exports/hooks";
 import { RecipePdfButton } from "./RecipePdfButton";
 import {
   useAllCostHistory,
@@ -54,6 +56,8 @@ export function ReportsPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const user = useSession((s) => s.user);
+  const recordExport = useRecordExport();
 
   const filtered = useMemo(
     () =>
@@ -105,6 +109,22 @@ export function ReportsPage() {
         },
         `${brandLabel}_${new Date().toISOString().slice(0, 10)}`,
       );
+      // Audit only after the workbook is generated.
+      recordExport.mutate({
+        exported_by_user_id: user?.id ?? null,
+        exporter_name_snapshot: user?.name ?? "Unknown",
+        exporter_email_snapshot: user?.email ?? null,
+        exporter_role_snapshot: user?.role ?? "viewer",
+        export_type: "recipe_report",
+        entity_type: "report",
+        entity_id: null,
+        recipe_name_snapshot: null,
+        report_name: `${brandLabel} Recipe Report`,
+        brand_id: brand === "all" ? null : brand,
+        outlet_id: null,
+        filters_used: JSON.stringify({ status, category, from, to, count: filtered.length }),
+        file_format: "xlsx",
+      });
       toast.success("Excel report downloaded");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");

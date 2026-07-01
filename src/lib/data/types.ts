@@ -304,6 +304,32 @@ export interface SystemSetting {
   updated_at: string;
 }
 
+export type ExportFormat = "pdf" | "csv" | "xlsx";
+export type ExportEntityType = "recipe" | "report";
+export type ExportStatus = "success" | "failed";
+
+/** §9 One audit row per successful export. Exporter identity + timestamp are
+ *  snapshotted from the authenticated session at export time (never user-typed). */
+export interface ExportHistory {
+  id: string;
+  exported_by_user_id: string | null;
+  exporter_name_snapshot: string;
+  exporter_email_snapshot: string | null;
+  exporter_role_snapshot: Role;
+  export_type: string; // e.g. "single_recipe", "recipe_report"
+  entity_type: ExportEntityType;
+  entity_id: string | null;
+  recipe_name_snapshot: string | null;
+  report_name: string | null;
+  brand_id: Brand | null;
+  outlet_id: string | null;
+  filters_used: string | null;
+  file_format: ExportFormat;
+  exported_at: string; // UTC ISO
+  timezone: string; // e.g. "Asia/Kolkata"
+  status: ExportStatus;
+}
+
 /** A recipe ingredient joined with its raw material or sub-recipe, for the UI. */
 export interface RecipeIngredientWithMaterial extends RecipeIngredient {
   material: RawMaterial | null;
