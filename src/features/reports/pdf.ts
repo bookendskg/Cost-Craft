@@ -202,3 +202,107 @@ function tableWidths(cols: number): (string | number)[] {
   for (let i = 2; i < cols; i++) widths.push("auto");
   return widths;
 }
+
+export interface ReportRow {
+  name: string;
+  category: string;
+  status: string;
+  costPerPortion: number;
+  menuPrice: number;
+  fcPct: number | null;
+}
+
+/** A report-shaped PDF: filter context + a table of recipes (day / brand / recipe
+ *  reports). Cost/price columns are dropped for restricted viewers, and the table
+ *  header repeats across pages. */
+export async function generateReportPdf(opts: {
+  title: string;
+  brandLabel: string;
+  rows: ReportRow[];
+  filtersText?: string;
+  exporter?: PdfExporter;
+  visibility?: ViewVisibility;
+}) {
+  const { title, brandLabel, rows, filtersText, exporter, visibility } = opts;
+  const showCost = visibility ? visibility.totalCost : true;
+  const showPrice = visibility ? visibility.sellingPrice : true;
+  const stamp = istStamp();
+  const roleLabel = exporter ? ROLE_LABELS[exporter.role as Role] ?? exporter.role : "";
+
+  const headRow = ["#", "Recipe", "Category"];
+  if (showCost) headRow.push("Cost / Portion");
+  if (showPrice) {
+    headRow.push("Menu Price");
+    headRow.push("FC %");
+  }
+  headRow.push("Status");
+
+  const body: string[][] = [headRow];
+  rows.forEach((r, idx) => {
+    const row = [String(idx + 1), r.name, r.category];
+    if (showCost) row.push(formatINR(r.costPerPortion));
+    if (showPrice) {
+      row.push(r.menuPrice > 0 ? formatINR(r.menuPrice) : "—");
+      row.push(r.fcPct != null ? `${r.fcPct}%` : "—");
+    }
+    row.push(r.status);
+    body.push(row);
+  });
+
+  const widths: (string | number)[] = [18, "*", "auto"];
+  for (let i = 3; i < headRow.length; i++) widths.push("auto");
+
+  const doc: TDocumentDefinitions = {
+    pageMargins: [40, 40, 40, 54],
+    footer: (currentPage: number, pageCount: number) => ({
+      margin: [40, 14, 40, 0] as [number, number, number, number],
+      columns: [
+        { text: `${brandLabel} · Generated from CostCraft`, fontSize: 8, color: "#94a3b8" },
+        { text: `Page ${currentPage} of ${pageCount}`, alignment: "center" as const, fontSize: 8, color: "#94a3b8" },
+        { text: "Confidential", alignment: "right" as const, fontSize: 8, color: "#94a3b8" },
+      ],
+    }),
+    content: [
+      {
+        columns: [
+          [
+            { text: "CostCraft", style: "brandMark" },
+            { text: "Bookends Hospitality", style: "org" },
+          ],
+          { text: brandLabel.toUpperCase(), style: "brandName", alignment: "right" as const },
+        ],
+      },
+      { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: "#e2e8f0" }], margin: [0, 8, 0, 12] as [number, number, number, number] },
+      { text: title, style: "title" },
+      {
+        style: "meta",
+        columns: [
+          [
+            `Generated: ${stamp.label}`,
+            exporter ? `Exported by: ${exporter.name} (${roleLabel})` : "",
+          ],
+          [
+            `Recipes: ${rows.length}`,
+            filtersText ? `Filters: ${filtersText}` : "",
+          ],
+        ],
+      },
+      {
+        table: { headerRows: 1, widths, body },
+        layout: "lightHorizontalLines",
+      },
+    ],
+    styles: {
+      brandMark: { fontSize: 15, bold: true, color: "#0f172a" },
+      org: { fontSize: 9, color: "#64748b" },
+      brandName: { fontSize: 13, bold: true, color: "#0f172a" },
+      title: { fontSize: 16, bold: true, margin: [0, 0, 0, 8] },
+      meta: { fontSize: 9, margin: [0, 0, 0, 10], lineHeight: 1.3, color: "#334155" },
+    },
+    defaultStyle: { fontSize: 9 },
+  };
+
+  const filename = `${brandLabel}_${title.replace(/[^\w]+/g, "_")}_${stamp.date.replace(/[\s,]+/g, "")}.pdf`;
+  const pdfMake = await loadPdfMake();
+  pdfMake.createPdf(doc).download(filename);
+}

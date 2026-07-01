@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { FileSpreadsheet, Loader2 } from "lucide-react";
+import { FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -37,6 +37,7 @@ import {
   useAllRecipeIngredients,
 } from "./hooks";
 import { generateExcelReport } from "./excel";
+import { generateReportPdf, type ReportRow } from "./pdf";
 
 export function ReportsPage() {
   const { data: recipes = [], isLoading: recipesLoading, isError: recipesError } = useRecipes();
@@ -56,6 +57,7 @@ export function ReportsPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [isPdfExporting, setIsPdfExporting] = useState(false);
   const user = useSession((s) => s.user);
   const recordExport = useRecordExport();
 
@@ -133,16 +135,67 @@ export function ReportsPage() {
     }
   };
 
+  const exportPdf = async () => {
+    if (isPdfExporting) return; // block double-clicks → no duplicate exports
+    setIsPdfExporting(true);
+    try {
+      const rows: ReportRow[] = filtered.map((r) => {
+        const cpp = (r.cost_per_portion ?? 0) + (r.packaging_cost ?? 0);
+        const menu = r.selling_price ?? 0;
+        const fc = menu > 0 ? Math.round((cpp / menu) * 1000) / 10 : null;
+        return { name: r.recipe_name, category: r.category, status: r.status, costPerPortion: cpp, menuPrice: menu, fcPct: fc };
+      });
+      const filtersText =
+        [status !== "all" ? `status=${status}` : "", category !== "all" ? `category=${category}` : "", from ? `from ${from}` : "", to ? `to ${to}` : ""]
+          .filter(Boolean)
+          .join(", ") || "none";
+      await generateReportPdf({
+        title: `${brandLabel} Recipe Report`,
+        brandLabel,
+        rows,
+        filtersText,
+        exporter: user ? { name: user.name, role: user.role } : undefined,
+      });
+      recordExport.mutate({
+        exported_by_user_id: user?.id ?? null,
+        exporter_name_snapshot: user?.name ?? "Unknown",
+        exporter_email_snapshot: user?.email ?? null,
+        exporter_role_snapshot: user?.role ?? "viewer",
+        export_type: "recipe_report",
+        entity_type: "report",
+        entity_id: null,
+        recipe_name_snapshot: null,
+        report_name: `${brandLabel} Recipe Report`,
+        brand_id: brand === "all" ? null : brand,
+        outlet_id: null,
+        filters_used: JSON.stringify({ status, category, from, to, count: filtered.length }),
+        file_format: "pdf",
+      });
+      toast.success("PDF exported successfully.");
+    } catch (e) {
+      if (import.meta.env.DEV) console.error("Report PDF failed", e);
+      toast.error("Unable to generate the PDF. Please try again.");
+    } finally {
+      setIsPdfExporting(false);
+    }
+  };
+
   return (
     <>
       <PageHeader
         title="Reports"
         description="Filter recipes and export a multi-sheet Excel workbook"
         actions={
-          <Button variant="accent" onClick={exportExcel} disabled={filtered.length === 0 || isExporting}>
-            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
-            {isExporting ? "Preparing…" : "Export Excel"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={exportPdf} disabled={filtered.length === 0 || isPdfExporting}>
+              {isPdfExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+              {isPdfExporting ? "Preparing…" : "Export PDF"}
+            </Button>
+            <Button variant="accent" onClick={exportExcel} disabled={filtered.length === 0 || isExporting}>
+              {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+              {isExporting ? "Preparing…" : "Export Excel"}
+            </Button>
+          </div>
         }
       />
 
