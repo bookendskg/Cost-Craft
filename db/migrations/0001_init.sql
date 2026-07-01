@@ -36,7 +36,9 @@ create table raw_materials (
 
 create table recipes (
   id               uuid primary key default gen_random_uuid(),
-  recipe_name      text not null unique,
+  -- NOT globally unique: pizzas share a name across size variants (11"/15").
+  -- New-recipe name uniqueness is enforced at the app layer, which excludes variants.
+  recipe_name      text not null,
   category         text not null,
   brand            text not null check (brand in ('capiche','aiko')),
   description      text,

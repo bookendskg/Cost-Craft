@@ -43,7 +43,9 @@ create table if not exists raw_materials (
 
 create table if not exists recipes (
   id               uuid primary key default gen_random_uuid(),
-  recipe_name      text not null unique,
+  -- NOT globally unique: pizzas share a name across size variants (11"/15").
+  -- New-recipe name uniqueness is enforced at the app layer, which excludes variants.
+  recipe_name      text not null,
   category         text not null,
   brand            text not null check (brand in ('capiche','aiko')),
   description      text,
@@ -528,6 +530,10 @@ alter table public.recipes
   add column if not exists parent_recipe_id  uuid references public.recipes(id) on delete set null,
   add column if not exists size_code         text check (size_code in ('11_INCH','15_INCH')),
   add column if not exists size_label        text;
+
+-- recipe_name is intentionally NOT globally unique — pizza size variants (11"/15")
+-- share a name. Drop the legacy unique constraint from 0001 on existing databases.
+alter table public.recipes drop constraint if exists recipes_recipe_name_key;
 
 alter table public.raw_materials
   add column if not exists notes text;

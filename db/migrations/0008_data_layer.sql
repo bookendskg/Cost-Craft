@@ -13,6 +13,10 @@ alter table public.recipes
   add column if not exists size_code         text check (size_code in ('11_INCH','15_INCH')),
   add column if not exists size_label        text;
 
+-- recipe_name is intentionally NOT globally unique — pizza size variants (11"/15")
+-- share a name. Drop the legacy unique constraint from 0001 on existing databases.
+alter table public.recipes drop constraint if exists recipes_recipe_name_key;
+
 alter table public.raw_materials
   add column if not exists notes text;
 
