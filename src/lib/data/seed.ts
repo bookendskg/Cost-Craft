@@ -941,5 +941,6 @@ export function buildSeed(): MockDb {
       },
     ],
     export_history: [],
+    recipe_access_links: [],
   };
 }

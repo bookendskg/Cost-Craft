@@ -18,6 +18,7 @@ import { recipesRepo as mockRecipesRepo } from "./mock/recipes";
 import { supabaseRecipesRepo } from "./supabase/recipes";
 import { exportsRepo as mockExportsRepo } from "./mock/exports";
 import { supabaseExportsRepo } from "./supabase/exports";
+import { accessLinksRepo as mockAccessLinksRepo } from "./mock/accessLinks";
 
 export { authenticate } from "./mock/users";
 export { applicableUnitCost } from "./mock/wastage";
@@ -33,10 +34,14 @@ export const yieldsRepo = isSupabaseDataBackend ? supabaseYieldsRepo : mockYield
 export const wastageRepo = isSupabaseDataBackend ? supabaseWastageRepo : mockWastageRepo;
 export const recipesRepo = isSupabaseDataBackend ? supabaseRecipesRepo : mockRecipesRepo;
 export const exportsRepo = isSupabaseDataBackend ? supabaseExportsRepo : mockExportsRepo;
+// Share links are client-enforced in mock mode; the Supabase path needs an edge
+// function for public token resolution (contract in db/migrations/0011).
+export const accessLinksRepo = mockAccessLinksRepo;
 
 export { viewsRepo, settingsRepo, auditRepo } from "./mock/misc";
 export type { AuditFilter } from "./mock/misc";
 export type { ExportRecordInput } from "./mock/exports";
+export type { CreateLinkInput, ResolvedLink } from "./mock/accessLinks";
 
 export { resetDb } from "./mock/db";
 export * from "./types";

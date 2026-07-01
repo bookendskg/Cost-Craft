@@ -308,6 +308,34 @@ export type ExportFormat = "pdf" | "csv" | "xlsx";
 export type ExportEntityType = "recipe" | "report";
 export type ExportStatus = "success" | "failed";
 
+/** §14 Controlled access types for a shared recipe link (no free-text). */
+export type AccessType = "READ_ONLY" | "DOWNLOAD_PDF" | "VIEW_AND_DOWNLOAD";
+export type AccessLinkStatus = "ACTIVE" | "EXPIRED" | "REVOKED";
+
+/** §15 A temporary, read-only recipe share link. The raw token is never stored —
+ *  only its hash — and expiry/revocation are checked when the token is resolved. */
+export interface RecipeAccessLink {
+  id: string;
+  token_hash: string;
+  recipe_id: string;
+  granted_by_user_id: string | null;
+  granted_by_name: string;
+  granted_by_role: Role;
+  granted_to_user_id: string | null;
+  granted_to_email: string | null;
+  granted_to_role: Role | null;
+  granted_to_brand_id: Brand | null;
+  granted_to_outlet_id: string | null;
+  access_type: AccessType;
+  created_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  revoked_by_user_id: string | null;
+  last_accessed_at: string | null;
+  access_count: number;
+  status: AccessLinkStatus;
+}
+
 /** §9 One audit row per successful export. Exporter identity + timestamp are
  *  snapshotted from the authenticated session at export time (never user-typed). */
 export interface ExportHistory {

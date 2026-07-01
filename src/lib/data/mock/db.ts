@@ -5,6 +5,7 @@
 import type {
   AuditLog,
   ExportHistory,
+  RecipeAccessLink,
   IngredientPriceHistory,
   IngredientYield,
   RawMaterial,
@@ -33,10 +34,11 @@ export interface MockDb {
   audit_logs: AuditLog[];
   system_settings: SystemSetting[];
   export_history: ExportHistory[];
+  recipe_access_links: RecipeAccessLink[];
 }
 
 // Bump this when the seed/DB shape changes so stale localStorage data is reseeded.
-const STORAGE_KEY = "rcms.mockdb.v39";
+const STORAGE_KEY = "rcms.mockdb.v40";
 
 let cache: MockDb | null = null;
 

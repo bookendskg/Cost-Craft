@@ -12,6 +12,7 @@ import {
   Sprout,
   Trash2,
   FileClock,
+  Link2,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/lib/data/types";
@@ -42,6 +43,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/users", label: "User Management", icon: Users, group: "Admin", roles: ["admin"] },
   { to: "/audit", label: "Price Changes", icon: ScrollText, group: "Admin", roles: ["admin"] },
   { to: "/exports", label: "Export History", icon: FileClock, group: "Admin", roles: ["admin"] },
+  { to: "/access", label: "Access History", icon: Link2, group: "Admin", roles: ["admin"] },
   { to: "/settings", label: "Settings", icon: Settings, group: "Admin", roles: ["admin"] },
 ];
 

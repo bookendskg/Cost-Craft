@@ -22,14 +22,18 @@ const UsersPage = lazy(() => import("@/features/users/UsersPage").then((m) => ({
 const ViewerAccessPage = lazy(() => import("@/features/viewers/ViewerAccessPage").then((m) => ({ default: m.ViewerAccessPage })));
 const AuditPage = lazy(() => import("@/features/audit/AuditPage").then((m) => ({ default: m.AuditPage })));
 const ExportHistoryPage = lazy(() => import("@/features/exports/ExportHistoryPage").then((m) => ({ default: m.ExportHistoryPage })));
+const AccessHistoryPage = lazy(() => import("@/features/share/AccessHistoryPage").then((m) => ({ default: m.AccessHistoryPage })));
 const SettingsPage = lazy(() => import("@/features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
+const SharedRecipePage = lazy(() => import("@/features/share/SharedRecipePage").then((m) => ({ default: m.SharedRecipePage })));
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/signup", element: <SignUpPage /> },
   { path: "/forgot-password", element: <ForgotPasswordPage /> },
   { path: "/reset-password", element: <ResetPasswordPage /> },
+  // Public, read-only shared recipe — no auth guard, no app chrome.
+  { path: "/share/:token", element: <SharedRecipePage /> },
   {
     path: "/",
     element: (
@@ -136,6 +140,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireRole roles={["admin"]}>
             <ExportHistoryPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "access",
+        element: (
+          <RequireRole roles={["admin"]}>
+            <AccessHistoryPage />
           </RequireRole>
         ),
       },

@@ -15,6 +15,7 @@ import {
   ImageOff,
   ExternalLink,
   ArrowLeft,
+  Share2,
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -40,6 +41,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { ShareLinkDialog } from "@/features/share/ShareLinkDialog";
 import { cn, formatDate, formatINR, formatUnit } from "@/lib/utils";
 import { prepUnitCostFrom, round2 } from "@/lib/costing";
 
@@ -153,6 +155,7 @@ export function RecipeDetailPage() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectNote, setRejectNote] = useState("");
   const [approveOpen, setApproveOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   if (isLoading) return <p className="p-8 text-center text-sm text-muted-foreground">Loading…</p>;
   if (!data) return <EmptyState title="Recipe not found" />;
@@ -265,6 +268,11 @@ export function RecipeDetailPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <RecipePdfButton recipe={recipe} ingredients={ingredients} foodCostPct={foodCostPct} visibility={vis} />
+          {editable && (
+            <Button variant="outline" onClick={() => setShareOpen(true)}>
+              <Share2 className="h-4 w-4" /> Create Temporary Link
+            </Button>
+          )}
           {can(user.role, "recipe.duplicate") && (
             <Button
               variant="outline"
@@ -701,6 +709,8 @@ export function RecipeDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ShareLinkDialog open={shareOpen} onOpenChange={setShareOpen} recipe={recipe} user={user} />
 
       <ConfirmDialog
         open={approveOpen}
