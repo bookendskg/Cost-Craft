@@ -70,7 +70,8 @@ create table recipe_ingredients (
   -- 'recipe' → it references recipes(id) (an in-house prep used as a component).
   ingredient_id   uuid not null,
   component_type  text not null default 'material' check (component_type in ('material','recipe')),
-  quantity_used   decimal(10,3) not null check (quantity_used > 0),
+  -- Allow 0 (optional/garnish lines are seeded with 0 quantity; the app permits it).
+  quantity_used   decimal(10,3) not null check (quantity_used >= 0),
   unit_used       text not null,
   calculated_cost decimal(10,2),
   sort_order      integer not null default 0

@@ -24,6 +24,11 @@ alter table public.recipe_ingredients
   add column if not exists wastage_override_pct decimal(5,2),
   add column if not exists cut_type             text;
 
+-- recipe_ingredients.quantity_used may be 0 (optional/garnish lines). Relax the
+-- legacy CHECK (> 0) from 0001 to (>= 0) on existing databases.
+alter table public.recipe_ingredients drop constraint if exists recipe_ingredients_quantity_used_check;
+alter table public.recipe_ingredients add constraint recipe_ingredients_quantity_used_check check (quantity_used >= 0);
+
 alter table public.wastage_entries
   add column if not exists done_by text;
 
