@@ -7,9 +7,11 @@ import {
   type OutletRecord,
   type Recipe,
   type Role,
+  type SystemRole,
   type User,
   type ViewType,
 } from "../data/types";
+import { capabilitiesForRole } from "./roleCache";
 
 export type Capability =
   // user management
@@ -49,7 +51,11 @@ export type Capability =
   | "outlet.change_brand"
   | "outlet.archive";
 
-const MATRIX: Record<Role, Capability[]> = {
+// The built-in role → capability matrix. This is now the SEED and the pre-hydration
+// fallback for the six system roles: the same rows are seeded into role_capabilities,
+// and once the role cache is primed (AppLayout) `can()` reads live data instead —
+// so a Super Admin can grant/revoke capabilities on custom roles without a code change.
+export const MATRIX: Record<SystemRole, Capability[]> = {
   // Super Admin: everything, plus exclusive role/permission management.
   super_admin: [
     "user.manage",
@@ -131,7 +137,12 @@ const MATRIX: Record<Role, Capability[]> = {
 export function can(role: Role | undefined, cap: Capability): boolean {
   if (!role) return false;
   if (role === "super_admin") return true; // Super Admin can do anything.
-  return MATRIX[role].includes(cap);
+  // Prefer live capabilities from the role cache (built-ins + custom roles). Before
+  // the cache is primed it returns null, so we fall back to the built-in matrix for
+  // the six system roles (custom roles simply get nothing until the cache loads).
+  const live = capabilitiesForRole(role);
+  if (live) return live.has(cap);
+  return (MATRIX[role as SystemRole] ?? []).includes(cap);
 }
 
 /** The protected top-level role. Only a Super Admin manages roles/permissions. */
@@ -142,10 +153,43 @@ export function isSuperAdmin(role: Role | undefined): boolean {
 /** Every capability in the system (the Super Admin set, which is the superset). */
 export const ALL_CAPABILITIES: Capability[] = MATRIX.super_admin;
 
-/** The capabilities a role currently holds (for the Roles & Permissions view). */
+/** The capabilities a role currently holds (for the Roles & Permissions view).
+ *  Reads live data (cache) when available, else the built-in matrix. */
 export function roleCapabilities(role: Role): Capability[] {
-  return MATRIX[role];
+  const live = capabilitiesForRole(role);
+  if (live) return ALL_CAPABILITIES.filter((c) => live.has(c));
+  return MATRIX[role as SystemRole] ?? [];
 }
+
+/** Capabilities grouped by area — drives the Roles & Permissions checkboxes. */
+export const CAPABILITY_GROUPS: { label: string; capabilities: Capability[] }[] = [
+  { label: "Recipes", capabilities: ["recipe.viewAll", "recipe.create", "recipe.editAll", "recipe.duplicate", "recipe.submit", "recipe.approve", "recipe.delete"] },
+  { label: "Raw Materials & Yield", capabilities: ["material.view", "material.edit", "yield.manage"] },
+  { label: "Operations", capabilities: ["wastage.create", "report.excel", "viewer.assign", "audit.view"] },
+  { label: "Settings", capabilities: ["settings.manage"] },
+  { label: "Administration (reserved)", capabilities: ["user.manage", "role.manage", "brand.create", "brand.edit", "brand.archive", "outlet.create", "outlet.edit", "outlet.change_brand", "outlet.archive"] },
+];
+
+/** Capabilities that are RESERVED to the built-in Admin / Super Admin roles: the
+ *  Postgres RLS + guard triggers gate these on the role NAME (is_app_admin /
+ *  is_app_super_admin), so granting them to a custom role would do nothing
+ *  server-side. They're shown locked in the Roles editor to keep app & DB in sync. */
+export const RESERVED_CAPABILITIES: Capability[] = [
+  "user.manage",
+  "role.manage",
+  "brand.create",
+  "brand.edit",
+  "brand.archive",
+  "outlet.create",
+  "outlet.edit",
+  "outlet.change_brand",
+  "outlet.archive",
+];
+
+/** Capabilities a custom role MAY be granted (everything except the reserved set). */
+export const GRANTABLE_CAPABILITIES: Capability[] = ALL_CAPABILITIES.filter(
+  (c) => !RESERVED_CAPABILITIES.includes(c),
+);
 
 /** Human labels for capability keys (Roles & Permissions matrix). */
 export const CAPABILITY_LABELS: Record<Capability, string> = {
@@ -180,10 +224,12 @@ export function isReadOnlyRole(role: Role | undefined): boolean {
   return role === "viewer" || role === "chef";
 }
 
-/** Can this user edit this specific recipe? Admin/Editor/Head Chef, else the creator. */
+/** Can this user edit this specific recipe? Anyone with the "edit any recipe"
+ *  capability (Admin/Editor/Head Chef by default, plus any custom role granted it),
+ *  else the creator. */
 export function canEditRecipe(user: User | null, recipe: Recipe): boolean {
   if (!user) return false;
-  if (user.role === "super_admin" || user.role === "admin" || user.role === "editor" || user.role === "head_chef") return true;
+  if (can(user.role, "recipe.editAll")) return true;
   return recipe.created_by === user.id;
 }
 

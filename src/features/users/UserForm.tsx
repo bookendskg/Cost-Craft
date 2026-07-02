@@ -24,8 +24,9 @@ import {
 import { userSchema, type UserValues } from "@/lib/validation/schemas";
 import { useSession } from "@/lib/auth/session";
 import { toast } from "@/components/ui/use-toast";
-import { ROLE_LABELS, type BrandScope, type OutletScope, type User } from "@/lib/data/types";
+import { type BrandScope, type OutletScope, type User } from "@/lib/data/types";
 import { useBrands, useOutlets } from "@/features/brands/hooks";
+import { useRoles } from "@/features/roles/hooks";
 import { useCreateUser, useUpdateUser } from "./hooks";
 
 type BrandScopeUi = "DEFAULT" | BrandScope;
@@ -47,6 +48,7 @@ export function UserForm({
   const iAmSuper = me?.role === "super_admin";
   const { data: brands = [] } = useBrands();
   const { data: outlets = [] } = useOutlets();
+  const { data: roles = [] } = useRoles();
   const activeBrands = brands.filter((b) => b.status === "active");
   const activeOutlets = outlets.filter((o) => o.status === "active");
 
@@ -200,15 +202,16 @@ export function UserForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* Super Admin is assignable only by a Super Admin (addendum §8). */}
-                  {(iAmSuper || user?.role === "super_admin") && (
-                    <SelectItem value="super_admin" disabled={!iAmSuper}>{ROLE_LABELS.super_admin}</SelectItem>
-                  )}
-                  <SelectItem value="admin">{ROLE_LABELS.admin}</SelectItem>
-                  <SelectItem value="editor">{ROLE_LABELS.editor}</SelectItem>
-                  <SelectItem value="head_chef">{ROLE_LABELS.head_chef}</SelectItem>
-                  <SelectItem value="chef">{ROLE_LABELS.chef}</SelectItem>
-                  <SelectItem value="viewer">{ROLE_LABELS.viewer}</SelectItem>
+                  {/* Built-in + custom roles. Super Admin is assignable only by a
+                      Super Admin (addendum §8); it stays visible when editing an
+                      existing Super Admin but disabled for non-super actors. */}
+                  {roles
+                    .filter((r) => r.key !== "super_admin" || iAmSuper || user?.role === "super_admin")
+                    .map((r) => (
+                      <SelectItem key={r.key} value={r.key} disabled={r.key === "super_admin" && !iAmSuper}>
+                        {r.label}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>

@@ -30,7 +30,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { toast } from "@/components/ui/use-toast";
-import { ROLE_LABELS, type User } from "@/lib/data/types";
+import { type User } from "@/lib/data/types";
+import { roleLabel } from "@/lib/auth/roleCache";
+import { useRoles } from "@/features/roles/hooks";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { sendPasswordReset } from "@/lib/supabase/profile";
 import { useUpdateUser, useUsers } from "./hooks";
@@ -45,6 +47,7 @@ const fmtDate = (iso?: string | null) => {
 
 export function UsersPage() {
   const { data: users = [], isLoading } = useUsers();
+  const { data: roles = [] } = useRoles();
   const updateMut = useUpdateUser();
 
   const [search, setSearch] = useState("");
@@ -149,8 +152,8 @@ export function UsersPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
-              {(Object.keys(ROLE_LABELS) as (keyof typeof ROLE_LABELS)[]).map((r) => (
-                <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+              {roles.map((r) => (
+                <SelectItem key={r.key} value={r.key}>{r.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -203,7 +206,7 @@ export function UsersPage() {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>{ROLE_LABELS[u.role]}</TableCell>
+                  <TableCell>{roleLabel(u.role)}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap items-center gap-1">
                       {u.approved === false ? (

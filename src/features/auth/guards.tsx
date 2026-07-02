@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useSession } from "@/lib/auth/session";
-import { isPendingApproval } from "@/lib/auth/permissions";
+import { can, isPendingApproval, type Capability } from "@/lib/auth/permissions";
 import { PendingApprovalPage } from "./PendingApprovalPage";
 import type { Role } from "@/lib/data/types";
 
@@ -19,12 +19,23 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-/** Requires one of the given roles; otherwise bounce to the dashboard. */
-export function RequireRole({ roles, children }: { roles: Role[]; children: ReactNode }) {
+/** Requires one of the given built-in roles OR the given capability (so custom
+ *  roles granted that capability get in too); otherwise bounce to the dashboard. */
+export function RequireRole({
+  roles,
+  cap,
+  children,
+}: {
+  roles: Role[];
+  cap?: Capability;
+  children: ReactNode;
+}) {
   const user = useSession((s) => s.user);
   if (!user) return <Navigate to="/login" replace />;
-  // Super Admin satisfies every role requirement (it sits above Admin).
-  if (user.role !== "super_admin" && !roles.includes(user.role)) {
+  // Super Admin satisfies every requirement (it sits above Admin).
+  const allowed =
+    user.role === "super_admin" || roles.includes(user.role) || (cap ? can(user.role, cap) : false);
+  if (!allowed) {
     return <Navigate to="/dashboard" replace />;
   }
   return <>{children}</>;

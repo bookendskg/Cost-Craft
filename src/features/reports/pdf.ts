@@ -5,8 +5,9 @@ import type { TDocumentDefinitions } from "pdfmake/interfaces";
 import { calculateIngredientCost, round2 } from "@/lib/costing";
 import { canConvert } from "@/lib/units";
 import { formatINR, formatUnit } from "@/lib/utils";
-import { ROLE_LABELS, type Recipe, type RecipeIngredientWithMaterial, type Role } from "@/lib/data/types";
+import { type Recipe, type RecipeIngredientWithMaterial } from "@/lib/data/types";
 import { brandLabel as resolveBrandLabel } from "@/lib/data/brandCache";
+import { roleLabel as resolveRoleLabel } from "@/lib/auth/roleCache";
 import type { ViewVisibility } from "@/lib/auth/permissions";
 
 /** Who exported + when — stamped by the caller from the authenticated session. */
@@ -118,7 +119,7 @@ export async function generateRecipePdf(
     .filter(Boolean)
     .join("  ·  ");
   const method = (recipe.method ?? []).filter((s) => s.trim());
-  const roleLabel = exporter ? ROLE_LABELS[exporter.role as Role] ?? exporter.role : "";
+  const roleLabel = exporter ? resolveRoleLabel(exporter.role) : "";
 
   const doc: TDocumentDefinitions = {
     pageMargins: [40, 40, 40, 54],
@@ -233,7 +234,7 @@ export async function generateReportPdf(opts: {
   const showCost = visibility ? visibility.totalCost : true;
   const showPrice = visibility ? visibility.sellingPrice : true;
   const stamp = istStamp();
-  const roleLabel = exporter ? ROLE_LABELS[exporter.role as Role] ?? exporter.role : "";
+  const roleLabel = exporter ? resolveRoleLabel(exporter.role) : "";
 
   const headRow = ["#", "Recipe", "Category"];
   if (showCost) headRow.push("Cost / Portion");

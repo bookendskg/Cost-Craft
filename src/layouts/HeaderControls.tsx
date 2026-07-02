@@ -10,7 +10,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
-import { ROLE_LABELS, type User } from "@/lib/data/types";
+import { type User } from "@/lib/data/types";
+import { roleLabel } from "@/lib/auth/roleCache";
 import { allBrandIds, brandLabel } from "@/lib/data/brandCache";
 
 /** Initials fallback for users without an avatar. */
@@ -82,7 +83,7 @@ export function ProfileMenu() {
           </div>
         </div>
         <div className="flex items-center gap-2 px-2 pb-2">
-          <Badge variant="outline">{ROLE_LABELS[user.role]}</Badge>
+          <Badge variant="outline">{roleLabel(user.role)}</Badge>
           {branch && <span className="truncate text-xs text-muted-foreground">{branch}</span>}
         </div>
         <DropdownMenuSeparator />

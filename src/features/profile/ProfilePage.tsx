@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
 import { formatDateTime } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
-import { ROLE_LABELS } from "@/lib/data/types";
+import { roleLabel } from "@/lib/auth/roleCache";
 import { Avatar } from "@/layouts/HeaderControls";
 import { useUpdateUser } from "@/features/users/hooks";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
@@ -135,7 +135,7 @@ export function ProfilePage() {
                 </div>
                 <div>
                   <p className="text-lg font-semibold">{user.name}</p>
-                  <Badge variant="outline" className="mt-1">{ROLE_LABELS[user.role]}</Badge>
+                  <Badge variant="outline" className="mt-1">{roleLabel(user.role)}</Badge>
                 </div>
                 {avatar && (
                   <Button variant="ghost" size="sm" className="ml-auto text-muted-foreground" onClick={() => setAvatar(null)}>
@@ -173,7 +173,7 @@ export function ProfilePage() {
               <dl className="space-y-3 text-sm">
                 <InfoRow icon={<Mail className="h-4 w-4" />} label="Email" value={user.email} />
                 <InfoRow icon={<Phone className="h-4 w-4" />} label="Phone" value={user.phone || "—"} />
-                <InfoRow icon={<ShieldCheck className="h-4 w-4" />} label="Role" value={ROLE_LABELS[user.role]} />
+                <InfoRow icon={<ShieldCheck className="h-4 w-4" />} label="Role" value={roleLabel(user.role)} />
                 <InfoRow label="Last Login" value={user.last_login ? formatDateTime(user.last_login) : "This session"} />
                 <InfoRow label="Account Created" value={formatDateTime(user.created_at)} />
               </dl>

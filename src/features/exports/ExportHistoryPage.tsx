@@ -8,10 +8,11 @@ import { TableSkeleton } from "@/components/TableSkeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ROLE_LABELS, type Role } from "@/lib/data/types";
 import { useExportHistory } from "./hooks";
 import { useBrands } from "@/features/brands/hooks";
+import { useRoles } from "@/features/roles/hooks";
 import { brandLabel } from "@/lib/data/brandCache";
+import { roleLabel } from "@/lib/auth/roleCache";
 
 const fmtIST = (iso: string, part: "date" | "time") =>
   new Date(iso).toLocaleString("en-IN", {
@@ -25,6 +26,7 @@ const fmtIST = (iso: string, part: "date" | "time") =>
 export function ExportHistoryPage() {
   const { data: rows = [], isLoading, isError } = useExportHistory();
   const { data: brands = [] } = useBrands();
+  const { data: roles = [] } = useRoles();
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
   const [format, setFormat] = useState("all");
@@ -67,7 +69,7 @@ export function ExportHistoryPage() {
             <SelectTrigger><SelectValue placeholder="Role" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
-              {(Object.keys(ROLE_LABELS) as Role[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}
+              {roles.map((r) => <SelectItem key={r.key} value={r.key}>{r.label}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={type} onValueChange={setType}>
@@ -139,7 +141,7 @@ export function ExportHistoryPage() {
                     <div className="font-medium">{r.exporter_name_snapshot}</div>
                     {r.exporter_email_snapshot && <div className="text-xs text-muted-foreground">{r.exporter_email_snapshot}</div>}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{ROLE_LABELS[r.exporter_role_snapshot] ?? r.exporter_role_snapshot}</TableCell>
+                  <TableCell className="text-muted-foreground">{roleLabel(r.exporter_role_snapshot)}</TableCell>
                   <TableCell className="text-muted-foreground">{r.export_type}</TableCell>
                   <TableCell>{r.recipe_name_snapshot ?? r.report_name ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{brandLabel(r.brand_id)}</TableCell>

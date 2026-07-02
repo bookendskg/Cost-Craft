@@ -19,12 +19,13 @@ import { navGroupsForRole } from "./nav";
 import { useUsers } from "@/features/users/hooks";
 // (global command-palette search removed per request)
 import { Button } from "@/components/ui/button";
-import { ROLE_LABELS } from "@/lib/data/types";
 import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWordmark } from "@/features/dashboard/brandTheme";
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
 import { useBrands } from "@/features/brands/hooks";
+import { useRoles } from "@/features/roles/hooks";
 import { primeBrandCache } from "@/lib/data/brandCache";
+import { primeRoleCache, roleLabel } from "@/lib/auth/roleCache";
 
 export function AppLayout() {
   const user = useSession((s) => s.user);
@@ -34,6 +35,10 @@ export function AppLayout() {
   const brand = useDashboardBrand((s) => s.brand);
   const setBrand = useDashboardBrand((s) => s.setBrand);
   const { data: brandRecords = [] } = useBrands();
+  const { data: roleRecords = [] } = useRoles();
+  // Prime the role cache synchronously in render (not just an effect) so nav +
+  // route guards see custom-role capabilities on the same render the roles load.
+  primeRoleCache(roleRecords);
   const [mobileOpen, setMobileOpen] = useState(false);
   const collapsed = usePrefs((s) => s.sidebarCollapsed);
   const toggleSidebar = usePrefs((s) => s.toggleSidebar);
@@ -129,7 +134,7 @@ export function AppLayout() {
         <div className="border-t border-black/5 p-3">
           <div className="mb-2 px-1">
             <p className="truncate text-sm font-medium">{user.name}</p>
-            <p className="text-xs text-muted-foreground">{ROLE_LABELS[user.role]}</p>
+            <p className="text-xs text-muted-foreground">{roleLabel(user.role)}</p>
           </div>
           <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
             <LogOut className="h-4 w-4" />

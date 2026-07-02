@@ -1,9 +1,21 @@
 // Domain types mirroring PRD §9.2 table specifications.
 // These map 1:1 to the Postgres schema authored in db/migrations.
 
-export type Role = "super_admin" | "admin" | "editor" | "head_chef" | "chef" | "viewer";
+/** The six built-in ("system") roles. Custom roles are arbitrary string keys
+ *  created by a Super Admin (see the `roles` table), so the domain `Role` is a
+ *  string — the literal union is kept as `SystemRole` for the built-ins that the
+ *  DB RLS/triggers and code helpers still key off by name. */
+export type SystemRole = "super_admin" | "admin" | "editor" | "head_chef" | "chef" | "viewer";
+export type Role = string;
 
-export const ROLE_LABELS: Record<Role, string> = {
+export const SYSTEM_ROLE_KEYS: SystemRole[] = ["super_admin", "admin", "editor", "head_chef", "chef", "viewer"];
+/** Reserved roles that can never be deleted or edited from the app — their names
+ *  are hard-wired into the Postgres RLS policies and guard triggers. */
+export const PROTECTED_ROLE_KEYS: SystemRole[] = ["super_admin", "admin"];
+
+/** Built-in role display labels. Custom roles resolve their label from the roles
+ *  table via roleLabel()/the role cache; this stays as the fallback for the six. */
+export const ROLE_LABELS: Record<string, string> = {
   super_admin: "Super Admin",
   admin: "Admin",
   editor: "Editor",
@@ -11,6 +23,25 @@ export const ROLE_LABELS: Record<Role, string> = {
   chef: "Chef",
   viewer: "Viewer",
 };
+
+/** A role definition — built-in or a Super-Admin-created custom role. Capabilities
+ *  are stored as capability keys (see `Capability` in src/lib/auth/permissions.ts);
+ *  they're typed `string[]` here to keep this module free of a permissions import. */
+export interface RoleRecord {
+  key: string;
+  label: string;
+  description: string | null;
+  /** True for the six built-in roles (not editable/deletable in Phase 1). */
+  is_system: boolean;
+  /** True for super_admin/admin — reserved names the DB depends on. */
+  protected: boolean;
+  sort_order: number;
+  capabilities: string[];
+  created_by: string | null;
+  created_at: string;
+  updated_by: string | null;
+  updated_at: string;
+}
 export type UserStatus = "active" | "inactive";
 export type RecipeStatus = "draft" | "testing" | "approved" | "rejected";
 /** Restaurant brands a recipe can belong to (PRD multi-brand operations). */
@@ -350,7 +381,7 @@ export interface UserRecipeView {
   assigned_at: string;
 }
 
-export type AuditEntityType = "recipe" | "ingredient" | "user" | "brand" | "outlet";
+export type AuditEntityType = "recipe" | "ingredient" | "user" | "brand" | "outlet" | "role";
 export type AuditAction = "create" | "update" | "delete" | "approve" | "reject" | "submit";
 
 export interface AuditLog {

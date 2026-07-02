@@ -15,8 +15,9 @@ import { MASTER_YIELDS } from "./masterYields";
 import { VEG_FRUIT_PRICES, VEG_FRUIT_ITEMS } from "./vegFruitPrices";
 import { PANKIL_PRICES, PANKIL_ITEMS } from "./pankilPrices";
 import { INGREDIENT_ALIASES } from "./ingredientAliases";
+import { MATRIX, ALL_CAPABILITIES } from "../auth/permissions";
 import type { MockDb } from "./mock/db";
-import type { Brand, BrandRecord, IngredientYield, OutletRecord, RawMaterial, Recipe, RecipeIngredient, User } from "./types";
+import type { Brand, BrandRecord, IngredientYield, OutletRecord, RoleRecord, RawMaterial, Recipe, RecipeIngredient, SystemRole, User } from "./types";
 
 /** ₹ per gram for an ingredient from the master costing book (the only price
  *  source), matched by normalised name. Undefined when the book has no price. */
@@ -938,6 +939,32 @@ const outlets: OutletRecord[] = OUTLET_SEED.map((o) => ({
   updated_at: SEED_TS,
 }));
 
+// --- Roles (built-in, Super-Admin managed) ---------------------------------
+// The six system roles seeded with the SAME capabilities as the permissions
+// MATRIX, so behaviour is identical to before until a Super Admin adds a custom
+// role. super_admin/admin are protected (their names back the DB RLS/triggers).
+const SYSTEM_ROLE_DEFS: { key: SystemRole; label: string; description: string; protected: boolean; sort: number }[] = [
+  { key: "super_admin", label: "Super Admin", description: "Full system control, incl. roles, brands & outlets. Protected — cannot be deleted.", protected: true, sort: 10 },
+  { key: "admin", label: "Admin", description: "Manage users, recipes, materials, pricing, approvals & reports.", protected: true, sort: 20 },
+  { key: "editor", label: "Editor", description: "Create/edit recipes, materials, pricing, yield & wastage.", protected: false, sort: 30 },
+  { key: "head_chef", label: "Head Chef", description: "Edit recipes, record wastage & grant viewer access (no pricing).", protected: false, sort: 40 },
+  { key: "chef", label: "Chef", description: "Read-only access to approved recipes.", protected: false, sort: 50 },
+  { key: "viewer", label: "Viewer", description: "Read-only access to approved recipes in their brands.", protected: false, sort: 60 },
+];
+const roles: RoleRecord[] = SYSTEM_ROLE_DEFS.map((d) => ({
+  key: d.key,
+  label: d.label,
+  description: d.description,
+  is_system: true,
+  protected: d.protected,
+  sort_order: d.sort,
+  capabilities: d.key === "super_admin" ? [...ALL_CAPABILITIES] : [...MATRIX[d.key]],
+  created_by: U_ADMIN,
+  created_at: SEED_TS,
+  updated_by: U_ADMIN,
+  updated_at: SEED_TS,
+}));
+
 export function buildSeed(): MockDb {
   return {
     // Standard prep yields: 3 demo (onion/ginger/carrot) + 84 imported from the
@@ -982,5 +1009,6 @@ export function buildSeed(): MockDb {
     recipe_access_links: [],
     brands: structuredClone(brands),
     outlets: structuredClone(outlets),
+    roles: structuredClone(roles),
   };
 }

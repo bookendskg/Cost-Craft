@@ -53,7 +53,9 @@ export type ChangePasswordValues = ResetPasswordValues;
 export const userSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().min(1, "Email is required").email("Enter a valid email"),
-  role: z.enum(["super_admin", "admin", "editor", "head_chef", "chef", "viewer"]),
+  // Role is a dynamic key (built-in or a Super-Admin-created custom role), so it's
+  // validated as a non-empty string, not a fixed enum.
+  role: z.string().min(1, "Role is required"),
   status: z.enum(["active", "inactive"]),
   assigned_brand: z.string().nullable().optional(),
   assigned_outlet: z.string().nullable().optional(),
@@ -222,3 +224,11 @@ export const outletSchema = z.object({
   notes: z.string().optional().or(z.literal("")),
 });
 export type OutletValues = z.infer<typeof outletSchema>;
+
+// --- Custom roles (Super-Admin managed) ------------------------------------
+export const roleSchema = z.object({
+  label: z.string().min(1, "Role name is required"),
+  description: z.string().optional().or(z.literal("")),
+  capabilities: z.array(z.string()).default([]),
+});
+export type RoleValues = z.infer<typeof roleSchema>;

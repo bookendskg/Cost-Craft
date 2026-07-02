@@ -10,6 +10,7 @@ import type {
   IngredientPriceHistory,
   IngredientYield,
   OutletRecord,
+  RoleRecord,
   RawMaterial,
   Recipe,
   RecipeCostHistory,
@@ -39,10 +40,11 @@ export interface MockDb {
   recipe_access_links: RecipeAccessLink[];
   brands: BrandRecord[];
   outlets: OutletRecord[];
+  roles: RoleRecord[];
 }
 
 // Bump this when the seed/DB shape changes so stale localStorage data is reseeded.
-const STORAGE_KEY = "rcms.mockdb.v42";
+const STORAGE_KEY = "rcms.mockdb.v43";
 
 let cache: MockDb | null = null;
 
