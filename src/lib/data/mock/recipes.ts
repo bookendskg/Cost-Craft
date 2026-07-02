@@ -579,4 +579,58 @@ export const recipesRepo = {
         .sort((a, b) => b.version_no - a.version_no),
     );
   },
+
+  /**
+   * Permanently delete a recipe (Admin / Super Admin — capability `recipe.delete`).
+   * Takes its size-variant children with it, but is BLOCKED if the recipe (or a
+   * child) is used as a sub-recipe component elsewhere — that would corrupt the
+   * dependent recipe's cost. Wastage rows keep their cost snapshot (link nulled).
+   */
+  async remove(id: string, actorId: string): Promise<void> {
+    return delay(
+      mutate((db) => {
+        const recipe = db.recipes.find((r) => r.id === id);
+        if (!recipe) throw new Error("Recipe not found");
+        // The recipe + its pizza size-variant children are deleted together.
+        const ids = new Set<string>([
+          id,
+          ...db.recipes.filter((r) => r.parent_recipe_id === id).map((r) => r.id),
+        ]);
+        // Block if any of them is a sub-recipe component of a recipe OUTSIDE the set.
+        const usedBy = db.recipe_ingredients.filter(
+          (ri) => ri.component_type === "recipe" && ids.has(ri.ingredient_id) && !ids.has(ri.recipe_id),
+        );
+        if (usedBy.length) {
+          const names = [
+            ...new Set(
+              usedBy
+                .map((ri) => db.recipes.find((r) => r.id === ri.recipe_id)?.recipe_name)
+                .filter(Boolean),
+            ),
+          ];
+          throw new Error(
+            `Can't delete — used as a sub-recipe in ${names.slice(0, 3).join(", ")}${names.length > 3 ? "…" : ""}. Remove it there first.`,
+          );
+        }
+        db.recipes = db.recipes.filter((r) => !ids.has(r.id));
+        db.recipe_ingredients = db.recipe_ingredients.filter((ri) => !ids.has(ri.recipe_id));
+        db.recipe_versions = db.recipe_versions.filter((v) => !ids.has(v.recipe_id));
+        db.recipe_cost_history = db.recipe_cost_history.filter((h) => !ids.has(h.recipe_id ?? ""));
+        db.user_recipe_views = db.user_recipe_views.filter((v) => !ids.has(v.recipe_id));
+        db.recipe_access_links = db.recipe_access_links.filter((l) => !ids.has(l.recipe_id));
+        // Wastage keeps its own cost snapshot; just detach the (now-gone) recipe link.
+        db.wastage_entries.forEach((w) => {
+          if (w.recipe_id && ids.has(w.recipe_id)) w.recipe_id = null;
+        });
+        recordAudit(db, {
+          entity_type: "recipe",
+          entity_id: id,
+          action: "delete",
+          old_values: { name: recipe.recipe_name },
+          performed_by: actorId,
+          notes: `Deleted "${recipe.recipe_name}"`,
+        });
+      }),
+    );
+  },
 };

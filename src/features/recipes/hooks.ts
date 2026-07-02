@@ -75,6 +75,15 @@ export function useDuplicateRecipe() {
   });
 }
 
+export function useDeleteRecipe() {
+  const qc = useQueryClient();
+  const actorId = useActorId();
+  return useMutation({
+    mutationFn: (id: string) => recipesRepo.remove(id, actorId),
+    onSuccess: () => invalidate(qc),
+  });
+}
+
 export function useSetRecipeImage() {
   const qc = useQueryClient();
   const actorId = useActorId();

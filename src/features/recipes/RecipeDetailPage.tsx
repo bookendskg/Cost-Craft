@@ -16,6 +16,7 @@ import {
   ExternalLink,
   ArrowLeft,
   Share2,
+  Trash2,
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -56,6 +57,7 @@ import { menuPriceOf, fullCostPerPortion, packagingOf } from "./recipeMetrics";
 import { RecipePdfButton } from "@/features/reports/RecipePdfButton";
 import {
   useApproveRecipe,
+  useDeleteRecipe,
   useDuplicateRecipe,
   useRecipe,
   useRecipes,
@@ -120,6 +122,7 @@ export function RecipeDetailPage() {
   const versions = useRecipeVersions(id);
 
   const dupMut = useDuplicateRecipe();
+  const delMut = useDeleteRecipe();
   const submitMut = useSubmitRecipe();
   const approveMut = useApproveRecipe();
   const rejectMut = useRejectRecipe();
@@ -158,6 +161,7 @@ export function RecipeDetailPage() {
   const [rejectNote, setRejectNote] = useState("");
   const [approveOpen, setApproveOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading) return <p className="p-8 text-center text-sm text-muted-foreground">Loading…</p>;
   if (!data) return <EmptyState title="Recipe not found" />;
@@ -309,6 +313,11 @@ export function RecipeDetailPage() {
                 <CheckCircle2 className="h-4 w-4" /> Approve
               </Button>
             </>
+          )}
+          {can(user.role, "recipe.delete") && (
+            <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+              <Trash2 className="h-4 w-4" /> Delete
+            </Button>
           )}
         </div>
       </div>
@@ -713,6 +722,24 @@ export function RecipeDetailPage() {
       </Dialog>
 
       <ShareLinkDialog open={shareOpen} onOpenChange={setShareOpen} recipe={recipe} user={user} />
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete this recipe?"
+        description={`"${recipe.recipe_name}" and its cost history will be permanently deleted. This can't be undone.`}
+        confirmLabel="Delete Recipe"
+        destructive
+        onConfirm={async () => {
+          try {
+            await delMut.mutateAsync(recipe.id);
+            toast.success("Recipe deleted");
+            navigate("/recipes");
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Delete failed");
+          }
+        }}
+      />
 
       <ConfirmDialog
         open={approveOpen}

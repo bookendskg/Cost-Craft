@@ -730,4 +730,49 @@ export const supabaseRecipesRepo = {
     if (error) fail("Load recipe versions", error.message);
     return (data ?? []) as RecipeVersion[];
   },
+
+  /**
+   * Permanently delete a recipe (Admin / Super Admin — capability `recipe.delete`).
+   * Deletes its size-variant children too; blocked if the recipe (or a child) is
+   * used as a sub-recipe component elsewhere. FK cascades handle its ingredients,
+   * cost history, versions, views and share links; wastage rows keep their cost
+   * snapshot (recipe_id → null per the on-delete-set-null FK).
+   */
+  async remove(id: string, actorId: string): Promise<void> {
+    const c = sb();
+    const cur = await c.from("recipes").select("recipe_name").eq("id", id).maybeSingle();
+    if (cur.error) fail("Delete recipe", cur.error.message);
+    if (!cur.data) fail("Delete recipe", "Recipe not found");
+    const name = (cur.data as { recipe_name: string }).recipe_name;
+
+    const children = await c.from("recipes").select("id").eq("parent_recipe_id", id);
+    if (children.error) fail("Delete recipe", children.error.message);
+    const ids = [id, ...((children.data ?? []) as { id: string }[]).map((r) => r.id)];
+
+    // Block if used as a sub-recipe component by a recipe outside the set.
+    const used = await c
+      .from("recipe_ingredients")
+      .select("recipe_id")
+      .eq("component_type", "recipe")
+      .in("ingredient_id", ids);
+    if (used.error) fail("Delete recipe", used.error.message);
+    if (((used.data ?? []) as { recipe_id: string }[]).some((r) => !ids.includes(r.recipe_id))) {
+      fail("Delete recipe", "Can't delete — this recipe is used as a sub-recipe in another recipe. Remove it there first.");
+    }
+
+    const del = await c.from("recipes").delete().in("id", ids);
+    if (del.error) {
+      if (del.error.code === "23503") {
+        fail("Delete recipe", "Can't delete — it's still referenced by other records.");
+      }
+      fail("Delete recipe", del.error.message);
+    }
+    await audit({
+      entity_type: "recipe",
+      entity_id: id,
+      action: "delete",
+      performed_by: actorId,
+      notes: `Deleted "${name}"`,
+    });
+  },
 };
