@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   Percent,
   Upload,
+  Trash2,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -38,6 +39,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { cn, formatDateTime, formatINR, formatQuantityWithUnit } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
 import { can, canEditRecipe, viewerBrands, viewerShowCost } from "@/lib/auth/permissions";
@@ -48,7 +50,7 @@ import { useMaterials } from "@/features/raw-materials/hooks";
 import { useUsersMap } from "@/features/users/hooks";
 import { useDashboardBrand } from "@/features/dashboard/brandTheme";
 import { useBrands } from "@/features/brands/hooks";
-import { useDuplicateRecipe, useRecipe, useRecipes } from "./hooks";
+import { useDeleteRecipe, useDuplicateRecipe, useRecipe, useRecipes } from "./hooks";
 import {
   FC_TONE_STYLES,
   fcTone,
@@ -130,6 +132,10 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
   const { data: materials = [] } = useMaterials();
   const { map: usersMap } = useUsersMap();
   const dupMut = useDuplicateRecipe();
+  const delMut = useDeleteRecipe();
+  const canDelete = can(user.role, "recipe.delete");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const pendingDelete = allRecipes.find((r) => r.id === deletingId) ?? null;
 
   // "Updated by" attribution is for staff roles, not external viewers.
   const showUpdatedBy = user.role !== "viewer";
@@ -387,8 +393,10 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
                   onView={() => navigate(`/recipes/${r.id}`)}
                   canEdit={canEditRecipe(user, r)}
                   canDuplicate={can(user.role, "recipe.duplicate")}
+                  canDelete={canDelete}
                   onEdit={() => navigate(`/recipes/${r.id}/edit`)}
                   onDuplicate={() => duplicate(r.id)}
+                  onDelete={() => setDeletingId(r.id)}
                   updatedBy={showUpdatedBy ? usersMap.get(r.updated_by ?? "")?.name ?? null : null}
                   canSeeCost={canSeeCost}
                   brandColored={prepMode}
@@ -438,6 +446,30 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
       </div>
       )}
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} config={importConfig} />
+
+      <ConfirmDialog
+        open={!!deletingId}
+        onOpenChange={(o) => !o && setDeletingId(null)}
+        title="Delete this recipe?"
+        description={
+          pendingDelete
+            ? `"${pendingDelete.recipe_name}" and its cost history will be permanently deleted. This can't be undone.`
+            : undefined
+        }
+        confirmLabel="Delete Recipe"
+        destructive
+        onConfirm={async () => {
+          if (!deletingId) return;
+          try {
+            await delMut.mutateAsync(deletingId);
+            toast.success("Recipe deleted");
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Delete failed");
+          } finally {
+            setDeletingId(null);
+          }
+        }}
+      />
     </>
   );
 }
@@ -483,8 +515,10 @@ function RecipeRow({
   onView,
   canEdit,
   canDuplicate,
+  canDelete,
   onEdit,
   onDuplicate,
+  onDelete,
   updatedBy,
   canSeeCost,
   brandColored,
@@ -498,8 +532,10 @@ function RecipeRow({
   onView: () => void;
   canEdit: boolean;
   canDuplicate: boolean;
+  canDelete: boolean;
   onEdit: () => void;
   onDuplicate: () => void;
+  onDelete: () => void;
   updatedBy: string | null;
   canSeeCost: boolean;
   /** Color the food-cost bar/badge by the active brand instead of by FC tone. */
@@ -594,8 +630,10 @@ function RecipeRow({
           onView={onView}
           canEdit={canEdit}
           canDuplicate={canDuplicate}
+          canDelete={canDelete}
           onEdit={onEdit}
           onDuplicate={onDuplicate}
+          onDelete={onDelete}
         />
       )}
     </div>
@@ -608,16 +646,20 @@ function ExpandedBreakdown({
   onView,
   canEdit,
   canDuplicate,
+  canDelete,
   onEdit,
   onDuplicate,
+  onDelete,
 }: {
   recipe: Recipe;
   foodCostPct: number;
   onView: () => void;
   canEdit: boolean;
   canDuplicate: boolean;
+  canDelete: boolean;
   onEdit: () => void;
   onDuplicate: () => void;
+  onDelete: () => void;
 }) {
   const { data, isLoading } = useRecipe(recipe.id);
   const margin = profitMarginOf(recipe, foodCostPct);
@@ -646,15 +688,22 @@ function ExpandedBreakdown({
                 <Pencil className="h-3.5 w-3.5" /> Edit
               </Button>
             )}
-            {canDuplicate && (
+            {(canDuplicate || canDelete) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" aria-label="More recipe actions"><MoreVertical className="h-4 w-4" /></Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={onDuplicate}>
-                    <Copy className="h-4 w-4" /> Duplicate
-                  </DropdownMenuItem>
+                  {canDuplicate && (
+                    <DropdownMenuItem onClick={onDuplicate}>
+                      <Copy className="h-4 w-4" /> Duplicate
+                    </DropdownMenuItem>
+                  )}
+                  {canDelete && (
+                    <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+                      <Trash2 className="h-4 w-4" /> Delete
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
