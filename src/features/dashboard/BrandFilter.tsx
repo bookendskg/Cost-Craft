@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { useBrands } from "@/features/brands/hooks";
+import { deriveBrandAccent } from "@/lib/data/brandCache";
 
 /** A brand id, or the special "all" selection. */
 export type BrandSelection = string;
@@ -47,7 +48,11 @@ export function BrandFilter({
                 ? known ?? "text-white shadow"
                 : "text-muted-foreground hover:text-foreground",
             )}
-            style={active && !known && o.accent ? { backgroundColor: o.accent, color: "#fff" } : undefined}
+            style={
+              active && !known
+                ? { backgroundColor: o.accent || deriveBrandAccent(o.id), color: "#fff" }
+                : undefined
+            }
           >
             {o.name}
           </button>

@@ -72,27 +72,33 @@ export function applyBrand(brand: BrandSelection) {
   }
 }
 
-/** Soft brand-tinted page background (light mode). New brands get the neutral tint. */
+/** Soft brand-tinted page background (light mode). A dynamically-added brand uses
+ *  a soft tint of its own accent (via the --primary var applyBrand set). */
 export function brandBgClass(brand: BrandSelection): string {
   switch (brand) {
+    case "all":
+      return "bg-[#eff6ff]"; // soft BOOKENDS blue
     case "capiche":
       return "bg-[#fef2f2]"; // soft Capiche red
     case "aiko":
       return "bg-[#fffbeb]"; // soft Aiko gold
     default:
-      return "bg-[#eff6ff]"; // soft BOOKENDS blue
+      return "bg-primary/5"; // soft tint of the dynamic brand's accent
   }
 }
 
-/** Brand accent text colour (logos, headings, links). New brands get the neutral blue. */
+/** Brand accent text colour (logos, headings, links). A dynamically-added brand
+ *  follows its accent via the --primary var (set by applyBrand). */
 export function brandAccentText(brand: BrandSelection): string {
   switch (brand) {
+    case "all":
+      return "text-[#1b35a8]"; // BOOKENDS blue
     case "capiche":
       return "text-[#ed1c24]";
     case "aiko":
       return "text-amber-600";
     default:
-      return "text-[#1b35a8]";
+      return "text-primary";
   }
 }
 
