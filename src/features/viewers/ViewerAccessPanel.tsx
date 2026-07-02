@@ -1,4 +1,3 @@
-import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { Card } from "@/components/ui/card";
@@ -16,7 +15,11 @@ import { BRANDS, type Brand } from "@/lib/data/types";
 import { viewerBrands, viewerShowCost } from "@/lib/auth/permissions";
 import { useUpdateUser, useViewers } from "@/features/users/hooks";
 
-export function ViewerAccessPage() {
+/**
+ * Viewer brand-access + cost-visibility matrix. Lives inside the User Management
+ * page (the "Viewer Access" tab) — no PageHeader of its own.
+ */
+export function ViewerAccessPanel() {
   const { viewers, isLoading } = useViewers();
   const updateUser = useUpdateUser();
 
@@ -34,10 +37,10 @@ export function ViewerAccessPage() {
 
   return (
     <>
-      <PageHeader
-        title="Viewer Access"
-        description="Viewers see everything by default. Uncheck a brand to restrict a viewer to particular items."
-      />
+      <p className="mb-3 text-sm text-muted-foreground">
+        Viewers see everything by default. Uncheck a brand to restrict a viewer to particular items,
+        or turn off “Show Costs” to hide pricing.
+      </p>
 
       <Card>
         {isLoading ? (
@@ -88,8 +91,8 @@ export function ViewerAccessPage() {
 
       <p className="mt-3 text-xs text-muted-foreground">
         Both brands checked = full access (the default). Uncheck one to limit the viewer to the
-        other. A viewer sees all <strong>approved</strong> recipes of their checked brands. "Show
-        Costs" off hides ingredient costs, totals, and pricing.
+        other. A viewer sees all <strong>approved</strong> recipes of their checked brands. “Show
+        Costs” off hides ingredient costs, totals, and pricing.
       </p>
     </>
   );

@@ -20,7 +20,6 @@ const RecipeDetailPage = lazy(() => import("@/features/recipes/RecipeDetailPage"
 const ApprovalsPage = lazy(() => import("@/features/approvals/ApprovalsPage").then((m) => ({ default: m.ApprovalsPage })));
 const ReportsPage = lazy(() => import("@/features/reports/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const UsersPage = lazy(() => import("@/features/users/UsersPage").then((m) => ({ default: m.UsersPage })));
-const ViewerAccessPage = lazy(() => import("@/features/viewers/ViewerAccessPage").then((m) => ({ default: m.ViewerAccessPage })));
 const AuditPage = lazy(() => import("@/features/audit/AuditPage").then((m) => ({ default: m.AuditPage })));
 const ExportHistoryPage = lazy(() => import("@/features/exports/ExportHistoryPage").then((m) => ({ default: m.ExportHistoryPage })));
 const AccessHistoryPage = lazy(() => import("@/features/share/AccessHistoryPage").then((m) => ({ default: m.AccessHistoryPage })));
@@ -130,14 +129,6 @@ export const router = createBrowserRouter([
         element: (
           <RequireRole roles={["admin", "editor", "head_chef"]}>
             <ReportsPage />
-          </RequireRole>
-        ),
-      },
-      {
-        path: "viewer-access",
-        element: (
-          <RequireRole roles={["admin", "editor", "head_chef"]}>
-            <ViewerAccessPage />
           </RequireRole>
         ),
       },

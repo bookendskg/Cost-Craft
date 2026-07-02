@@ -8,7 +8,6 @@ import {
   Settings,
   ScrollText,
   ChefHat,
-  Eye,
   Sprout,
   Trash2,
   FileClock,
@@ -40,7 +39,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/wastage", label: "Wastage Management", icon: Trash2, group: "Operations", roles: ["admin", "editor", "head_chef"] },
   { to: "/approvals", label: "Approvals", icon: CheckCircle2, group: "Operations", roles: ["admin"] },
   { to: "/reports", label: "Reports", icon: FileBarChart, group: "Operations", roles: ["admin", "editor", "head_chef"] },
-  { to: "/viewer-access", label: "Viewer Access", icon: Eye, group: "Operations", roles: ["admin", "editor", "head_chef"] },
+  // Viewer Access is now a tab inside User Management (admin) — no separate item.
   { to: "/users", label: "User Management", icon: Users, group: "Admin", roles: ["admin"] },
   { to: "/audit", label: "Price Changes", icon: ScrollText, group: "Admin", roles: ["admin"] },
   { to: "/exports", label: "Export History", icon: FileClock, group: "Admin", roles: ["admin"] },

@@ -36,6 +36,8 @@ import { sendPasswordReset } from "@/lib/supabase/profile";
 import { useUpdateUser, useUsers } from "./hooks";
 import { UserForm } from "./UserForm";
 import { AssignAccessDialog } from "@/features/viewers/AssignAccessDialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ViewerAccessPanel } from "@/features/viewers/ViewerAccessPanel";
 
 const fmtDate = (iso?: string | null) => {
   if (!iso) return "Never";
@@ -113,7 +115,7 @@ export function UsersPage() {
     <>
       <PageHeader
         title="User Management"
-        description="Manage accounts, roles, verification, and brand/outlet access"
+        description="Manage accounts, roles, verification, and viewer access"
         actions={
           <Button
             variant="accent"
@@ -127,6 +129,13 @@ export function UsersPage() {
         }
       />
 
+      <Tabs defaultValue="users">
+        <TabsList className="mb-4">
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="viewer-access">Viewer Access</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users">
       {pendingCount > 0 && (
         <button
           onClick={() => setStatus("pending")}
@@ -279,6 +288,12 @@ export function UsersPage() {
           </Table>
         )}
       </Card>
+        </TabsContent>
+
+        <TabsContent value="viewer-access">
+          <ViewerAccessPanel />
+        </TabsContent>
+      </Tabs>
 
       <UserForm open={formOpen} onOpenChange={setFormOpen} user={editing} />
       <AssignAccessDialog
