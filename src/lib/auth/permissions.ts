@@ -41,15 +41,7 @@ export type Capability =
   | "report.excel"
   | "audit.view"
   // role & permission management (Super Admin only)
-  | "role.manage"
-  // brand & outlet management (Super Admin only)
-  | "brand.create"
-  | "brand.edit"
-  | "brand.archive"
-  | "outlet.create"
-  | "outlet.edit"
-  | "outlet.change_brand"
-  | "outlet.archive";
+  | "role.manage";
 
 // The built-in role → capability matrix. This is now the SEED and the pre-hydration
 // fallback for the six system roles: the same rows are seeded into role_capabilities,
@@ -75,13 +67,6 @@ export const MATRIX: Record<SystemRole, Capability[]> = {
     "report.excel",
     "audit.view",
     "role.manage",
-    "brand.create",
-    "brand.edit",
-    "brand.archive",
-    "outlet.create",
-    "outlet.edit",
-    "outlet.change_brand",
-    "outlet.archive",
   ],
   admin: [
     "user.manage",
@@ -167,7 +152,7 @@ export const CAPABILITY_GROUPS: { label: string; capabilities: Capability[] }[] 
   { label: "Raw Materials & Yield", capabilities: ["material.view", "material.edit", "yield.manage"] },
   { label: "Operations", capabilities: ["wastage.create", "report.excel", "viewer.assign", "audit.view"] },
   { label: "Settings", capabilities: ["settings.manage"] },
-  { label: "Administration (reserved)", capabilities: ["user.manage", "role.manage", "brand.create", "brand.edit", "brand.archive", "outlet.create", "outlet.edit", "outlet.change_brand", "outlet.archive"] },
+  { label: "Administration (reserved)", capabilities: ["user.manage", "role.manage"] },
 ];
 
 /** Capabilities that are RESERVED to the built-in Admin / Super Admin roles: the
@@ -177,13 +162,6 @@ export const CAPABILITY_GROUPS: { label: string; capabilities: Capability[] }[] 
 export const RESERVED_CAPABILITIES: Capability[] = [
   "user.manage",
   "role.manage",
-  "brand.create",
-  "brand.edit",
-  "brand.archive",
-  "outlet.create",
-  "outlet.edit",
-  "outlet.change_brand",
-  "outlet.archive",
 ];
 
 /** Capabilities a custom role MAY be granted (everything except the reserved set). */
@@ -210,13 +188,6 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
   "report.excel": "Export reports",
   "audit.view": "View audit / price changes",
   "role.manage": "Manage roles & permissions",
-  "brand.create": "Create brands",
-  "brand.edit": "Edit brands",
-  "brand.archive": "Archive brands",
-  "outlet.create": "Create outlets",
-  "outlet.edit": "Edit outlets",
-  "outlet.change_brand": "Move outlet to another brand",
-  "outlet.archive": "Archive outlets",
 };
 
 /** Roles that are read-only (treated like a Viewer everywhere). */

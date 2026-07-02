@@ -14,7 +14,6 @@ import {
   FileClock,
   Link2,
   ShieldCheck,
-  Store,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/lib/data/types";
@@ -53,11 +52,9 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/exports", label: "Export History", icon: FileClock, group: "Admin", roles: ["admin"], cap: "audit.view" },
   { to: "/access", label: "Access History", icon: Link2, group: "Admin", roles: ["admin"], cap: "audit.view" },
   { to: "/settings", label: "Settings", icon: Settings, group: "Admin", roles: ["admin"], cap: "settings.manage" },
-  // Super-Admin-only. navForRole shows all items to super_admin, and role.manage /
-  // brand.create are reserved capabilities (never granted to a custom role), so
-  // these stay hidden from regular Admins and custom roles alike.
+  // Super-Admin-only. role.manage is a reserved capability (never granted to a
+  // custom role), so this stays hidden from regular Admins and custom roles alike.
   { to: "/roles", label: "Roles & Permissions", icon: ShieldCheck, group: "Admin", roles: ["super_admin"], cap: "role.manage" },
-  { to: "/brands", label: "Brands & Outlets", icon: Store, group: "Admin", roles: ["super_admin"], cap: "brand.create" },
 ];
 
 export function navForRole(role: Role): NavItem[] {
