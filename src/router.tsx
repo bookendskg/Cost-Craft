@@ -1,5 +1,6 @@
-import { lazy } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { AppLayout } from "@/layouts/AppLayout";
 import { RequireAuth, RequireRole } from "@/features/auth/guards";
 // Auth shell stays eager (small, first paint); everything else is code-split.
@@ -27,8 +28,27 @@ const RolesPage = lazy(() => import("@/features/roles/RolesPage").then((m) => ({
 const SettingsPage = lazy(() => import("@/features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const SharedRecipePage = lazy(() => import("@/features/share/SharedRecipePage").then((m) => ({ default: m.SharedRecipePage })));
+// Public marketing landing page (code-split; the app's public entry point at "/").
+const LandingPage = lazy(() => import("@/features/marketing/LandingPage").then((m) => ({ default: m.LandingPage })));
+
+/** Suspense wrapper for code-split PUBLIC routes (the app shell has its own). */
+function PublicRoute({ children }: { children: ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[100dvh] items-center justify-center bg-background">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
 
 export const router = createBrowserRouter([
+  // Public landing page — unauthenticated visitors to "/" see this.
+  { path: "/", element: <PublicRoute><LandingPage /></PublicRoute> },
   { path: "/login", element: <LoginPage /> },
   { path: "/signup", element: <SignUpPage /> },
   { path: "/forgot-password", element: <ForgotPasswordPage /> },
@@ -36,14 +56,14 @@ export const router = createBrowserRouter([
   // Public, read-only shared recipe — no auth guard, no app chrome.
   { path: "/share/:token", element: <SharedRecipePage /> },
   {
-    path: "/",
+    // Pathless layout route — its children resolve to absolute paths
+    // (/dashboard, /materials, …). "/" itself is the public landing page above.
     element: (
       <RequireAuth>
         <AppLayout />
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: "dashboard", element: <DashboardPage /> },
       { path: "profile", element: <ProfilePage /> },
       {
