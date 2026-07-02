@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/brand/Logo";
+import { BrandLogoStrip } from "./parts";
 
-export function PublicFooter({ authed }: { authed: boolean }) {
+export function PublicFooter() {
   const year = new Date().getFullYear();
   return (
     <footer className="border-t bg-background">
@@ -12,6 +13,7 @@ export function PublicFooter({ authed }: { authed: boolean }) {
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               Recipe costing, yield and wastage management for Bookends Hospitality.
             </p>
+            <BrandLogoStrip className="mt-6" />
           </div>
 
           <div className="grid grid-cols-2 gap-10 sm:gap-16">
@@ -39,9 +41,7 @@ export function PublicFooter({ authed }: { authed: boolean }) {
                   <a href="#how-it-works" className="text-muted-foreground hover:text-foreground">How It Works</a>
                 </li>
                 <li>
-                  <Link to={authed ? "/dashboard" : "/login"} className="text-muted-foreground hover:text-foreground">
-                    {authed ? "Dashboard" : "Login"}
-                  </Link>
+                  <Link to="/login" className="text-muted-foreground hover:text-foreground">Login</Link>
                 </li>
               </ul>
             </div>

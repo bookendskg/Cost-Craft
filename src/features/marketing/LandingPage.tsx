@@ -13,20 +13,30 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { useSession } from "@/lib/auth/session";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { PublicHeader } from "./PublicHeader";
 import { PublicFooter } from "./PublicFooter";
-import { SectionHeading, FeatureCard, BrandBadge, CTASection } from "./parts";
+import { SectionHeading, FeatureCard, BrandBadge, CTASection, BrandLogoStrip } from "./parts";
+
+const OVERVIEW = [
+  "Recipes",
+  "Raw materials",
+  "Ingredient prices",
+  "In-House Prep",
+  "Yield",
+  "Wastage",
+  "Reports",
+  "Brand & outlet access",
+];
 
 const FEATURES = [
-  { icon: BookOpen, title: "Recipe Management", body: "A central recipe library with ingredient quantities, preparation steps, sub-recipe linking and pizza size variants." },
-  { icon: Calculator, title: "Ingredient Costing", body: "Purchase quantity, base-unit conversion and ingredient pricing roll up into accurate per-recipe costs." },
-  { icon: Percent, title: "Yield Management", body: "Capture raw quantity, wastage and usable quantity to derive true yield-adjusted ingredient cost." },
-  { icon: Trash2, title: "Wastage Management", body: "Record outlet-wise wastage with reasons, quantities and units for clear operational visibility." },
-  { icon: ChefHat, title: "In-House Prep", body: "Standardise prepared components as sub-recipes and reuse them across the menu." },
-  { icon: FileBarChart, title: "Reports & Export", body: "Brand, outlet and day-wise reports with PDF, CSV and XLSX export where permitted." },
+  { icon: BookOpen, title: "Recipe Management", body: "A central recipe library with ingredients, quantities, preparation instructions, linked sub-recipes and pizza size variants." },
+  { icon: Calculator, title: "Raw Material Costing", body: "Purchase quantity, units and price-per-base-unit give tight control over ingredient pricing." },
+  { icon: Percent, title: "Yield Management", body: "Capture raw quantity, wastage and usable quantity to derive true yield percentage and adjusted cost." },
+  { icon: Trash2, title: "Wastage Management", body: "Outlet-level tracking with wastage reasons and clear quantity and unit records." },
+  { icon: ChefHat, title: "In-House Prep", body: "Standardise prepared components as reusable sub-recipes across the menu." },
+  { icon: FileBarChart, title: "Reports & Export", body: "Day-wise, brand-wise and outlet-wise reports with PDF, CSV and XLSX export where permitted." },
   { icon: ShieldCheck, title: "Role-Based Access", body: "Super Admin, custom roles and read-only Viewer access with restricted financial fields." },
 ];
 
@@ -42,27 +52,27 @@ const MODULES = [
 ];
 
 const STEPS = [
-  { icon: Package, title: "Add Ingredients", body: "Set purchase price, quantity and base unit for every raw material." },
+  { icon: Package, title: "Manage Raw Materials", body: "Set purchase price, quantity and base unit for every ingredient." },
   { icon: BookOpen, title: "Build Recipes", body: "Combine ingredients and sub-recipes with quantities and prep steps." },
   { icon: Percent, title: "Track Yield & Wastage", body: "Record prep yield and outlet wastage to reflect real usable cost." },
   { icon: FileBarChart, title: "Review Reports", body: "Analyse costing by brand and outlet, then export where allowed." },
 ];
 
 const BENEFITS = [
-  "Centralized recipe information across brands",
-  "More consistent, repeatable costing",
-  "Better ingredient and pricing visibility",
-  "Clear yield calculations after prep loss",
-  "Reduced dependence on manual spreadsheets",
-  "Brand-wise recipe and category separation",
-  "Outlet-level operational visibility",
-  "Controlled, role-based user access",
+  "Centralized recipe information",
+  "Better costing visibility",
+  "Consistent unit handling",
+  "Clear yield calculations",
+  "Better wastage tracking",
+  "Reduced spreadsheet dependency",
+  "Brand-wise data separation",
+  "Controlled user access",
 ];
 
 const SECURITY = [
-  { icon: Lock, title: "Secure authentication", body: "Access requires a verified account; disabled accounts cannot enter the app." },
+  { icon: Lock, title: "Secure login", body: "Access requires a verified account; disabled accounts cannot enter the app." },
   { icon: ShieldCheck, title: "Role-based access", body: "Super Admin and custom roles govern exactly what each user can see and do." },
-  { icon: Users, title: "Scoped visibility", body: "Brand and outlet scope keep users focused on the data they're responsible for." },
+  { icon: Users, title: "Scoped visibility", body: "Brand and outlet scope, with financial fields hidden from read-only Viewers." },
 ];
 
 export function LandingPage() {
@@ -71,11 +81,10 @@ export function LandingPage() {
     description:
       "CostCraft is the recipe costing, yield and wastage platform for Bookends Hospitality — Capiche and Aiko. Standardise recipes and control food cost across every brand and outlet.",
   });
-  const authed = useSession((s) => !!s.user);
 
   return (
     <div className="min-h-[100dvh] bg-background">
-      <PublicHeader authed={authed} />
+      <PublicHeader />
 
       <main>
         {/* ── Hero ── */}
@@ -99,13 +108,13 @@ export function LandingPage() {
                 Smarter Recipe Costing for Better Restaurant Operations
               </h1>
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-                CostCraft helps your teams manage recipes, ingredient pricing, yield, wastage and
-                in-house prep — with cost visibility at brand and outlet level.
+                CostCraft brings recipe management, ingredient costing, yield, wastage and brand-level
+                operational visibility into one platform.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="h-11">
-                  <Link to={authed ? "/dashboard" : "/login"}>
-                    {authed ? "Go to Dashboard" : "Login to CostCraft"}
+                  <Link to="/login">
+                    Login to CostCraft
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -113,6 +122,8 @@ export function LandingPage() {
                   <a href="#features">Explore Features</a>
                 </Button>
               </div>
+
+              <BrandLogoStrip label="Built for Bookends Hospitality" className="mt-10" />
             </div>
 
             {/* Illustrative, masked product preview — structural UI only, no live data. */}
@@ -122,33 +133,27 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* ── Brands ── */}
-        <section id="brands" className="border-t bg-muted/30">
+        {/* ── Overview ── */}
+        <section className="border-t bg-muted/30">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-            <SectionHeading
-              eyebrow="Multi-brand"
-              title="One platform, every Bookends brand"
-              description="CostCraft keeps recipes, categories and operations separated per brand while sharing one consistent costing engine."
-            />
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
-              <BrandBadge
-                name="Bookends Hospitality"
-                tone="bookends"
-                tagline="The parent platform identity and default CostCraft context."
-                points={["Unified recipe & costing engine", "Brand and outlet reporting", "Central user and role management"]}
+            <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+              <SectionHeading
+                align="left"
+                eyebrow="Overview"
+                title="One platform for restaurant cost control"
+                description="CostCraft helps Bookends Hospitality teams standardise recipes and control food cost — replacing scattered spreadsheets with one consistent source of truth."
               />
-              <BrandBadge
-                name="Capiche"
-                tone="capiche"
-                tagline="Capiche-specific operations, kept distinct."
-                points={["Brand-specific recipes", "Brand-specific categories", "Separate operational data"]}
-              />
-              <BrandBadge
-                name="Aiko"
-                tone="aiko"
-                tagline="Aiko-specific operations, kept distinct."
-                points={["Aiko-specific recipes", "Aiko-specific categories", "Separate operational data"]}
-              />
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+                {OVERVIEW.map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-center gap-2.5 rounded-lg border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-sm"
+                  >
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </section>
@@ -177,7 +182,7 @@ export function LandingPage() {
             <SectionHeading eyebrow="How it works" title="Four steps from ingredient to insight" />
             <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {STEPS.map((s, i) => (
-                <div key={s.title} className="relative rounded-xl border bg-card p-6 shadow-sm">
+                <div key={s.title} className="rounded-xl border bg-card p-6 shadow-sm">
                   <div className="flex items-center gap-3">
                     <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
                       <s.icon className="h-5 w-5" />
@@ -192,21 +197,53 @@ export function LandingPage() {
           </div>
         </section>
 
+        {/* ── Brands ── */}
+        <section id="brands">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+            <SectionHeading
+              eyebrow="Multi-brand"
+              title="One platform, every Bookends brand"
+              description="CostCraft keeps recipes, categories and operational data separated per brand while sharing one consistent costing engine."
+            />
+            <div className="mt-12 grid gap-6 md:grid-cols-3">
+              <BrandBadge
+                name="Bookends Hospitality"
+                tone="bookends"
+                tagline="We believe in unreasonable hospitality."
+                points={["Central recipe & costing platform", "Brand and outlet reporting", "Unified user & role management"]}
+              />
+              <BrandBadge
+                name="Capiche"
+                tone="capiche"
+                tagline="It's always pizza time."
+                points={["Pizza-first recipes & size variants", "Capiche-specific categories", "Separate operational data"]}
+              />
+              <BrandBadge
+                name="Aiko"
+                tone="aiko"
+                tagline="Asian Inspired Komfort."
+                points={["Asian comfort recipes", "Aiko-specific categories", "Separate operational data"]}
+              />
+            </div>
+          </div>
+        </section>
+
         {/* ── Benefits ── */}
-        <section>
+        <section className="border-t bg-muted/30">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
             <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-              <div>
-                <SectionHeading
-                  className="mx-0 text-left"
-                  eyebrow="Why CostCraft"
-                  title="Operational benefits that add up"
-                  description="Practical improvements to how your kitchens and management teams work — no spreadsheets required."
-                />
-              </div>
+              <SectionHeading
+                align="left"
+                eyebrow="Why CostCraft"
+                title="Operational benefits that add up"
+                description="Practical improvements to how your kitchens and management teams work — no spreadsheets required."
+              />
               <ul className="grid gap-3 sm:grid-cols-2">
                 {BENEFITS.map((b) => (
-                  <li key={b} className="flex items-start gap-2.5 rounded-lg border bg-card px-4 py-3 text-sm text-foreground/85 shadow-sm">
+                  <li
+                    key={b}
+                    className="flex items-start gap-2.5 rounded-lg border bg-card px-4 py-3 text-sm text-foreground/85 shadow-sm"
+                  >
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     {b}
                   </li>
@@ -217,7 +254,7 @@ export function LandingPage() {
         </section>
 
         {/* ── Modules preview ── */}
-        <section className="border-t bg-muted/30">
+        <section>
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
             <SectionHeading eyebrow="Inside CostCraft" title="The modules your team will use" />
             <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -237,7 +274,7 @@ export function LandingPage() {
         </section>
 
         {/* ── Security ── */}
-        <section>
+        <section className="border-t bg-muted/30">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
             <SectionHeading eyebrow="Security & access" title="Access designed for teams" />
             <div className="mt-12 grid gap-5 sm:grid-cols-3">
@@ -250,10 +287,10 @@ export function LandingPage() {
           </div>
         </section>
 
-        <CTASection authed={authed} />
+        <CTASection />
       </main>
 
-      <PublicFooter authed={authed} />
+      <PublicFooter />
     </div>
   );
 }
@@ -281,10 +318,7 @@ function HeroPreview() {
           <div key={label} className="flex items-center gap-3">
             <span className="w-40 shrink-0 text-xs text-muted-foreground">{label}</span>
             <span className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-              <span
-                className="block h-full rounded-full bg-primary/70"
-                style={{ width: [82, 54, 30][i] + "%" }}
-              />
+              <span className="block h-full rounded-full bg-primary/70" style={{ width: [82, 54, 30][i] + "%" }} />
             </span>
             <span className="w-12 text-right text-xs font-medium tabular-nums text-muted-foreground">₹•••</span>
           </div>

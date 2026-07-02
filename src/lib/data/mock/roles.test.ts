@@ -4,7 +4,7 @@ import { rolesRepo } from "./roles";
 import { usersRepo } from "./users";
 
 const mk = (label: string, capabilities: string[] = []) =>
-  rolesRepo.create({ label, capabilities }, "u-moin");
+  rolesRepo.create({ label, capabilities }, "u-owner");
 
 describe("custom roles repo", () => {
   beforeEach(() => resetDb());
@@ -34,12 +34,12 @@ describe("custom roles repo", () => {
 
   it("blocks editing a built-in role", async () => {
     await expect(
-      rolesRepo.update("editor", { label: "Editor X", capabilities: [] }, "u-moin"),
+      rolesRepo.update("editor", { label: "Editor X", capabilities: [] }, "u-owner"),
     ).rejects.toThrow(/built-in/i);
   });
 
   it("blocks deleting a built-in role", async () => {
-    await expect(rolesRepo.remove("viewer", "u-moin")).rejects.toThrow(/built-in/i);
+    await expect(rolesRepo.remove("viewer", "u-owner")).rejects.toThrow(/built-in/i);
   });
 
   it("edits a custom role's capabilities", async () => {
@@ -47,7 +47,7 @@ describe("custom roles repo", () => {
     const updated = await rolesRepo.update(
       role.key,
       { label: "Analyst", capabilities: ["recipe.viewAll", "report.excel"] },
-      "u-moin",
+      "u-owner",
     );
     expect(updated.capabilities.sort()).toEqual(["recipe.viewAll", "report.excel"]);
   });
@@ -56,11 +56,11 @@ describe("custom roles repo", () => {
     const role = await mk("Analyst", ["recipe.viewAll"]);
     const u = await usersRepo.create(
       { name: "A", email: "a@x.com", role: role.key, password: "password1" },
-      "u-moin",
+      "u-owner",
     );
-    await expect(rolesRepo.remove(role.key, "u-moin")).rejects.toThrow(/still assigned/i);
-    await usersRepo.update(u.id, { role: "viewer" }, "u-moin");
-    await rolesRepo.remove(role.key, "u-moin");
+    await expect(rolesRepo.remove(role.key, "u-owner")).rejects.toThrow(/still assigned/i);
+    await usersRepo.update(u.id, { role: "viewer" }, "u-owner");
+    await rolesRepo.remove(role.key, "u-owner");
     expect(await rolesRepo.getByKey(role.key)).toBeNull();
   });
 });

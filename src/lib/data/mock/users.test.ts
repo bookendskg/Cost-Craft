@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { resetDb } from "./db";
 import { usersRepo } from "./users";
 
-// The mock seed ships with moin (owner) as the single active super_admin.
+// The mock seed ships with M S Patel (owner) as the single active super_admin.
 const mkSuper = (i: number) =>
   usersRepo.create(
     { name: `S${i}`, email: `s${i}@x.com`, role: "super_admin", password: "password1" },
-    "u-moin",
+    "u-owner",
   );
 
 describe("super admin count limits", () => {
@@ -19,11 +19,18 @@ describe("super admin count limits", () => {
   });
 
   it("exempts owner emails from the maximum", async () => {
-    for (let i = 1; i <= 4; i++) await mkSuper(i); // 5 active supers
-    const owner = await usersRepo.create(
-      { name: "Owner2", email: "reservation.bookends@gmail.com", role: "super_admin", password: "password1" },
-      "u-moin",
-    );
+    // The seed owner (mspatel05831) already occupies the single owner email, so to
+    // exercise the exemption we bootstrap a second super, demote the owner (min-1
+    // still holds), fill the 5-cap with non-owner supers, then re-promote the owner.
+    const s0 = await mkSuper(0); // supers: owner + s0
+    await usersRepo.update("u-owner", { role: "admin" }, s0.id); // demote owner → 1 super (s0)
+    for (let i = 1; i <= 4; i++)
+      await usersRepo.create(
+        { name: `S${i}`, email: `s${i}@x.com`, role: "super_admin", password: "password1" },
+        s0.id,
+      ); // → 5 active supers (s0 + s1..s4)
+    // The owner email is exempt from the 5-cap, so re-promoting is allowed as a 6th.
+    const owner = await usersRepo.update("u-owner", { role: "super_admin" }, s0.id);
     expect(owner.role).toBe("super_admin");
   });
 
@@ -34,21 +41,21 @@ describe("super admin count limits", () => {
   });
 
   it("blocks disabling the last active super admin (min 1)", async () => {
-    await expect(usersRepo.update("u-moin", { status: "inactive" }, "u-moin")).rejects.toThrow(
+    await expect(usersRepo.update("u-owner", { status: "inactive" }, "u-owner")).rejects.toThrow(
       /at least one active super admin/i,
     );
   });
 
   it("allows disabling a super admin when another remains active", async () => {
     const s = await mkSuper(1); // now moin + s = 2 active supers
-    const updated = await usersRepo.update(s.id, { status: "inactive" }, "u-moin");
+    const updated = await usersRepo.update(s.id, { status: "inactive" }, "u-owner");
     expect(updated.status).toBe("inactive");
   });
 
   it("blocks a plain admin from promoting anyone to super_admin", async () => {
     const v = await usersRepo.create(
       { name: "V", email: "v@x.com", role: "viewer", password: "password1" },
-      "u-moin",
+      "u-owner",
     );
     // actor u-admin is role 'admin', not super_admin → not allowed to mint a super.
     await expect(usersRepo.update(v.id, { role: "super_admin" }, "u-admin")).rejects.toThrow(
@@ -67,8 +74,8 @@ describe("super admin count limits", () => {
     for (let i = 1; i <= 4; i++) await mkSuper(i); // 5 active supers
     const editor = await usersRepo.create(
       { name: "Ed", email: "ed@x.com", role: "editor", password: "password1" },
-      "u-moin",
+      "u-owner",
     );
-    await expect(usersRepo.update(editor.id, { role: "super_admin" }, "u-moin")).rejects.toThrow(/maximum of 5/i);
+    await expect(usersRepo.update(editor.id, { role: "super_admin" }, "u-owner")).rejects.toThrow(/maximum of 5/i);
   });
 });

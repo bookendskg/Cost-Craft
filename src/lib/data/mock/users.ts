@@ -6,7 +6,7 @@ const MAX_SUPER_ADMINS = 5;
 const MAX_SUPER_MSG =
   "A maximum of 5 active Super Admin users is allowed. Remove or demote an existing Super Admin before assigning another.";
 const isActiveSuperAdmin = (u: User) => u.role === "super_admin" && u.status === "active" && u.approved !== false;
-const OWNER_EMAILS = ["reservation.bookends@gmail.com", "moin.bookends@gmail.com"];
+const OWNER_EMAILS = ["mspatel05831@gmail.com"];
 const isOwnerEmail = (email: string) => OWNER_EMAILS.includes(email.toLowerCase());
 
 export interface CreateUserInput {
