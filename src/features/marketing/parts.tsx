@@ -9,7 +9,17 @@ import { Button } from "@/components/ui/button";
  * icon). Lets us reference official brand logos from /public that may not exist
  * yet — drop the files in and they appear; until then the text mark shows.
  */
-function BrandLogo({ candidates, alt, className }: { candidates: string[]; alt: string; className?: string }) {
+function BrandLogo({
+  candidates,
+  alt,
+  className,
+  onResolve,
+}: {
+  candidates: string[];
+  alt: string;
+  className?: string;
+  onResolve?: (ok: boolean) => void;
+}) {
   const [i, setI] = useState(0);
   if (i >= candidates.length) return null;
   return (
@@ -18,8 +28,13 @@ function BrandLogo({ candidates, alt, className }: { candidates: string[]; alt: 
       alt={alt}
       loading="lazy"
       decoding="async"
-      onError={() => setI((n) => n + 1)}
       className={className}
+      onLoad={() => onResolve?.(true)}
+      onError={() => {
+        const next = i + 1;
+        if (next >= candidates.length) onResolve?.(false);
+        setI(next);
+      }}
     />
   );
 }
@@ -92,20 +107,28 @@ export function BrandBadge({
     capiche: { ring: "ring-[#ed1c24]/20", dot: "bg-[#ed1c24]", text: "text-[#ed1c24]", tint: "bg-[#fef2f2]" },
     aiko: { ring: "ring-amber-500/25", dot: "bg-[#f5c107]", text: "text-amber-600", tint: "bg-[#fffbeb]" },
   }[tone];
+  const [logoOk, setLogoOk] = useState<boolean | null>(null);
 
   return (
     <div className={cn("rounded-xl border p-6 ring-1", styles.ring, styles.tint)}>
-      {/* Official logo if provided in /public/brands (svg preferred, png fallback). */}
+      {/* Official brand logo plate (from /public/brands). Falls back to a
+          coloured dot + name if the image is ever missing. */}
+      <h3 className="sr-only">{name}</h3>
       <BrandLogo
-        candidates={[`/brands/${tone}.svg`, `/brands/${tone}.png`]}
+        candidates={[`/brands/${tone}.png`, `/brands/${tone}.svg`]}
         alt={`${name} logo`}
-        className="mb-3 h-9 w-auto max-w-[170px] object-contain"
+        className="h-12 w-auto max-w-[190px] rounded-lg object-contain shadow-sm ring-1 ring-black/5"
+        onResolve={setLogoOk}
       />
-      <div className="flex items-center gap-2.5">
-        <span className={cn("h-3 w-3 rounded-full", styles.dot)} />
-        <h3 className={cn("text-lg font-semibold", styles.text)}>{name}</h3>
-      </div>
-      <p className="mt-2 text-sm font-medium italic text-foreground/70">“{tagline}”</p>
+      {logoOk === false && (
+        <div className="flex items-center gap-2.5">
+          <span className={cn("h-3 w-3 rounded-full", styles.dot)} />
+          <span className={cn("text-lg font-semibold", styles.text)}>{name}</span>
+        </div>
+      )}
+      <p className={cn("text-sm font-medium italic text-foreground/70", logoOk === false ? "mt-2" : "mt-4")}>
+        “{tagline}”
+      </p>
       <ul className="mt-4 space-y-2">
         {points.map((p) => (
           <li key={p} className="flex items-start gap-2 text-sm text-foreground/80">
