@@ -137,6 +137,14 @@ create policy role_caps_write on public.role_capabilities for all to authenticat
   using (public.is_app_super_admin()) with check (public.is_app_super_admin());
 
 -- ── 5. user_profiles.role: relax the enum → text + FK to roles(key) ─────────
+-- Two policies reference user_profiles.role DIRECTLY (in a subquery), which
+-- Postgres tracks as a dependency and refuses to alter the column type while
+-- they exist. Drop them here and recreate them via is_app_admin() in section 7
+-- (function-based → no direct dependency, and it also lets super_admin + a
+-- custom role granted audit.view read — which the old 'admin'-only check didn't).
+drop policy if exists "export_history_read_admin" on public.export_history;
+drop policy if exists "access_links_admin_read"  on public.recipe_access_links;
+
 alter table public.user_profiles alter column role drop default;
 alter table public.user_profiles alter column role type text using role::text;
 alter table public.user_profiles alter column role set default 'viewer';
@@ -300,6 +308,19 @@ drop policy if exists user_recipe_views_write on public.user_recipe_views;
 create policy user_recipe_views_write on public.user_recipe_views for all to authenticated
   using (public.can_edit_recipes() or public.has_cap('recipe.editAll'))
   with check (public.can_edit_recipes() or public.has_cap('recipe.editAll'));
+
+-- Recreate the two policies dropped in section 5 — now dependency-free (they call
+-- is_app_admin() instead of referencing user_profiles.role), recognising
+-- super_admin and any custom role granted audit.view.
+drop policy if exists "export_history_read_admin" on public.export_history;
+create policy "export_history_read_admin" on public.export_history
+  for select using (
+    exported_by_user_id = auth.uid() or public.is_app_admin() or public.has_cap('audit.view')
+  );
+
+drop policy if exists "access_links_admin_read" on public.recipe_access_links;
+create policy "access_links_admin_read" on public.recipe_access_links
+  for select using (public.is_app_admin() or public.has_cap('audit.view'));
 
 -- ── 8. Relax role-snapshot CHECKs so a custom role can export / share ────────
 -- These columns store the actor's role NAME historically; keep them as tolerant
