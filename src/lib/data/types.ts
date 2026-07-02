@@ -284,6 +284,12 @@ export interface Recipe {
   approved_by: string | null;
   approved_at: string | null;
   rejection_note: string | null;
+  /** Soft-archive: when set, the recipe is retired from active lists but kept
+   *  (with its cost history) so reports and sub-recipe links stay intact. This is
+   *  independent of the workflow `status`, which is preserved and restored on
+   *  un-archive. Null → the recipe is active. */
+  archived_at?: string | null;
+  archived_by?: string | null;
   version_no: number;
   created_at: string;
   updated_at: string;

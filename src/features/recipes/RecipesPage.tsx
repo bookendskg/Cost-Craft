@@ -14,6 +14,8 @@ import {
   Percent,
   Upload,
   Trash2,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -50,7 +52,7 @@ import { useMaterials } from "@/features/raw-materials/hooks";
 import { useUsersMap } from "@/features/users/hooks";
 import { useDashboardBrand } from "@/features/dashboard/brandTheme";
 import { useBrands } from "@/features/brands/hooks";
-import { useDeleteRecipe, useDuplicateRecipe, useRecipe, useRecipes } from "./hooks";
+import { useArchiveRecipe, useDeleteRecipe, useDuplicateRecipe, useRecipe, useRecipes, useUnarchiveRecipe } from "./hooks";
 import {
   FC_TONE_STYLES,
   fcTone,
@@ -133,9 +135,24 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
   const { map: usersMap } = useUsersMap();
   const dupMut = useDuplicateRecipe();
   const delMut = useDeleteRecipe();
+  const archiveMut = useArchiveRecipe();
+  const unarchiveMut = useUnarchiveRecipe();
   const canDelete = can(user.role, "recipe.delete");
+  // Archiving is a reversible retire, offered to the same audience that can delete.
+  const canArchive = canDelete;
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const pendingDelete = allRecipes.find((r) => r.id === deletingId) ?? null;
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+  const pendingArchive = allRecipes.find((r) => r.id === archivingId) ?? null;
+
+  const unarchive = async (id: string) => {
+    try {
+      await unarchiveMut.mutateAsync(id);
+      toast.success("Recipe restored");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Restore failed");
+    }
+  };
 
   // "Updated by" attribution is for staff roles, not external viewers.
   const showUpdatedBy = user.role !== "viewer";
@@ -221,9 +238,16 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
 
   const filtered = useMemo(() => {
     return recipes.filter((r) => {
+      // Archived recipes are hidden everywhere except the dedicated "Archived" view.
+      const isArchived = !!r.archived_at;
+      if (status === "archived") {
+        if (!isArchived) return false;
+      } else {
+        if (isArchived) return false;
+        if (status !== "all" && r.status !== status) return false;
+      }
       if (search && !r.recipe_name.toLowerCase().includes(search.toLowerCase())) return false;
       if (category !== "all" && r.category !== category) return false;
-      if (status !== "all" && r.status !== status) return false;
       if (fcRange !== "all") {
         const fc = foodCostPctOf(r, foodCostPct);
         if (fcRange === "low" && !(fc < 25)) return false;
@@ -326,6 +350,7 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
                 <SelectItem value="testing">Testing</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
           </Filter>
@@ -394,9 +419,12 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
                   canEdit={canEditRecipe(user, r)}
                   canDuplicate={can(user.role, "recipe.duplicate")}
                   canDelete={canDelete}
+                  canArchive={canArchive}
                   onEdit={() => navigate(`/recipes/${r.id}/edit`)}
                   onDuplicate={() => duplicate(r.id)}
                   onDelete={() => setDeletingId(r.id)}
+                  onArchive={() => setArchivingId(r.id)}
+                  onUnarchive={() => unarchive(r.id)}
                   updatedBy={showUpdatedBy ? usersMap.get(r.updated_by ?? "")?.name ?? null : null}
                   canSeeCost={canSeeCost}
                   brandColored={prepMode}
@@ -470,6 +498,29 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
           }
         }}
       />
+
+      <ConfirmDialog
+        open={!!archivingId}
+        onOpenChange={(o) => !o && setArchivingId(null)}
+        title="Archive this recipe?"
+        description={
+          pendingArchive
+            ? `"${pendingArchive.recipe_name}" will be hidden from active recipes but kept with its cost history and any sub-recipe links. You can restore it anytime from the Archived filter.`
+            : undefined
+        }
+        confirmLabel="Archive"
+        onConfirm={async () => {
+          if (!archivingId) return;
+          try {
+            await archiveMut.mutateAsync(archivingId);
+            toast.success("Recipe archived");
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Archive failed");
+          } finally {
+            setArchivingId(null);
+          }
+        }}
+      />
     </>
   );
 }
@@ -516,9 +567,12 @@ function RecipeRow({
   canEdit,
   canDuplicate,
   canDelete,
+  canArchive,
   onEdit,
   onDuplicate,
   onDelete,
+  onArchive,
+  onUnarchive,
   updatedBy,
   canSeeCost,
   brandColored,
@@ -533,9 +587,12 @@ function RecipeRow({
   canEdit: boolean;
   canDuplicate: boolean;
   canDelete: boolean;
+  canArchive: boolean;
   onEdit: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onArchive: () => void;
+  onUnarchive: () => void;
   updatedBy: string | null;
   canSeeCost: boolean;
   /** Color the food-cost bar/badge by the active brand instead of by FC tone. */
@@ -578,6 +635,11 @@ function RecipeRow({
               {sizes && sizes.length > 0 && (
                 <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                   {sizes.join(" · ")}
+                </span>
+              )}
+              {recipe.archived_at && (
+                <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Archived
                 </span>
               )}
             </p>
@@ -631,9 +693,12 @@ function RecipeRow({
           canEdit={canEdit}
           canDuplicate={canDuplicate}
           canDelete={canDelete}
+          canArchive={canArchive}
           onEdit={onEdit}
           onDuplicate={onDuplicate}
           onDelete={onDelete}
+          onArchive={onArchive}
+          onUnarchive={onUnarchive}
         />
       )}
     </div>
@@ -647,9 +712,12 @@ function ExpandedBreakdown({
   canEdit,
   canDuplicate,
   canDelete,
+  canArchive,
   onEdit,
   onDuplicate,
   onDelete,
+  onArchive,
+  onUnarchive,
 }: {
   recipe: Recipe;
   foodCostPct: number;
@@ -657,10 +725,14 @@ function ExpandedBreakdown({
   canEdit: boolean;
   canDuplicate: boolean;
   canDelete: boolean;
+  canArchive: boolean;
   onEdit: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onArchive: () => void;
+  onUnarchive: () => void;
 }) {
+  const isArchived = !!recipe.archived_at;
   const { data, isLoading } = useRecipe(recipe.id);
   const margin = profitMarginOf(recipe, foodCostPct);
   const actualFc = foodCostPctOf(recipe, foodCostPct);
@@ -688,7 +760,7 @@ function ExpandedBreakdown({
                 <Pencil className="h-3.5 w-3.5" /> Edit
               </Button>
             )}
-            {(canDuplicate || canDelete) && (
+            {(canDuplicate || canDelete || canArchive) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" aria-label="More recipe actions"><MoreVertical className="h-4 w-4" /></Button>
@@ -698,6 +770,17 @@ function ExpandedBreakdown({
                     <DropdownMenuItem onClick={onDuplicate}>
                       <Copy className="h-4 w-4" /> Duplicate
                     </DropdownMenuItem>
+                  )}
+                  {canArchive && (
+                    isArchived ? (
+                      <DropdownMenuItem onClick={onUnarchive}>
+                        <ArchiveRestore className="h-4 w-4" /> Restore from archive
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onClick={onArchive}>
+                        <Archive className="h-4 w-4" /> Archive
+                      </DropdownMenuItem>
+                    )
                   )}
                   {canDelete && (
                     <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">

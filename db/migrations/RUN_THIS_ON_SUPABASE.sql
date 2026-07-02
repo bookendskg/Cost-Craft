@@ -3903,4 +3903,17 @@ delete from public.role_capabilities
    'outlet.create', 'outlet.edit', 'outlet.change_brand', 'outlet.archive'
  );
 
+
+-- ===================================================================
+-- 0018_recipe_archive.sql — soft-archive for recipes (spliced)
+-- ===================================================================
+-- Retire a recipe from active lists without deleting it, so its cost history and
+-- any sub-recipe links stay intact. Independent of the workflow `status` (which is
+-- preserved and restored on un-archive). archived_at IS NULL → active.
+-- archived_by holds the Supabase auth uid (no FK — see 0008).
+alter table public.recipes
+  add column if not exists archived_at timestamptz,
+  add column if not exists archived_by uuid;
+create index if not exists recipes_archived_at_idx on public.recipes (archived_at);
+
 commit;

@@ -651,6 +651,55 @@ export const supabaseRecipesRepo = {
     return recipe;
   },
 
+  /** Soft-archive: retire a recipe from active lists without deleting it. Its
+   *  workflow status, cost history and sub-recipe links are all preserved. */
+  async archive(id: string, actorId: string): Promise<Recipe> {
+    const c = sb();
+    const cur = await c.from("recipes").select("recipe_name").eq("id", id).maybeSingle();
+    if (cur.error) fail("Archive recipe", cur.error.message);
+    if (!cur.data) fail("Archive recipe", "Recipe not found");
+    const { data, error } = await c
+      .from("recipes")
+      .update({ archived_at: nowISO(), archived_by: actorId, updated_at: nowISO(), updated_by: actorId })
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) fail("Archive recipe", error.message);
+    const recipe = data as Recipe;
+    await audit({
+      entity_type: "recipe",
+      entity_id: id,
+      action: "update",
+      performed_by: actorId,
+      notes: `Archived "${recipe.recipe_name}"`,
+    });
+    return recipe;
+  },
+
+  /** Restore a soft-archived recipe back into active lists (status is unchanged). */
+  async unarchive(id: string, actorId: string): Promise<Recipe> {
+    const c = sb();
+    const cur = await c.from("recipes").select("recipe_name").eq("id", id).maybeSingle();
+    if (cur.error) fail("Restore recipe", cur.error.message);
+    if (!cur.data) fail("Restore recipe", "Recipe not found");
+    const { data, error } = await c
+      .from("recipes")
+      .update({ archived_at: null, archived_by: null, updated_at: nowISO(), updated_by: actorId })
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) fail("Restore recipe", error.message);
+    const recipe = data as Recipe;
+    await audit({
+      entity_type: "recipe",
+      entity_id: id,
+      action: "update",
+      performed_by: actorId,
+      notes: `Restored "${recipe.recipe_name}" from archive`,
+    });
+    return recipe;
+  },
+
   /** All cost-history rows across every recipe (for bulk Excel export). */
   async allCostHistory(): Promise<RecipeCostHistory[]> {
     const { data, error } = await sb()

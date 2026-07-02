@@ -516,6 +516,53 @@ export const recipesRepo = {
     );
   },
 
+  /** Soft-archive: retire a recipe from active lists without deleting it. Its
+   *  workflow status, cost history and sub-recipe links are all preserved. */
+  async archive(id: string, actorId: string): Promise<Recipe> {
+    return delay(
+      mutate((db) => {
+        const recipe = db.recipes.find((r) => r.id === id);
+        if (!recipe) throw new Error("Recipe not found");
+        if (recipe.archived_at) return recipe;
+        recipe.archived_at = nowISO();
+        recipe.archived_by = actorId;
+        recipe.updated_at = nowISO();
+        recipe.updated_by = actorId;
+        recordAudit(db, {
+          entity_type: "recipe",
+          entity_id: id,
+          action: "update",
+          performed_by: actorId,
+          notes: `Archived "${recipe.recipe_name}"`,
+        });
+        return recipe;
+      }),
+    );
+  },
+
+  /** Restore a soft-archived recipe back into active lists (status is unchanged). */
+  async unarchive(id: string, actorId: string): Promise<Recipe> {
+    return delay(
+      mutate((db) => {
+        const recipe = db.recipes.find((r) => r.id === id);
+        if (!recipe) throw new Error("Recipe not found");
+        if (!recipe.archived_at) return recipe;
+        recipe.archived_at = null;
+        recipe.archived_by = null;
+        recipe.updated_at = nowISO();
+        recipe.updated_by = actorId;
+        recordAudit(db, {
+          entity_type: "recipe",
+          entity_id: id,
+          action: "update",
+          performed_by: actorId,
+          notes: `Restored "${recipe.recipe_name}" from archive`,
+        });
+        return recipe;
+      }),
+    );
+  },
+
   /** All cost-history rows across every recipe (for bulk Excel export). */
   async allCostHistory(): Promise<RecipeCostHistory[]> {
     return delay(

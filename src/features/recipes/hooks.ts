@@ -84,6 +84,24 @@ export function useDeleteRecipe() {
   });
 }
 
+export function useArchiveRecipe() {
+  const qc = useQueryClient();
+  const actorId = useActorId();
+  return useMutation({
+    mutationFn: (id: string) => recipesRepo.archive(id, actorId),
+    onSuccess: () => invalidate(qc),
+  });
+}
+
+export function useUnarchiveRecipe() {
+  const qc = useQueryClient();
+  const actorId = useActorId();
+  return useMutation({
+    mutationFn: (id: string) => recipesRepo.unarchive(id, actorId),
+    onSuccess: () => invalidate(qc),
+  });
+}
+
 export function useSetRecipeImage() {
   const qc = useQueryClient();
   const actorId = useActorId();
