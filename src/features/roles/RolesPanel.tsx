@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Check, Minus, Pencil, Plus, ShieldCheck, Trash2, Loader2 } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,10 +18,11 @@ import type { RoleRecord } from "@/lib/data/types";
 import { useRoles, useDeleteRole } from "./hooks";
 import { RoleForm } from "./RoleForm";
 
-/** Super-Admin-only Roles & Permissions. Shows the effective permission matrix for
- *  every role and lets a Super Admin create/edit/delete CUSTOM roles with their own
- *  feature access. Built-in roles are protected (read-only). */
-export function RolesPage() {
+/** Custom-role creator + effective-permission matrix. Rendered inside the User
+ *  Management "Roles" tab (Super-Admin only; no PageHeader of its own).
+ *  Built-in roles are protected/read-only; custom roles can be created, edited
+ *  and deleted with their own tailored feature access. */
+export function RolesPanel() {
   const { data: roles = [], isLoading } = useRoles();
   const deleteMut = useDeleteRole();
   const [formOpen, setFormOpen] = useState(false);
@@ -53,15 +53,14 @@ export function RolesPage() {
 
   return (
     <>
-      <PageHeader
-        title="Roles & Permissions"
-        description="Effective permissions for every role. Only a Super Admin can view or change this."
-        actions={
-          <Button variant="accent" onClick={openNew}>
-            <Plus className="h-4 w-4" /> New Role
-          </Button>
-        }
-      />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Create custom roles with a tailored set of features. Built-in roles are protected.
+        </p>
+        <Button variant="accent" className="shrink-0" onClick={openNew}>
+          <Plus className="h-4 w-4" /> New Role
+        </Button>
+      </div>
 
       <Card className="mb-4 flex items-center gap-3 border-emerald-200 bg-emerald-50/60 p-4">
         <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-700" />

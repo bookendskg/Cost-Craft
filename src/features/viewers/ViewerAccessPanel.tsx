@@ -1,4 +1,3 @@
-import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { Card } from "@/components/ui/card";
@@ -16,7 +15,9 @@ import { viewerBrands, viewerShowCost } from "@/lib/auth/permissions";
 import { useBrands } from "@/features/brands/hooks";
 import { useUpdateUser, useViewers } from "@/features/users/hooks";
 
-export function ViewerAccessPage() {
+/** Viewer × brand access matrix. Rendered inside the User Management "Viewer Access"
+ *  tab (no PageHeader of its own). */
+export function ViewerAccessPanel() {
   const { viewers, isLoading } = useViewers();
   const updateUser = useUpdateUser();
   const { data: brandList = [] } = useBrands();
@@ -42,10 +43,9 @@ export function ViewerAccessPage() {
 
   return (
     <>
-      <PageHeader
-        title="Viewer Access"
-        description="Viewers see everything by default. Uncheck a brand to restrict a viewer to particular items."
-      />
+      <p className="mb-4 text-sm text-muted-foreground">
+        Viewers see everything by default. Uncheck a brand to restrict a viewer to particular items.
+      </p>
 
       <Card>
         {isLoading ? (

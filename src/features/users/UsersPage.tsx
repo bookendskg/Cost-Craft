@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
 import { type User } from "@/lib/data/types";
 import { roleLabel } from "@/lib/auth/roleCache";
@@ -39,6 +40,8 @@ import { sendPasswordReset } from "@/lib/supabase/profile";
 import { useDeleteUser, useUpdateUser, useUsers } from "./hooks";
 import { UserForm } from "./UserForm";
 import { AssignAccessDialog } from "@/features/viewers/AssignAccessDialog";
+import { ViewerAccessPanel } from "@/features/viewers/ViewerAccessPanel";
+import { RolesPanel } from "@/features/roles/RolesPanel";
 
 const fmtDate = (iso?: string | null) => {
   if (!iso) return "Never";
@@ -52,6 +55,7 @@ export function UsersPage() {
   const updateMut = useUpdateUser();
   const delUser = useDeleteUser();
   const me = useSession((s) => s.user);
+  const isSuperAdmin = me?.role === "super_admin";
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
   const [search, setSearch] = useState("");
@@ -120,19 +124,28 @@ export function UsersPage() {
     <>
       <PageHeader
         title="User Management"
-        description="Manage accounts, roles, verification, and brand/outlet access"
-        actions={
-          <Button
-            variant="accent"
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" /> Create User
-          </Button>
-        }
+        description="Manage accounts, roles, verification, viewer access and custom roles"
       />
+
+      <Tabs defaultValue="users">
+        <TabsList>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="viewer-access">Viewer Access</TabsTrigger>
+          {isSuperAdmin && <TabsTrigger value="roles">Roles</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="users">
+          <div className="mb-4 flex justify-end">
+            <Button
+              variant="accent"
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" /> Create User
+            </Button>
+          </div>
 
       {pendingCount > 0 && (
         <button
@@ -294,6 +307,18 @@ export function UsersPage() {
           </Table>
         )}
       </Card>
+        </TabsContent>
+
+        <TabsContent value="viewer-access">
+          <ViewerAccessPanel />
+        </TabsContent>
+
+        {isSuperAdmin && (
+          <TabsContent value="roles">
+            <RolesPanel />
+          </TabsContent>
+        )}
+      </Tabs>
 
       <UserForm open={formOpen} onOpenChange={setFormOpen} user={editing} />
       <AssignAccessDialog

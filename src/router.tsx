@@ -20,11 +20,9 @@ const RecipeDetailPage = lazy(() => import("@/features/recipes/RecipeDetailPage"
 const ApprovalsPage = lazy(() => import("@/features/approvals/ApprovalsPage").then((m) => ({ default: m.ApprovalsPage })));
 const ReportsPage = lazy(() => import("@/features/reports/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const UsersPage = lazy(() => import("@/features/users/UsersPage").then((m) => ({ default: m.UsersPage })));
-const ViewerAccessPage = lazy(() => import("@/features/viewers/ViewerAccessPage").then((m) => ({ default: m.ViewerAccessPage })));
 const AuditPage = lazy(() => import("@/features/audit/AuditPage").then((m) => ({ default: m.AuditPage })));
 const ExportHistoryPage = lazy(() => import("@/features/exports/ExportHistoryPage").then((m) => ({ default: m.ExportHistoryPage })));
 const AccessHistoryPage = lazy(() => import("@/features/share/AccessHistoryPage").then((m) => ({ default: m.AccessHistoryPage })));
-const RolesPage = lazy(() => import("@/features/roles/RolesPage").then((m) => ({ default: m.RolesPage })));
 const SettingsPage = lazy(() => import("@/features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const SharedRecipePage = lazy(() => import("@/features/share/SharedRecipePage").then((m) => ({ default: m.SharedRecipePage })));
@@ -133,14 +131,6 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "viewer-access",
-        element: (
-          <RequireRole roles={["admin", "editor", "head_chef"]} cap="viewer.assign">
-            <ViewerAccessPage />
-          </RequireRole>
-        ),
-      },
-      {
         path: "users",
         element: (
           <RequireRole roles={["admin"]} cap="user.manage">
@@ -172,14 +162,9 @@ export const router = createBrowserRouter([
           </RequireRole>
         ),
       },
-      {
-        path: "roles",
-        element: (
-          <RequireRole roles={["super_admin"]}>
-            <RolesPage />
-          </RequireRole>
-        ),
-      },
+      // Roles & Permissions and Viewer Access now live as tabs inside User
+      // Management (/users). Their old standalone routes are intentionally gone;
+      // the catch-all below redirects any stale links to /dashboard.
       // "Brands & Outlets" management has been removed. The old /brands route is
       // intentionally gone; the catch-all below redirects it to /dashboard.
       {
