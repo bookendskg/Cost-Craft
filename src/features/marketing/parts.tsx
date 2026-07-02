@@ -1,8 +1,28 @@
-import type { ComponentType, ReactNode } from "react";
+import { useState, type ComponentType, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { LucideProps } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+
+/**
+ * Renders the first candidate image that loads, else nothing (no broken-image
+ * icon). Lets us reference official brand logos from /public that may not exist
+ * yet — drop the files in and they appear; until then the text mark shows.
+ */
+function BrandLogo({ candidates, alt, className }: { candidates: string[]; alt: string; className?: string }) {
+  const [i, setI] = useState(0);
+  if (i >= candidates.length) return null;
+  return (
+    <img
+      src={candidates[i]}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onError={() => setI((n) => n + 1)}
+      className={className}
+    />
+  );
+}
 
 /** Centered section heading with an eyebrow label + supporting copy. */
 export function SectionHeading({
@@ -75,6 +95,12 @@ export function BrandBadge({
 
   return (
     <div className={cn("rounded-xl border p-6 ring-1", styles.ring, styles.tint)}>
+      {/* Official logo if provided in /public/brands (svg preferred, png fallback). */}
+      <BrandLogo
+        candidates={[`/brands/${tone}.svg`, `/brands/${tone}.png`]}
+        alt={`${name} logo`}
+        className="mb-3 h-9 w-auto max-w-[170px] object-contain"
+      />
       <div className="flex items-center gap-2.5">
         <span className={cn("h-3 w-3 rounded-full", styles.dot)} />
         <h3 className={cn("text-lg font-semibold", styles.text)}>{name}</h3>
