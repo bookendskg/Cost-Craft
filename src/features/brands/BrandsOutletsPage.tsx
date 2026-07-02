@@ -250,9 +250,6 @@ export function BrandsOutletsPage() {
                             {b.status !== "active" && (
                               <DropdownMenuItem onClick={() => changeBrandStatus(b, "active")}>Activate</DropdownMenuItem>
                             )}
-                            {b.status === "active" && (
-                              <DropdownMenuItem onClick={() => changeBrandStatus(b, "inactive")}>Deactivate</DropdownMenuItem>
-                            )}
                             {b.status !== "archived" && (
                               <DropdownMenuItem onClick={() => changeBrandStatus(b, "archived")}>
                                 <Archive className="h-4 w-4" /> Archive
@@ -334,9 +331,6 @@ export function BrandsOutletsPage() {
                             <DropdownMenuSeparator />
                             {o.status !== "active" && (
                               <DropdownMenuItem onClick={() => changeOutletStatus(o, "active")}>Activate</DropdownMenuItem>
-                            )}
-                            {o.status === "active" && (
-                              <DropdownMenuItem onClick={() => changeOutletStatus(o, "inactive")}>Deactivate</DropdownMenuItem>
                             )}
                             {o.status !== "archived" && (
                               <DropdownMenuItem onClick={() => changeOutletStatus(o, "archived")}>

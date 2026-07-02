@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BadgeCheck, Clock, KeyRound, LayoutDashboard, Mail, MoreVertical, Plus } from "lucide-react";
+import { BadgeCheck, Clock, KeyRound, LayoutDashboard, Mail, MoreVertical, Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/TableSkeleton";
@@ -32,10 +32,11 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { toast } from "@/components/ui/use-toast";
 import { type User } from "@/lib/data/types";
 import { roleLabel } from "@/lib/auth/roleCache";
+import { useSession } from "@/lib/auth/session";
 import { useRoles } from "@/features/roles/hooks";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { sendPasswordReset } from "@/lib/supabase/profile";
-import { useUpdateUser, useUsers } from "./hooks";
+import { useDeleteUser, useUpdateUser, useUsers } from "./hooks";
 import { UserForm } from "./UserForm";
 import { AssignAccessDialog } from "@/features/viewers/AssignAccessDialog";
 
@@ -49,6 +50,9 @@ export function UsersPage() {
   const { data: users = [], isLoading } = useUsers();
   const { data: roles = [] } = useRoles();
   const updateMut = useUpdateUser();
+  const delUser = useDeleteUser();
+  const me = useSession((s) => s.user);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
@@ -272,6 +276,14 @@ export function UsersPage() {
                         >
                           {u.status === "active" ? "Deactivate" : "Reactivate"}
                         </DropdownMenuItem>
+                        {me && u.id !== me.id && (u.role !== "super_admin" || me.role === "super_admin") && (
+                          <DropdownMenuItem
+                            onClick={() => setDeletingUser(u)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" /> Delete User
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -297,6 +309,29 @@ export function UsersPage() {
         confirmLabel="Deactivate"
         destructive
         onConfirm={() => deactivating && setUserStatus(deactivating, "inactive")}
+      />
+      <ConfirmDialog
+        open={!!deletingUser}
+        onOpenChange={(o) => !o && setDeletingUser(null)}
+        title={`Delete ${deletingUser?.name}?`}
+        description={
+          isSupabaseConfigured
+            ? "Permanently removes this user's account and profile. This can't be undone. (Requires the delete-user Edge Function to be deployed.)"
+            : "Permanently removes this user. This can't be undone."
+        }
+        confirmLabel="Delete User"
+        destructive
+        onConfirm={async () => {
+          if (!deletingUser) return;
+          try {
+            await delUser.mutateAsync(deletingUser.id);
+            toast.success("User deleted");
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Delete failed");
+          } finally {
+            setDeletingUser(null);
+          }
+        }}
       />
     </>
   );

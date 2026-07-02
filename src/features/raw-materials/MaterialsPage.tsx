@@ -54,7 +54,13 @@ import { cn, formatINR, formatQuantityWithUnit } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import type { RawMaterial } from "@/lib/data/types";
-import { useMaterials, useSetMaterialStatus, useBulkSetMaterialStatus } from "./hooks";
+import {
+  useMaterials,
+  useSetMaterialStatus,
+  useBulkSetMaterialStatus,
+  useDeleteMaterial,
+  useBulkDeleteMaterial,
+} from "./hooks";
 import { useCategories } from "@/features/settings/hooks";
 import { MaterialForm } from "./MaterialForm";
 import { PriceHistoryDialog } from "./PriceHistoryDialog";
@@ -80,6 +86,8 @@ export function MaterialsPage() {
   const { data: categories = [] } = useCategories();
   const setStatus = useSetMaterialStatus();
   const bulkStatus = useBulkSetMaterialStatus();
+  const delMat = useDeleteMaterial();
+  const bulkDelMat = useBulkDeleteMaterial();
   const queryClient = useQueryClient();
   const [importOpen, setImportOpen] = useState(false);
 
@@ -157,8 +165,9 @@ export function MaterialsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<RawMaterial | null>(null);
   const [historyFor, setHistoryFor] = useState<RawMaterial | null>(null);
-  const [deactivating, setDeactivating] = useState<RawMaterial | null>(null);
-  const [bulkConfirm, setBulkConfirm] = useState<"inactive" | "active" | null>(null);
+  const [deleting, setDeleting] = useState<RawMaterial | null>(null);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkReactivateOpen, setBulkReactivateOpen] = useState(false);
 
   const filtered = useMemo(() => {
     return materials.filter((m) => {
@@ -236,14 +245,31 @@ export function MaterialsPage() {
     }
   };
 
-  const runBulk = async (next: "inactive" | "active") => {
+  const runReactivate = async () => {
     const ids = [...selected];
     try {
-      const n = await bulkStatus.mutateAsync({ ids, status: next });
+      const n = await bulkStatus.mutateAsync({ ids, status: "active" });
       setSelected(new Set());
-      toast.success(`${next === "inactive" ? "Deactivated" : "Reactivated"} ${n} ingredient${n === 1 ? "" : "s"}`);
+      toast.success(`Reactivated ${n} ingredient${n === 1 ? "" : "s"}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Bulk update failed");
+    }
+  };
+
+  const runBulkDelete = async () => {
+    const ids = [...selected];
+    try {
+      const { deleted, skipped } = await bulkDelMat.mutateAsync(ids);
+      setSelected(new Set());
+      if (deleted && skipped) {
+        toast.success(`Deleted ${deleted}; ${skipped} skipped (still used in recipes)`);
+      } else if (deleted) {
+        toast.success(`Deleted ${deleted} ingredient${deleted === 1 ? "" : "s"}`);
+      } else {
+        toast.error(`Nothing deleted — ${skipped} still used in recipes`);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Bulk delete failed");
     }
   };
 
@@ -262,23 +288,25 @@ export function MaterialsPage() {
       <DropdownMenuContent align="end">
         {canEdit && <DropdownMenuItem onClick={() => openEdit(m)}>Edit</DropdownMenuItem>}
         <DropdownMenuItem onClick={() => setHistoryFor(m)}>Price History</DropdownMenuItem>
-        {canEdit &&
-          (m.status === "active" ? (
-            <DropdownMenuItem onClick={() => setDeactivating(m)}>Deactivate</DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem
-              onClick={async () => {
-                try {
-                  await setStatus.mutateAsync({ id: m.id, status: "active" });
-                  toast.success("Ingredient reactivated");
-                } catch (e) {
-                  toast.error(e instanceof Error ? e.message : "Reactivate failed");
-                }
-              }}
-            >
-              Reactivate
-            </DropdownMenuItem>
-          ))}
+        {canEdit && m.status !== "active" && (
+          <DropdownMenuItem
+            onClick={async () => {
+              try {
+                await setStatus.mutateAsync({ id: m.id, status: "active" });
+                toast.success("Ingredient reactivated");
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Reactivate failed");
+              }
+            }}
+          >
+            Reactivate
+          </DropdownMenuItem>
+        )}
+        {canEdit && (
+          <DropdownMenuItem onClick={() => setDeleting(m)} className="text-destructive focus:text-destructive">
+            <Trash2 className="h-4 w-4" /> Delete
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -391,11 +419,11 @@ export function MaterialsPage() {
           <Button variant="outline" size="sm" onClick={doExport} disabled={isExporting}>
             <Download className="h-4 w-4" /> Export
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setBulkConfirm("active")}>
+          <Button variant="outline" size="sm" onClick={() => setBulkReactivateOpen(true)}>
             <RotateCcw className="h-4 w-4" /> Reactivate
           </Button>
-          <Button variant="destructive" size="sm" onClick={() => setBulkConfirm("inactive")}>
-            <Trash2 className="h-4 w-4" /> Deactivate
+          <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)}>
+            <Trash2 className="h-4 w-4" /> Delete
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
             Clear
@@ -531,37 +559,39 @@ export function MaterialsPage() {
         onOpenChange={(o) => !o && setHistoryFor(null)}
       />
       <ConfirmDialog
-        open={!!deactivating}
-        onOpenChange={(o) => !o && setDeactivating(null)}
-        title="Deactivate ingredient?"
-        description={`"${deactivating?.ingredient_name}" will be hidden from new recipes. Existing recipes keep their data.`}
-        confirmLabel="Deactivate"
+        open={!!deleting}
+        onOpenChange={(o) => !o && setDeleting(null)}
+        title="Delete ingredient?"
+        description={`"${deleting?.ingredient_name}" and its price history will be permanently deleted. This can't be undone, and it's blocked if the ingredient is still used in any recipe.`}
+        confirmLabel="Delete"
         destructive
         onConfirm={async () => {
-          if (!deactivating) return;
-          const m = deactivating;
+          if (!deleting) return;
+          const m = deleting;
           try {
-            await setStatus.mutateAsync({ id: m.id, status: "inactive" });
-            toast.success("Ingredient deactivated", undefined, {
-              action: { label: "Undo", onClick: () => setStatus.mutate({ id: m.id, status: "active" }) },
-            });
+            await delMat.mutateAsync(m.id);
+            toast.success("Ingredient deleted");
           } catch (e) {
-            toast.error(e instanceof Error ? e.message : "Deactivate failed");
+            toast.error(e instanceof Error ? e.message : "Delete failed");
           }
         }}
       />
       <ConfirmDialog
-        open={!!bulkConfirm}
-        onOpenChange={(o) => !o && setBulkConfirm(null)}
-        title={bulkConfirm === "inactive" ? `Deactivate ${selected.size} ingredients?` : `Reactivate ${selected.size} ingredients?`}
-        description={
-          bulkConfirm === "inactive"
-            ? "They'll be hidden from new recipes. Existing recipes keep their data."
-            : "They'll be available for new recipes again."
-        }
-        confirmLabel={bulkConfirm === "inactive" ? "Deactivate" : "Reactivate"}
-        destructive={bulkConfirm === "inactive"}
-        onConfirm={() => bulkConfirm && runBulk(bulkConfirm)}
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title={`Delete ${selected.size} ingredient${selected.size === 1 ? "" : "s"}?`}
+        description="Permanently deletes the selected ingredients and their price history. Any still used in a recipe are skipped."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={runBulkDelete}
+      />
+      <ConfirmDialog
+        open={bulkReactivateOpen}
+        onOpenChange={setBulkReactivateOpen}
+        title={`Reactivate ${selected.size} ingredient${selected.size === 1 ? "" : "s"}?`}
+        description="They'll be available for new recipes again."
+        confirmLabel="Reactivate"
+        onConfirm={runReactivate}
       />
     </>
   );

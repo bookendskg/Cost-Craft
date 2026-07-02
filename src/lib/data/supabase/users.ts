@@ -82,4 +82,18 @@ export const supabaseUsersRepo = {
     if (error) fail("Update user", error.message);
     return profileToUser(data as ProfileRow);
   },
+
+  /**
+   * Permanently delete a user via the delete-user Edge Function (service role) —
+   * the browser can't remove a Supabase auth account itself. Guards (self-delete,
+   * super-admin, last admin/super) are enforced server-side in the function.
+   */
+  async remove(id: string, _actorId: string): Promise<void> {
+    const { data, error } = await client().functions.invoke("delete-user", {
+      body: { userId: id },
+    });
+    if (error) fail("Delete user", error.message);
+    const res = data as { ok?: boolean; error?: string } | null;
+    if (!res?.ok) fail("Delete user", res?.error || "Delete user failed");
+  },
 };

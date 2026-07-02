@@ -194,6 +194,41 @@ export const usersRepo = {
       }),
     );
   },
+
+  /**
+   * Permanently delete a user. Mirrors the server-side guards enforced by the
+   * delete-user Edge Function: no self-delete, only a Super Admin deletes a Super
+   * Admin, and never drop below one active Admin or one active Super Admin.
+   */
+  async remove(id: string, actorId: string): Promise<void> {
+    return delay(
+      mutate((db) => {
+        const u = db.users.find((x) => x.id === id);
+        if (!u) throw new Error("User not found");
+        if (id === actorId) throw new Error("You cannot delete your own account");
+        const actor = db.users.find((x) => x.id === actorId);
+        if (u.role === "super_admin" && actor?.role !== "super_admin") {
+          throw new Error("Only a Super Admin can delete a Super Admin user");
+        }
+        const isActiveAdmin = (x: User) => x.role === "admin" && x.status === "active" && x.approved !== false;
+        if (u.role === "admin" && u.status === "active" && db.users.filter(isActiveAdmin).length <= 1) {
+          throw new Error("Cannot delete the last remaining Admin");
+        }
+        if (isActiveSuperAdmin(u) && db.users.filter(isActiveSuperAdmin).length <= 1) {
+          throw new Error("This action cannot be completed because the system must retain at least one active Super Admin.");
+        }
+        db.users = db.users.filter((x) => x.id !== id);
+        recordAudit(db, {
+          entity_type: "user",
+          entity_id: id,
+          action: "delete",
+          old_values: { name: u.name, email: u.email, role: u.role },
+          performed_by: actorId,
+          notes: `Deleted user ${u.email}`,
+        });
+      }),
+    );
+  },
 };
 
 /** Mock auth — validates credentials and account status (PRD Module 1). */

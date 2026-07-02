@@ -38,6 +38,18 @@ export function useUpdateUser() {
   });
 }
 
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  const actorId = useActorId();
+  return useMutation({
+    mutationFn: (id: string) => usersRepo.remove(id, actorId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      qc.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+}
+
 /** Viewers only — for the Viewer Access page. */
 export function useViewers() {
   const q = useUsers();

@@ -74,3 +74,21 @@ export function useBulkSetMaterialStatus() {
     onSuccess: () => invalidateAll(qc),
   });
 }
+
+export function useDeleteMaterial() {
+  const qc = useQueryClient();
+  const actorId = useActorId();
+  return useMutation({
+    mutationFn: (id: string) => materialsRepo.remove(id, actorId),
+    onSuccess: () => invalidateAll(qc),
+  });
+}
+
+export function useBulkDeleteMaterial() {
+  const qc = useQueryClient();
+  const actorId = useActorId();
+  return useMutation({
+    mutationFn: (ids: string[]) => materialsRepo.bulkRemove(ids, actorId),
+    onSuccess: () => invalidateAll(qc),
+  });
+}

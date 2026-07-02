@@ -322,6 +322,64 @@ export const supabaseMaterialsRepo = {
     return n;
   },
 
+  /**
+   * Permanently delete an ingredient. BLOCKED while it's used in any recipe (the
+   * recipe_ingredients FK cascades, which would silently strip those recipe lines).
+   * Removes its price history + yields first, then the row (wastage link → null).
+   */
+  async remove(id: string, actorId: string): Promise<void> {
+    const c = sb();
+    const info = await c.from("raw_materials").select("ingredient_name").eq("id", id).maybeSingle();
+    if (info.error) fail("Delete ingredient", info.error.message);
+    if (!info.data) fail("Delete ingredient", "Ingredient not found");
+    const name = (info.data as { ingredient_name: string }).ingredient_name;
+
+    const used = await c
+      .from("recipe_ingredients")
+      .select("recipe_id")
+      .eq("component_type", "material")
+      .eq("ingredient_id", id)
+      .limit(1);
+    if (used.error) fail("Delete ingredient", used.error.message);
+    if ((used.data ?? []).length) {
+      fail("Delete ingredient", `Can't delete "${name}" — it's used in one or more recipes. Remove it from those recipes first.`);
+    }
+
+    const hist = await c.from("ingredient_price_history").delete().eq("ingredient_id", id);
+    if (hist.error) fail("Delete ingredient", hist.error.message);
+    const yld = await c.from("ingredient_yields").delete().eq("ingredient_id", id);
+    if (yld.error) fail("Delete ingredient", yld.error.message);
+    const del = await c.from("raw_materials").delete().eq("id", id);
+    if (del.error) {
+      if (del.error.code === "23503") {
+        fail("Delete ingredient", `Can't delete "${name}" — it's still referenced by other records.`);
+      }
+      fail("Delete ingredient", del.error.message);
+    }
+    await audit({
+      entity_type: "ingredient",
+      entity_id: id,
+      action: "delete",
+      performed_by: actorId,
+      notes: `Deleted ${name}`,
+    });
+  },
+
+  /** Bulk delete. Deletes those not in use; returns how many were deleted vs skipped. */
+  async bulkRemove(ids: string[], actorId: string): Promise<{ deleted: number; skipped: number }> {
+    let deleted = 0;
+    let skipped = 0;
+    for (const id of ids) {
+      try {
+        await supabaseMaterialsRepo.remove(id, actorId);
+        deleted++;
+      } catch {
+        skipped++;
+      }
+    }
+    return { deleted, skipped };
+  },
+
   /** All ingredient price-history rows (for bulk Excel export). */
   async allPriceHistory(): Promise<IngredientPriceHistory[]> {
     const { data, error } = await sb()

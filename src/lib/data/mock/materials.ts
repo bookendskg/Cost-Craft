@@ -213,7 +213,7 @@ export const materialsRepo = {
     );
   },
 
-  /** Soft delete — PRD only ever deactivates (set status inactive). */
+  /** Reactivate a legacy inactive ingredient (deactivate is replaced by delete). */
   async setStatus(
     id: string,
     status: "active" | "inactive",
@@ -236,7 +236,6 @@ export const materialsRepo = {
     );
   },
 
-  /** Bulk activate/deactivate (bulk delete = bulk deactivate, soft delete). */
   async bulkSetStatus(
     ids: string[],
     status: "active" | "inactive",
@@ -259,6 +258,85 @@ export const materialsRepo = {
           });
         }
         return n;
+      }),
+    );
+  },
+
+  /** Which recipes (names) use this ingredient — used to explain a blocked delete. */
+  recipesUsing(db: ReturnType<typeof getDb>, id: string): string[] {
+    const lines = db.recipe_ingredients.filter(
+      (ri) => ri.component_type === "material" && ri.ingredient_id === id,
+    );
+    return [
+      ...new Set(
+        lines.map((ri) => db.recipes.find((r) => r.id === ri.recipe_id)?.recipe_name).filter(Boolean) as string[],
+      ),
+    ];
+  },
+
+  /**
+   * Permanently delete an ingredient. BLOCKED while it's used in any recipe (the
+   * recipe_ingredients FK cascades, which would silently strip those recipe lines).
+   * Deletes its price history + yields; wastage rows keep their snapshot (link nulled).
+   */
+  async remove(id: string, actorId: string): Promise<void> {
+    return delay(
+      mutate((db) => {
+        const m = db.raw_materials.find((x) => x.id === id);
+        if (!m) throw new Error("Ingredient not found");
+        const used = this.recipesUsing(db, id);
+        if (used.length) {
+          throw new Error(
+            `Can't delete "${m.ingredient_name}" — it's used in ${used.length} recipe${used.length === 1 ? "" : "s"} (${used.slice(0, 3).join(", ")}${used.length > 3 ? "…" : ""}). Remove it from those recipes first.`,
+          );
+        }
+        db.raw_materials = db.raw_materials.filter((x) => x.id !== id);
+        db.ingredient_price_history = db.ingredient_price_history.filter((h) => h.ingredient_id !== id);
+        db.ingredient_yields = db.ingredient_yields.filter((y) => y.ingredient_id !== id);
+        db.wastage_entries.forEach((w) => {
+          if (w.ingredient_id === id) w.ingredient_id = null;
+        });
+        recordAudit(db, {
+          entity_type: "ingredient",
+          entity_id: id,
+          action: "delete",
+          old_values: { name: m.ingredient_name },
+          performed_by: actorId,
+          notes: `Deleted ${m.ingredient_name}`,
+        });
+      }),
+    );
+  },
+
+  /** Bulk delete. Deletes those not in use; returns how many were deleted vs skipped. */
+  async bulkRemove(ids: string[], actorId: string): Promise<{ deleted: number; skipped: number }> {
+    return delay(
+      mutate((db) => {
+        let deleted = 0;
+        let skipped = 0;
+        for (const id of ids) {
+          const m = db.raw_materials.find((x) => x.id === id);
+          if (!m) continue;
+          if (this.recipesUsing(db, id).length) {
+            skipped++;
+            continue;
+          }
+          db.raw_materials = db.raw_materials.filter((x) => x.id !== id);
+          db.ingredient_price_history = db.ingredient_price_history.filter((h) => h.ingredient_id !== id);
+          db.ingredient_yields = db.ingredient_yields.filter((y) => y.ingredient_id !== id);
+          db.wastage_entries.forEach((w) => {
+            if (w.ingredient_id === id) w.ingredient_id = null;
+          });
+          deleted++;
+          recordAudit(db, {
+            entity_type: "ingredient",
+            entity_id: id,
+            action: "delete",
+            performed_by: actorId,
+            notes: `Deleted ${m.ingredient_name} (bulk)`,
+          });
+        }
+        return { deleted, skipped };
       }),
     );
   },
