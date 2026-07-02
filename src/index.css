@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* --- Responsive, sidebar-aware dashboard layout helpers ----------------------
+   The dashboard grids used viewport breakpoints (lg/xl), but the sidebar eats
+   ~240px, so on a 1366/1440 screen those breakpoints fired while the real
+   content area was far narrower — cramming 5 cards + a 2-column layout into
+   ~1050px. These helpers are CONTAINER-driven, so they adapt to the actual
+   available width regardless of monitor size, sidebar state or browser zoom. */
+
+/* Mark the main content wrapper as an inline-size container. */
+.cq-content { container-type: inline-size; }
+
+/* Summary/KPI cards: as many readable columns as fit the container width. */
+.card-autofit {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+/* Dashboard main area (table + side panel): stacks below ~1180px of CONTENT
+   width, side-by-side with a table-favouring ratio above it. */
+.dash-main-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+@container (min-width: 1180px) {
+  .dash-main-grid { grid-template-columns: minmax(0, 2.5fr) minmax(260px, 1fr); }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

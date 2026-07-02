@@ -128,7 +128,9 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
   const accent = brandAccentText(brand);
 
   return (
-    <div className="space-y-4">
+    // cq-content makes this dashboard an inline-size container so the main grid
+    // stacks based on the real available width (after the sidebar), not the viewport.
+    <div className="cq-content space-y-4">
       {/* Header bar */}
       <Card className="overflow-hidden border-0 bg-slate-900 text-white dark:bg-slate-950">
         <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -148,8 +150,8 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
         </div>
       </Card>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {/* KPI row — container-driven so cards never cram when the sidebar narrows the area */}
+      <div className="card-autofit">
         <Kpi label="Total Items" value={String(data.totalItems)} accent={accent} />
         <Kpi label="Avg FC % With Pkg" value={`${data.avgWith.toFixed(2)}%`} accent={accent} />
         <Kpi label="Avg FC % Without Pkg" value={`${data.avgWithout.toFixed(2)}%`} accent={accent} />
@@ -188,7 +190,7 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
         </DialogContent>
       </Dialog>
 
-      <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
+      <div className="dash-main-grid">
         {/* Costing table */}
         <Card className="overflow-hidden">
           {isLoading ? (
@@ -201,8 +203,8 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
               </p>
             </div>
           ) : (
-            <div className="max-h-[640px] overflow-auto">
-              <table className="w-full border-collapse text-sm">
+            <div className="max-h-[60vh] overflow-auto">
+              <table className="w-full min-w-[720px] border-collapse text-sm">
                 <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur">
                   <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                     <th className="w-8 px-2 py-2 text-right">#</th>

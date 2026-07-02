@@ -84,7 +84,7 @@ export function AppLayout() {
         <ChefHat className="h-6 w-6 shrink-0" />
         {!rail && <span className="text-sm font-semibold leading-tight">Recipe Costing</span>}
       </div>
-      <nav className="flex-1 space-y-3 overflow-y-auto p-3">
+      <nav className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
         {groups.map(({ group, items }) => (
           <div key={group} className="space-y-1">
             {!rail && (
@@ -148,7 +148,9 @@ export function AppLayout() {
   return (
     <div
       className={cn(
-        "flex h-screen transition-colors duration-300",
+        // 100dvh (not 100vh) so mobile browser chrome / display scaling never
+        // clips the shell; overflow-hidden keeps scrolling inside main + sidebar.
+        "flex h-[100dvh] overflow-hidden transition-colors duration-300",
         // Soft brand tint fills the screen in light mode; neutral in dark.
         dark ? "bg-background" : brandBgClass(brand),
       )}
@@ -227,7 +229,7 @@ export function AppLayout() {
           >
             {brandWordmark(brand)}
           </button>
-          <div className="mr-1 hidden sm:block">
+          <div className="mr-1 hidden max-w-[min(46vw,560px)] overflow-x-auto sm:block">
             <BrandFilter value={brand} onChange={setBrand} />
           </div>
           <Button variant="ghost" size="icon" onClick={toggle} title="Toggle light/dark" aria-label="Toggle light/dark">
@@ -236,7 +238,7 @@ export function AppLayout() {
           <ProfileMenu />
         </header>
 
-        <main className="relative flex-1 overflow-y-auto p-4 transition-colors sm:p-6">
+        <main className="relative flex-1 overflow-y-auto p-3 transition-colors sm:p-4 lg:p-6">
           {/* Brand wordmark watermark behind the content — sized to fit the width */}
           {!dark && (
             <div

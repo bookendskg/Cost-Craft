@@ -67,8 +67,8 @@ export function SimpleDashboard({ brand }: { brand: BrandSelection }) {
         </div>
       </Card>
 
-      {/* Non-sensitive KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {/* Non-sensitive KPIs — container-driven so they never cram */}
+      <div className="card-autofit">
         <Stat icon={<UtensilsCrossed className="h-4 w-4" />} label="Dishes" value={isLoading ? "—" : String(data.total)} accent={accent} />
         <Stat icon={<LayoutGrid className="h-4 w-4" />} label="Categories" value={isLoading ? "—" : String(data.categories.length)} accent={accent} />
         <Stat icon={<BookOpen className="h-4 w-4" />} label="Brand" value={brandWordmark(brand)} accent={accent} />
