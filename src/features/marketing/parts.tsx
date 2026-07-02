@@ -110,7 +110,15 @@ export function BrandBadge({
   const [logoOk, setLogoOk] = useState<boolean | null>(null);
 
   return (
-    <div className={cn("rounded-xl border p-6 ring-1", styles.ring, styles.tint)}>
+    <div className={cn("relative rounded-xl border p-6 ring-1", styles.ring, styles.tint)}>
+      {/* Decorative brand icon mark (Capiche OK-hand / Aiko person), top-right. */}
+      {(tone === "capiche" || tone === "aiko") && (
+        <BrandLogo
+          candidates={[`/brands/${tone}-icon.png`]}
+          alt=""
+          className="pointer-events-none absolute right-4 top-4 h-11 w-11 object-contain opacity-90"
+        />
+      )}
       {/* Official brand logo plate (from /public/brands). Falls back to a
           coloured dot + name if the image is ever missing. */}
       <h3 className="sr-only">{name}</h3>
