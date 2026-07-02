@@ -1,0 +1,11 @@
+import { buildSeed } from "../src/lib/data/seed";
+const db = buildSeed();
+const matById = new Map(db.raw_materials.map((m) => [m.id, m]));
+const used = new Set<string>();
+for (const ri of db.recipe_ingredients) if ((ri.component_type ?? "material") === "material") used.add(ri.ingredient_id);
+const usedMats = [...used].map((id) => matById.get(id)).filter(Boolean) as typeof db.raw_materials;
+const nullPriced = usedMats.filter((m) => m.cost_per_base_unit == null);
+console.log("total materials:", db.raw_materials.length);
+console.log("used-in-recipes materials:", usedMats.length, "| still NULL price:", nullPriced.length);
+console.log("\nStill-unpriced recipe ingredients:");
+for (const m of nullPriced) console.log("  " + m.ingredient_name + "  [" + m.category + "]");

@@ -1,0 +1,833 @@
+{
+ "totals": {
+  "reconcile": 84,
+  "unpriced": 9,
+  "excluded": 103
+ },
+ "reconcile": [
+  {
+   "ingredient": "Alfanso mango",
+   "match": "Alphonso Mango",
+   "perGram": 0.4269,
+   "current": null,
+   "matchType": "spelling",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Avocado",
+   "match": "Avocado Imported",
+   "perGram": 0.65,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.7
+  },
+  {
+   "ingredient": "Basil (fresh, chopped)",
+   "match": "Basil",
+   "perGram": 0.32,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Thai basil",
+   "match": "Basil",
+   "perGram": 0.32,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.7
+  },
+  {
+   "ingredient": "Thai chilli",
+   "match": "Bird Eye Thai Red Chilli",
+   "perGram": 1.0634,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.75
+  },
+  {
+   "ingredient": "Thai red chilli",
+   "match": "Bird Eye Thai Red Chilli",
+   "perGram": 1.0634,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.75
+  },
+  {
+   "ingredient": "Pok choy",
+   "match": "Bokchoy",
+   "perGram": 0.1185,
+   "current": null,
+   "matchType": "spelling",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Pokchoy (blanched)",
+   "match": "Bokchoy",
+   "perGram": 0.1185,
+   "current": null,
+   "matchType": "spelling",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Brussels sprouts (halved)",
+   "match": "Brussels Sprouts.",
+   "perGram": 0.8225,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Button mushroom",
+   "match": "Button Mushrooms",
+   "perGram": 0.1478,
+   "current": 0.0714,
+   "matchType": "spelling",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Mushroom",
+   "match": "Button Mushrooms",
+   "perGram": 0.1478,
+   "current": 0.28,
+   "matchType": "prep-variant",
+   "confidence": 0.55
+  },
+  {
+   "ingredient": "Mushrooms",
+   "match": "Button Mushrooms",
+   "perGram": 0.1478,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.5
+  },
+  {
+   "ingredient": "Indian cabbage",
+   "match": "Cabbage",
+   "perGram": 0.0311,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Carrot (diced)",
+   "match": "Carrot",
+   "perGram": 0.0506,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Carrot slice",
+   "match": "Carrot",
+   "perGram": 0.0506,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Cherry tomatoes",
+   "match": "Cherry Tomato",
+   "perGram": 0.5053,
+   "current": 0.605,
+   "matchType": "spelling",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Coriander (chopped)",
+   "match": "Coriander",
+   "perGram": 0.0721,
+   "current": 0.1825,
+   "matchType": "prep-variant",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Coriander leaf",
+   "match": "Coriander",
+   "perGram": 0.0721,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Coriander Leaves",
+   "match": "Coriander",
+   "perGram": 0.0721,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Coriander stem",
+   "match": "Coriander",
+   "perGram": 0.0721,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Cucumber slice",
+   "match": "Cucumber",
+   "perGram": 0.0525,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Blanched kale",
+   "match": "Curly Kale",
+   "perGram": 0.35,
+   "current": 0.5,
+   "matchType": "prep-variant",
+   "confidence": 0.78
+  },
+  {
+   "ingredient": "Dil leaves",
+   "match": "Dil Leaves .",
+   "perGram": 0.07,
+   "current": 0.3,
+   "matchType": "spelling",
+   "confidence": 0.88
+  },
+  {
+   "ingredient": "Dill Leaves",
+   "match": "Dil Leaves .",
+   "perGram": 0.07,
+   "current": 1,
+   "matchType": "spelling",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Baby corn",
+   "match": "Fresh Babycorn",
+   "perGram": 0.1374,
+   "current": null,
+   "matchType": "spelling",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "American corn",
+   "match": "Frozen American Corn",
+   "perGram": 0.0807,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.6
+  },
+  {
+   "ingredient": "Corn",
+   "match": "Frozen American Corn",
+   "perGram": 0.0807,
+   "current": 0.09,
+   "matchType": "prep-variant",
+   "confidence": 0.6
+  },
+  {
+   "ingredient": "Chooped garlic",
+   "match": "Garlic Chop",
+   "perGram": 0.023,
+   "current": 0.3,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Chopped garlic",
+   "match": "Garlic Chop",
+   "perGram": 0.023,
+   "current": 0.3,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Garlic (chopped)",
+   "match": "Garlic Chop",
+   "perGram": 0.023,
+   "current": 0.3333,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Garlic (minced)",
+   "match": "Garlic Chop",
+   "perGram": 0.023,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.82
+  },
+  {
+   "ingredient": "Garlic Chopped",
+   "match": "Garlic Chop",
+   "perGram": 0.023,
+   "current": 0.1875,
+   "matchType": "prep-variant",
+   "confidence": 0.93
+  },
+  {
+   "ingredient": "Garlic slice",
+   "match": "Garlic Chop",
+   "perGram": 0.023,
+   "current": 0.2857,
+   "matchType": "prep-variant",
+   "confidence": 0.5
+  },
+  {
+   "ingredient": "Garlic slices",
+   "match": "Garlic Chop",
+   "perGram": 0.023,
+   "current": 0.2698,
+   "matchType": "prep-variant",
+   "confidence": 0.5
+  },
+  {
+   "ingredient": "Slice garlic",
+   "match": "Garlic Chop",
+   "perGram": 0.023,
+   "current": 0.3,
+   "matchType": "prep-variant",
+   "confidence": 0.82
+  },
+  {
+   "ingredient": "Fresh ginger zest",
+   "match": "Ginger.",
+   "perGram": 0.1295,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.82
+  },
+  {
+   "ingredient": "Ginger",
+   "match": "Ginger.",
+   "perGram": 0.1295,
+   "current": 0.1288,
+   "matchType": "spelling",
+   "confidence": 0.96
+  },
+  {
+   "ingredient": "Ginger (minced)",
+   "match": "Ginger.",
+   "perGram": 0.1295,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Ginger (paste)",
+   "match": "Ginger.",
+   "perGram": 0.1295,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Grapefruit (cubed)",
+   "match": "Grapefruit",
+   "perGram": 0.2277,
+   "current": 0.2686,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Bell pepper",
+   "match": "Green Bell Pepper",
+   "perGram": 0.1215,
+   "current": 0.0872,
+   "matchType": "prep-variant",
+   "confidence": 0.55
+  },
+  {
+   "ingredient": "Green Bellpaper",
+   "match": "Green Bell Pepper",
+   "perGram": 0.1215,
+   "current": 0.09,
+   "matchType": "spelling",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Ring bell pepper",
+   "match": "Green Bell Pepper",
+   "perGram": 0.1215,
+   "current": 0.2,
+   "matchType": "prep-variant",
+   "confidence": 0.45
+  },
+  {
+   "ingredient": "Fresh Bhavnagri chilli",
+   "match": "Green Bhavnagri",
+   "perGram": 0.0825,
+   "current": 0.2,
+   "matchType": "prep-variant",
+   "confidence": 0.6
+  },
+  {
+   "ingredient": "Green Bhavnagari chilli",
+   "match": "Green Bhavnagri",
+   "perGram": 0.0825,
+   "current": null,
+   "matchType": "spelling",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Green Chillies",
+   "match": "Green Chilli",
+   "perGram": 0.0415,
+   "current": 0.1,
+   "matchType": "prep-variant",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Green garlic (garnish)",
+   "match": "Green Garlic",
+   "perGram": 0.2,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Zucchini",
+   "match": "Green Zucchini",
+   "perGram": 0.1719,
+   "current": 0.1344,
+   "matchType": "prep-variant",
+   "confidence": 0.7
+  },
+  {
+   "ingredient": "Processed Iceberg lettuce",
+   "match": "Iceberg",
+   "perGram": 0.1791,
+   "current": 0.3226,
+   "matchType": "prep-variant",
+   "confidence": 0.78
+  },
+  {
+   "ingredient": "Kaffir lime leaf",
+   "match": "Kafir Lime Leaves.",
+   "perGram": 1.05,
+   "current": null,
+   "matchType": "spelling",
+   "confidence": 0.93
+  },
+  {
+   "ingredient": "Lemon wedge",
+   "match": "Lemon",
+   "perGram": 0.0971,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Lemon wedges",
+   "match": "Lemon",
+   "perGram": 0.0971,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Lemon zest",
+   "match": "Lemon",
+   "perGram": 0.0971,
+   "current": 1,
+   "matchType": "prep-variant",
+   "confidence": 0.8
+  },
+  {
+   "ingredient": "Lemongrass",
+   "match": "Lemon Grass",
+   "perGram": 0.1239,
+   "current": 1,
+   "matchType": "spelling",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Lotus root",
+   "match": "Lotus Roots",
+   "perGram": 0.1877,
+   "current": null,
+   "matchType": "spelling",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Fried stem lotus",
+   "match": "Lotus Stem",
+   "perGram": 0.1865,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Mango (cubed)",
+   "match": "Mango",
+   "perGram": 0.2667,
+   "current": 0.51,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Caramelised onion",
+   "match": "Onion",
+   "perGram": 0.0275,
+   "current": 0.12,
+   "matchType": "prep-variant",
+   "confidence": 0.7
+  },
+  {
+   "ingredient": "Onion (diced)",
+   "match": "Onion",
+   "perGram": 0.0275,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Ring onion",
+   "match": "Onion",
+   "perGram": 0.0275,
+   "current": 0.1,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Parsley stems (optional, simmer with base)",
+   "match": "Parsley",
+   "perGram": 0.2891,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.88
+  },
+  {
+   "ingredient": "Garlic",
+   "match": "Peeled Garlic.",
+   "perGram": 0.1823,
+   "current": 0.3,
+   "matchType": "prep-variant",
+   "confidence": 0.6
+  },
+  {
+   "ingredient": "Peeled Garlic",
+   "match": "Peeled Garlic.",
+   "perGram": 0.1823,
+   "current": 0.2571,
+   "matchType": "spelling",
+   "confidence": 0.96
+  },
+  {
+   "ingredient": "Red bell pepper",
+   "match": "Red Bellpepper",
+   "perGram": 0.1807,
+   "current": 0.2462,
+   "matchType": "spelling",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Red bell peppers",
+   "match": "Red Bellpepper",
+   "perGram": 0.1807,
+   "current": null,
+   "matchType": "spelling",
+   "confidence": 0.93
+  },
+  {
+   "ingredient": "Red capsicum",
+   "match": "Red Bellpepper",
+   "perGram": 0.1807,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Red Bhavnagri chilli",
+   "match": "Red Bhavnagri",
+   "perGram": 0.12,
+   "current": null,
+   "matchType": "exact",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Arugula",
+   "match": "Rocket /arugula Leaves",
+   "perGram": 0.4626,
+   "current": 1,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Marinated Arugula",
+   "match": "Rocket /arugula Leaves",
+   "perGram": 0.4626,
+   "current": 0.5,
+   "matchType": "prep-variant",
+   "confidence": 0.7
+  },
+  {
+   "ingredient": "Curly romaine",
+   "match": "Romaine",
+   "perGram": 0.2413,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.8
+  },
+  {
+   "ingredient": "Processed Romaine lettuce",
+   "match": "Romaine Lettuce",
+   "perGram": 0.2375,
+   "current": 0.4,
+   "matchType": "prep-variant",
+   "confidence": 0.8
+  },
+  {
+   "ingredient": "Spinach",
+   "match": "Spinach Palak",
+   "perGram": 0.06,
+   "current": 0.1143,
+   "matchType": "prep-variant",
+   "confidence": 0.75
+  },
+  {
+   "ingredient": "Green spring onion",
+   "match": "Spring Onion .",
+   "perGram": 0.0753,
+   "current": 0.0667,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Spring Onion",
+   "match": "Spring Onion .",
+   "perGram": 0.0753,
+   "current": 0.15,
+   "matchType": "spelling",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Spring onion (chopped)",
+   "match": "Spring Onion .",
+   "perGram": 0.0753,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Spring onion (garnish)",
+   "match": "Spring Onion .",
+   "perGram": 0.0753,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Spring Onion Slit",
+   "match": "Spring Onion .",
+   "perGram": 0.0753,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Spring onion slit (garnish)",
+   "match": "Spring Onion .",
+   "perGram": 0.0753,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Spring onion whites",
+   "match": "Spring Onion .",
+   "perGram": 0.0753,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "White Part Spring Onion",
+   "match": "Spring Onion .",
+   "perGram": 0.0753,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.88
+  },
+  {
+   "ingredient": "White Spring Onion",
+   "match": "Spring Onion .",
+   "perGram": 0.0753,
+   "current": 0.1,
+   "matchType": "prep-variant",
+   "confidence": 0.8
+  },
+  {
+   "ingredient": "Thyme (sprigs) (simmer, remove before blending)",
+   "match": "Thyme",
+   "perGram": 0.6,
+   "current": null,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Tomatoes",
+   "match": "Tomato",
+   "perGram": 0.0683,
+   "current": null,
+   "matchType": "spelling",
+   "confidence": 0.97
+  },
+  {
+   "ingredient": "Yellow bell pepper",
+   "match": "Yellow Bellpepper",
+   "perGram": 0.1661,
+   "current": null,
+   "matchType": "spelling",
+   "confidence": 0.95
+  }
+ ],
+ "unpriced": [
+  {
+   "ingredient": "Asparagus",
+   "current": 0.9231,
+   "note": "Fresh vegetable but no asparagus candidate exists."
+  },
+  {
+   "ingredient": "Broad Beans",
+   "current": null,
+   "note": "Only broad beans candidate is the chilli/packaged variant; no plain broad beans exists."
+  },
+  {
+   "ingredient": "Celery (diced)",
+   "current": null,
+   "note": "Fresh vegetable but no celery candidate exists."
+  },
+  {
+   "ingredient": "Mixed mushroom",
+   "current": null,
+   "note": "No plain 'Mushroom' candidate; only specific varieties (Button, Oyster, Shimeji, King Oyster). Button is the most common/generic; low confidence."
+  },
+  {
+   "ingredient": "Peas",
+   "current": null,
+   "note": "Fresh vegetable but no peas candidate exists (edamame is not peas)."
+  },
+  {
+   "ingredient": "Pepper",
+   "current": 1,
+   "note": "Ambiguous; item is category Vegetables so likely capsicum/bell pepper. Low confidence as 'Pepper' could mean black pepper spice."
+  },
+  {
+   "ingredient": "Persimmon",
+   "current": 0.3625,
+   "note": "Fresh fruit but no persimmon candidate in master."
+  },
+  {
+   "ingredient": "Shiitake mushroom",
+   "current": null,
+   "note": "Fresh mushroom, but no shiitake candidate exists; available mushrooms (button, oyster, king oyster, shimeji) are different varieties, so no genuine match."
+  },
+  {
+   "ingredient": "Strawberry",
+   "current": 0.4,
+   "note": "Fresh fruit but no strawberry candidate in master."
+  }
+ ],
+ "excluded": [
+  "Basil Pomodoro Sauce",
+  "Black Pepper",
+  "White Pepper",
+  "Lemon Juice",
+  "Pickled ginger",
+  "Chilli Flakes",
+  "Coconut Milk",
+  "Oregano",
+  "Scallion oil",
+  "Corn Slurry",
+  "Kashmiri Chilli Powder",
+  "Crushed black pepper",
+  "Tomato paste",
+  "Salt & black pepper",
+  "Fried Garlic",
+  "Chilli oil",
+  "Fried Onion",
+  "Red chilli powder",
+  "Ginger-garlic paste",
+  "Ginger paste",
+  "Garlic paste",
+  "Chilli bean paste",
+  "Peanut butter",
+  "Garlic Ricotta",
+  "Artichoke",
+  "Basil Pesto",
+  "Garlic oil",
+  "Corn mix",
+  "Chilli butter dollop",
+  "Chili oil",
+  "Roasted Bell paper",
+  "Boiled Broccoli",
+  "Dried Red Chilli",
+  "Garlic Powder",
+  "Onion Powder",
+  "Confit Onion",
+  "Confit Garlic",
+  "Chunky Tomato Sauce",
+  "Coriander Seeds",
+  "Fennel Seeds",
+  "Roasted bell pepper paste",
+  "Garlic butter",
+  "Salt & pepper",
+  "Red chilli flakes",
+  "Pickled onions",
+  "Chili flakes (or fresh red chili - 5 g, deseeded)",
+  "Bay leaf (remove before blending)",
+  "Orange (creamy tomato) sauce",
+  "Tomato passata",
+  "Dried oregano",
+  "Garlic pomodoro sauce",
+  "Pumpkin seeds & pistachios (crushed & mixed)",
+  "Confit cherry tomatoes",
+  "Mint syrup",
+  "Kara Coconut milk",
+  "Pineapple jam",
+  "Gunsberg Ginger Beer",
+  "Orange juice",
+  "Schweppes Ginger Ale",
+  "Chilli crisps",
+  "Chilli Crisp (for chilli version)",
+  "Coriander mayo",
+  "Fried Corn",
+  "Corn Rocks sauce",
+  "Sweet corn puree",
+  "Scallion Pancake",
+  "Green garlic cream cheese",
+  "Scallion salad",
+  "Peanut (crushed)",
+  "Mix iceberg romain slice",
+  "Kashmiri Chilli Red Paste",
+  "Red Chilli Oil",
+  "Chilli Garlic Sauce - Sunflower oil",
+  "Chilli Garlic Sauce - Chopped garlic",
+  "Chilli Garlic Sauce - Soy sauce",
+  "Chilli Garlic Sauce - Hot sauce",
+  "Chilli Garlic Sauce - Wok hei sauce",
+  "Chilli Garlic Sauce - Thai red chilli",
+  "Wok Hei Sauce - Chilli bean",
+  "Wok Hei Sauce - Black pepper",
+  "Teriyaki Sauce - Corn starch",
+  "Yaki Soba Sauce - Black pepper",
+  "Yaki Soba Sauce - Crushed black pepper",
+  "Yaki Soba Sauce - Corn starch",
+  "Chilli besan paste",
+  "Coconut cream",
+  "Chilli Oil Dumplings filling",
+  "Chilli Oil Dumplings paste",
+  "Toasted Peanuts",
+  "Cheese & Chilli Dumplings",
+  "Chili Crisp",
+  "Dragon sauce",
+  "Ginger pickled",
+  "Pickled radish",
+  "Sautéed spinach with soy & garlic",
+  "Sweet chilli sauce",
+  "Chili bean paste",
+  "Roasted peanuts",
+  "Chilli powder",
+  "Peanuts (roasted)",
+  "Chilli crisp",
+  "Fried garlic (garnish)",
+  "Orange sauce"
+ ]
+}

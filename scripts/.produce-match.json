@@ -1,0 +1,2775 @@
+{
+  "summary": {
+    "used": 537,
+    "matched": 27,
+    "unmatched": 510,
+    "produceUnmatched": 196
+  },
+  "produceUnmatched": [
+    {
+      "id": "m-cb-basil-pomodoro-sauce",
+      "name": "Basil Pomodoro Sauce",
+      "category": "Sauces & Condiments",
+      "perGram": 0.2026,
+      "usedInLines": 26,
+      "recipes": [
+        "Apollo pizza",
+        "Burrata hot honey",
+        "Garlic pie Pizza",
+        "Hell Boy Pizza",
+        "Margherita Pizza",
+        "Ortolana pizza"
+      ]
+    },
+    {
+      "id": "m-spring-onion",
+      "name": "Spring Onion",
+      "category": "Vegetables",
+      "perGram": 0.15,
+      "usedInLines": 23,
+      "recipes": [
+        "Chili Crunch Sauce",
+        "Truffle Mac & Cheese",
+        "Kwispy Lotus Root",
+        "Tteokbokki",
+        "General Tso's Water Chestnuts",
+        "Creamy Corn Rocks"
+      ]
+    },
+    {
+      "id": "m-black-pepper",
+      "name": "Black Pepper",
+      "category": "Spices",
+      "perGram": 1,
+      "usedInLines": 15,
+      "recipes": [
+        "Chili Crunch Sauce",
+        "Marinated Beetroot Chunks",
+        "Sri Lankan Red Curry Powder Mix",
+        "Caesar Salad",
+        "Persimmon Salad",
+        "Summer Burrata Salad"
+      ]
+    },
+    {
+      "id": "m-cb-garlic",
+      "name": "Garlic",
+      "category": "Vegetables",
+      "perGram": 0.3,
+      "usedInLines": 14,
+      "recipes": [
+        "Roasted Red Bell Pepper Soup",
+        "Dough Balls",
+        "Garlic Bread",
+        "Miso Tomato Soup",
+        "Risotto",
+        "Tomato Butter Risotto"
+      ]
+    },
+    {
+      "id": "m-white-pepper",
+      "name": "White Pepper",
+      "category": "Spices",
+      "perGram": 1,
+      "usedInLines": 14,
+      "recipes": [
+        "Creamy Corn Rocks",
+        "Thai Curry",
+        "Sri Lankan Curry",
+        "Chestnut Gyoza",
+        "Okonomiyaki Gyoza (6 Pcs)",
+        "Saucy Momos"
+      ]
+    },
+    {
+      "id": "m-lemon-juice",
+      "name": "Lemon Juice",
+      "category": "Sauces & Condiments",
+      "perGram": 0.311,
+      "usedInLines": 8,
+      "recipes": [
+        "Hydroponic Basil Pesto",
+        "Lemon Linguini",
+        "Lemon Iced Tea",
+        "Mint Mojito",
+        "Moscow Mule",
+        "Sunset Cocktail"
+      ]
+    },
+    {
+      "id": "m-cb-thai-chilli",
+      "name": "Thai chilli",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 7,
+      "recipes": [
+        "Tom Yum",
+        "Chestnut Gyoza",
+        "Okonomiyaki Gyoza (6 Pcs)",
+        "Saucy Momos",
+        "Drunken Noodles",
+        "Shoyu Ramen"
+      ]
+    },
+    {
+      "id": "m-garlic-peeled",
+      "name": "Peeled Garlic",
+      "category": "Vegetables",
+      "perGram": 0.2571,
+      "usedInLines": 6,
+      "recipes": [
+        "Chili Crunch Sauce",
+        "Sri Lankan Red Paste",
+        "Affair Pizza",
+        "Third Wave Pizza"
+      ]
+    },
+    {
+      "id": "m-cb-pickled-ginger",
+      "name": "Pickled ginger",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 6,
+      "recipes": [
+        "Okonomiyaki Gyoza (6 Pcs)",
+        "Avocado Roll",
+        "Dragon Roll",
+        "Bombay Blues Roll",
+        "Jalapeño Popper Roll",
+        "Corn Tempura Roll"
+      ]
+    },
+    {
+      "id": "m-cb-chopped-garlic",
+      "name": "Chopped garlic",
+      "category": "Vegetables",
+      "perGram": 0.3,
+      "usedInLines": 5,
+      "recipes": [
+        "Pasta Fritti 2.0",
+        "Butter Garlic Mushroom",
+        "Alfredo Fettuccine",
+        "Caramelised Onion Pasta",
+        "General Tso's Water Chestnuts"
+      ]
+    },
+    {
+      "id": "m-cb-bell-pepper",
+      "name": "Bell pepper",
+      "category": "Vegetables",
+      "perGram": 0.0872,
+      "usedInLines": 5,
+      "recipes": [
+        "Kwispy Lotus Root",
+        "Thai Curry",
+        "Hakka Noodles",
+        "Shoyu Ramen",
+        "Peperone Pizza"
+      ]
+    },
+    {
+      "id": "m-cb-arugula",
+      "name": "Arugula",
+      "category": "Vegetables",
+      "perGram": 1,
+      "usedInLines": 4,
+      "recipes": [
+        "Burrata Salad",
+        "Persimmon Salad",
+        "Summer Burrata Salad",
+        "Tomato Butter Risotto"
+      ]
+    },
+    {
+      "id": "m-chilli-flakes",
+      "name": "Chilli Flakes",
+      "category": "Spices",
+      "perGram": 0.3533,
+      "usedInLines": 4,
+      "recipes": [
+        "Pasta Fritti 2.0",
+        "Butter Garlic Mushroom",
+        "Pomodoro Spaghetti",
+        "Pink Burrata Pasta"
+      ]
+    },
+    {
+      "id": "m-cb-pepper",
+      "name": "Pepper",
+      "category": "Vegetables",
+      "perGram": 1,
+      "usedInLines": 4,
+      "recipes": [
+        "Butter Garlic Mushroom",
+        "Lemon Linguini",
+        "Risotto",
+        "Lasagna"
+      ]
+    },
+    {
+      "id": "m-cb-garlic-slice",
+      "name": "Garlic slice",
+      "category": "Vegetables",
+      "perGram": 0.2857,
+      "usedInLines": 4,
+      "recipes": [
+        "Apollo pizza",
+        "Picanate"
+      ]
+    },
+    {
+      "id": "m-cb-marinated-arugula",
+      "name": "Marinated Arugula",
+      "category": "Vegetables",
+      "perGram": 0.5,
+      "usedInLines": 4,
+      "recipes": [
+        "Apollo pizza",
+        "Sid's pizza"
+      ]
+    },
+    {
+      "id": "m-cb-garlic-slices",
+      "name": "Garlic slices",
+      "category": "Vegetables",
+      "perGram": 0.2698,
+      "usedInLines": 4,
+      "recipes": [
+        "Chilli Butter Corn",
+        "Hell Boy Pizza"
+      ]
+    },
+    {
+      "id": "m-ginger",
+      "name": "Ginger",
+      "category": "Vegetables",
+      "perGram": 0.1288,
+      "usedInLines": 3,
+      "recipes": [
+        "Chilli Crisp",
+        "Sri Lankan Red Paste",
+        "Cheese Chilli Dumplings"
+      ]
+    },
+    {
+      "id": "m-coconut-milk",
+      "name": "Coconut Milk",
+      "category": "Dairy",
+      "perGram": 0.2667,
+      "usedInLines": 3,
+      "recipes": [
+        "Chili Crunch Sauce",
+        "Thai Curry",
+        "Sri Lankan Curry"
+      ]
+    },
+    {
+      "id": "m-cb-oregano",
+      "name": "Oregano",
+      "category": "Spices",
+      "perGram": 0.375,
+      "usedInLines": 3,
+      "recipes": [
+        "Pasta Fritti 2.0",
+        "Burrata hot honey"
+      ]
+    },
+    {
+      "id": "m-mushroom",
+      "name": "Mushroom",
+      "category": "Vegetables",
+      "perGram": 0.28,
+      "usedInLines": 3,
+      "recipes": [
+        "Butter Garlic Mushroom",
+        "Thai Curry",
+        "Sri Lankan Curry"
+      ]
+    },
+    {
+      "id": "m-cb-caramelised-onion",
+      "name": "Caramelised onion",
+      "category": "Vegetables",
+      "perGram": 0.12,
+      "usedInLines": 3,
+      "recipes": [
+        "Caramelised Onion Pasta",
+        "Apollo pizza"
+      ]
+    },
+    {
+      "id": "m-cb-red-bell-pepper",
+      "name": "Red bell pepper",
+      "category": "Vegetables",
+      "perGram": 0.2462,
+      "usedInLines": 3,
+      "recipes": [
+        "General Tso's Water Chestnuts",
+        "Dragon Roll",
+        "Volcano 1"
+      ]
+    },
+    {
+      "id": "m-cb-scallion-oil",
+      "name": "Scallion oil",
+      "category": "Oils & Fats",
+      "perGram": null,
+      "usedInLines": 3,
+      "recipes": [
+        "Katsu Curry",
+        "Thai Curry",
+        "Shoyu Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-zucchini",
+      "name": "Zucchini",
+      "category": "Other",
+      "perGram": 0.1344,
+      "usedInLines": 3,
+      "recipes": [
+        "Thai Curry",
+        "Apollo pizza"
+      ]
+    },
+    {
+      "id": "m-cb-button-mushroom",
+      "name": "Button mushroom",
+      "category": "Vegetables",
+      "perGram": 0.0714,
+      "usedInLines": 3,
+      "recipes": [
+        "Mushroom Truffle Fried Rice",
+        "Affair Pizza"
+      ]
+    },
+    {
+      "id": "m-corn-slurry",
+      "name": "Corn Slurry",
+      "category": "Sauces & Condiments",
+      "perGram": 0.1,
+      "usedInLines": 2,
+      "recipes": [
+        "Pesto White Base Sauce",
+        "Kwispy Wonton"
+      ]
+    },
+    {
+      "id": "m-kashmiri-chilli-powder",
+      "name": "Kashmiri Chilli Powder",
+      "category": "Spices",
+      "perGram": 0.8,
+      "usedInLines": 2,
+      "recipes": [
+        "Sri Lankan Red Paste",
+        "Sri Lankan Curry"
+      ]
+    },
+    {
+      "id": "m-cb-crushed-black-pepper",
+      "name": "Crushed black pepper",
+      "category": "Spices",
+      "perGram": 1,
+      "usedInLines": 2,
+      "recipes": [
+        "Summer Burrata Salad",
+        "Pink Burrata Pasta"
+      ]
+    },
+    {
+      "id": "m-cb-tomato-paste",
+      "name": "Tomato paste",
+      "category": "Sauces & Condiments",
+      "perGram": 0.2428,
+      "usedInLines": 2,
+      "recipes": [
+        "Pasta Fritti 2.0",
+        "Lasagna"
+      ]
+    },
+    {
+      "id": "m-cb-garlic-chopped",
+      "name": "Garlic (chopped)",
+      "category": "Vegetables",
+      "perGram": 0.3333,
+      "usedInLines": 2,
+      "recipes": [
+        "Saucy Brussels Sprouts",
+        "Lasagna"
+      ]
+    },
+    {
+      "id": "m-cb-salt-black-pepper",
+      "name": "Salt & black pepper",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 2,
+      "recipes": [
+        "Saucy Brussels Sprouts"
+      ]
+    },
+    {
+      "id": "m-cb-thai-red-chilli",
+      "name": "Thai red chilli",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 2,
+      "recipes": [
+        "Kwispy Lotus Root",
+        "General Tso's Water Chestnuts"
+      ]
+    },
+    {
+      "id": "m-fried-garlic",
+      "name": "Fried Garlic",
+      "category": "Vegetables",
+      "perGram": 0.2,
+      "usedInLines": 2,
+      "recipes": [
+        "Tteokbokki",
+        "Burnt Garlic Fried Rice"
+      ]
+    },
+    {
+      "id": "m-cb-garlic-minced",
+      "name": "Garlic (minced)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 2,
+      "recipes": [
+        "Creamy Corn Rocks",
+        "Burnt Garlic Fried Rice"
+      ]
+    },
+    {
+      "id": "m-cb-baby-corn",
+      "name": "Baby corn",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 2,
+      "recipes": [
+        "Thai Curry",
+        "Burnt Garlic Fried Rice"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-oil",
+      "name": "Chilli oil",
+      "category": "Oils & Fats",
+      "perGram": 0.1,
+      "usedInLines": 2,
+      "recipes": [
+        "Thai Curry",
+        "Spiced Miso Ramen"
+      ]
+    },
+    {
+      "id": "m-fried-onion",
+      "name": "Fried Onion",
+      "category": "Vegetables",
+      "perGram": 0.1,
+      "usedInLines": 2,
+      "recipes": [
+        "Sri Lankan Curry",
+        "Cheese Chilli Dumplings"
+      ]
+    },
+    {
+      "id": "m-cb-indian-cabbage",
+      "name": "Indian cabbage",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 2,
+      "recipes": [
+        "Okonomiyaki Gyoza (6 Pcs)",
+        "Saucy Momos"
+      ]
+    },
+    {
+      "id": "m-white-spring-onion",
+      "name": "White Spring Onion",
+      "category": "Vegetables",
+      "perGram": 0.1,
+      "usedInLines": 2,
+      "recipes": [
+        "Okonomiyaki Gyoza (6 Pcs)",
+        "Chilli Oil Dumplings"
+      ]
+    },
+    {
+      "id": "m-cb-red-chilli-powder",
+      "name": "Red chilli powder",
+      "category": "Spices",
+      "perGram": 0.898,
+      "usedInLines": 2,
+      "recipes": [
+        "Chilli Oil Dumplings",
+        "Peanut Butter Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-corn",
+      "name": "Corn",
+      "category": "Vegetables",
+      "perGram": 0.09,
+      "usedInLines": 2,
+      "recipes": [
+        "Fried Rice",
+        "Shoyu Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-ginger-garlic-paste",
+      "name": "Ginger-garlic paste",
+      "category": "Sauces & Condiments",
+      "perGram": null,
+      "usedInLines": 2,
+      "recipes": [
+        "Hakka Noodles",
+        "Pad Thai"
+      ]
+    },
+    {
+      "id": "m-cb-ginger-paste-x",
+      "name": "Ginger paste",
+      "category": "Sauces & Condiments",
+      "perGram": null,
+      "usedInLines": 2,
+      "recipes": [
+        "Peanut Butter Ramen",
+        "Spiced Miso Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-garlic-paste",
+      "name": "Garlic paste",
+      "category": "Sauces & Condiments",
+      "perGram": 0.18,
+      "usedInLines": 2,
+      "recipes": [
+        "Peanut Butter Ramen",
+        "Spiced Miso Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-bean-paste",
+      "name": "Chilli bean paste",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 2,
+      "recipes": [
+        "Peanut Butter Ramen",
+        "Spiced Miso Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-peanut-butter",
+      "name": "Peanut butter",
+      "category": "Dairy",
+      "perGram": 0.4,
+      "usedInLines": 2,
+      "recipes": [
+        "Peanut Butter Ramen",
+        "Spiced Miso Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-garlic-ricotta",
+      "name": "Garlic Ricotta",
+      "category": "Dairy",
+      "perGram": 0.425,
+      "usedInLines": 2,
+      "recipes": [
+        "Affair Pizza"
+      ]
+    },
+    {
+      "id": "m-cb-artichoke",
+      "name": "Artichoke",
+      "category": "Other",
+      "perGram": 1.02,
+      "usedInLines": 2,
+      "recipes": [
+        "Apollo pizza"
+      ]
+    },
+    {
+      "id": "m-cb-basil-pesto",
+      "name": "Basil Pesto",
+      "category": "Sauces & Condiments",
+      "perGram": 0.4085,
+      "usedInLines": 2,
+      "recipes": [
+        "Baby Hulk Pizza",
+        "Prime Hulk Pizza"
+      ]
+    },
+    {
+      "id": "m-cb-garlic-oil",
+      "name": "Garlic oil",
+      "category": "Oils & Fats",
+      "perGram": 0.2,
+      "usedInLines": 2,
+      "recipes": [
+        "Burrata hot honey"
+      ]
+    },
+    {
+      "id": "m-cb-dil-leaves",
+      "name": "Dil leaves",
+      "category": "Other",
+      "perGram": 0.3,
+      "usedInLines": 2,
+      "recipes": [
+        "CHILLI CRUNCH"
+      ]
+    },
+    {
+      "id": "m-cb-corn-mix",
+      "name": "Corn mix",
+      "category": "Vegetables",
+      "perGram": 0.321,
+      "usedInLines": 2,
+      "recipes": [
+        "Chilli Butter Corn"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-butter-dollop",
+      "name": "Chilli butter dollop",
+      "category": "Dairy",
+      "perGram": 0.5092,
+      "usedInLines": 2,
+      "recipes": [
+        "Chilli Butter Corn"
+      ]
+    },
+    {
+      "id": "m-cb-slice-garlic",
+      "name": "Slice garlic",
+      "category": "Vegetables",
+      "perGram": 0.3,
+      "usedInLines": 2,
+      "recipes": [
+        "Garlic pie Pizza"
+      ]
+    },
+    {
+      "id": "m-cb-chooped-garlic",
+      "name": "Chooped garlic",
+      "category": "Vegetables",
+      "perGram": 0.3,
+      "usedInLines": 2,
+      "recipes": [
+        "Garlic pie Pizza"
+      ]
+    },
+    {
+      "id": "m-cb-green-bellpaper",
+      "name": "Green Bellpaper",
+      "category": "Vegetables",
+      "perGram": 0.09,
+      "usedInLines": 2,
+      "recipes": [
+        "Ortolana pizza"
+      ]
+    },
+    {
+      "id": "m-cb-chili-oil",
+      "name": "Chili oil",
+      "category": "Oils & Fats",
+      "perGram": 0.4,
+      "usedInLines": 2,
+      "recipes": [
+        "Picanate"
+      ]
+    },
+    {
+      "id": "m-cb-roasted-bell-paper",
+      "name": "Roasted Bell paper",
+      "category": "Vegetables",
+      "perGram": 0.2538,
+      "usedInLines": 2,
+      "recipes": [
+        "Picanate"
+      ]
+    },
+    {
+      "id": "m-cb-boiled-broccoli",
+      "name": "Boiled Broccoli",
+      "category": "Oils & Fats",
+      "perGram": 0.455,
+      "usedInLines": 2,
+      "recipes": [
+        "Third Wave Pizza"
+      ]
+    },
+    {
+      "id": "m-dried-red-chilli",
+      "name": "Dried Red Chilli",
+      "category": "Spices",
+      "perGram": 0.425,
+      "usedInLines": 1,
+      "recipes": [
+        "Chilli Crisp"
+      ]
+    },
+    {
+      "id": "m-garlic-chopped",
+      "name": "Garlic Chopped",
+      "category": "Vegetables",
+      "perGram": 0.1875,
+      "usedInLines": 1,
+      "recipes": [
+        "Chilli Crisp"
+      ]
+    },
+    {
+      "id": "m-garlic-powder",
+      "name": "Garlic Powder",
+      "category": "Spices",
+      "perGram": 0.4,
+      "usedInLines": 1,
+      "recipes": [
+        "Bechamel Sauce"
+      ]
+    },
+    {
+      "id": "m-onion-powder",
+      "name": "Onion Powder",
+      "category": "Spices",
+      "perGram": 0.84,
+      "usedInLines": 1,
+      "recipes": [
+        "Bechamel Sauce"
+      ]
+    },
+    {
+      "id": "m-confit-onion",
+      "name": "Confit Onion",
+      "category": "Vegetables",
+      "perGram": 0.5,
+      "usedInLines": 1,
+      "recipes": [
+        "Pesto White Base Sauce"
+      ]
+    },
+    {
+      "id": "m-confit-garlic",
+      "name": "Confit Garlic",
+      "category": "Vegetables",
+      "perGram": 0.48219999999999996,
+      "usedInLines": 1,
+      "recipes": [
+        "Pesto White Base Sauce"
+      ]
+    },
+    {
+      "id": "m-dill-leaves",
+      "name": "Dill Leaves",
+      "category": "Vegetables",
+      "perGram": 1,
+      "usedInLines": 1,
+      "recipes": [
+        "Chili Crunch Sauce"
+      ]
+    },
+    {
+      "id": "m-chunky-tomato-sauce",
+      "name": "Chunky Tomato Sauce",
+      "category": "Sauces & Condiments",
+      "perGram": 0.235,
+      "usedInLines": 1,
+      "recipes": [
+        "Chili Crunch Sauce"
+      ]
+    },
+    {
+      "id": "m-coriander-seeds",
+      "name": "Coriander Seeds",
+      "category": "Spices",
+      "perGram": 4,
+      "usedInLines": 1,
+      "recipes": [
+        "Sri Lankan Red Curry Powder Mix"
+      ]
+    },
+    {
+      "id": "m-fennel-seeds",
+      "name": "Fennel Seeds",
+      "category": "Spices",
+      "perGram": 0.2,
+      "usedInLines": 1,
+      "recipes": [
+        "Sri Lankan Red Curry Powder Mix"
+      ]
+    },
+    {
+      "id": "m-green-chilli",
+      "name": "Green Chillies",
+      "category": "Vegetables",
+      "perGram": 0.1,
+      "usedInLines": 1,
+      "recipes": [
+        "Sri Lankan Red Paste"
+      ]
+    },
+    {
+      "id": "m-cb-curly-romaine",
+      "name": "Curly romaine",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Burrata Salad"
+      ]
+    },
+    {
+      "id": "m-cb-persimmon",
+      "name": "Persimmon",
+      "category": "Fruits",
+      "perGram": 0.3625,
+      "usedInLines": 1,
+      "recipes": [
+        "Persimmon Salad"
+      ]
+    },
+    {
+      "id": "m-cb-strawberry",
+      "name": "Strawberry",
+      "category": "Fruits",
+      "perGram": 0.4,
+      "usedInLines": 1,
+      "recipes": [
+        "Persimmon Salad"
+      ]
+    },
+    {
+      "id": "m-cb-processed-iceberg-lettuce",
+      "name": "Processed Iceberg lettuce",
+      "category": "Vegetables",
+      "perGram": 0.3226,
+      "usedInLines": 1,
+      "recipes": [
+        "Summer Burrata Salad"
+      ]
+    },
+    {
+      "id": "m-cb-processed-romaine-lettuce",
+      "name": "Processed Romaine lettuce",
+      "category": "Vegetables",
+      "perGram": 0.4,
+      "usedInLines": 1,
+      "recipes": [
+        "Summer Burrata Salad"
+      ]
+    },
+    {
+      "id": "m-cb-mango-cubed",
+      "name": "Mango (cubed)",
+      "category": "Fruits",
+      "perGram": 0.51,
+      "usedInLines": 1,
+      "recipes": [
+        "Summer Burrata Salad"
+      ]
+    },
+    {
+      "id": "m-cb-grapefruit-cubed",
+      "name": "Grapefruit (cubed)",
+      "category": "Fruits",
+      "perGram": 0.2686,
+      "usedInLines": 1,
+      "recipes": [
+        "Summer Burrata Salad"
+      ]
+    },
+    {
+      "id": "m-cb-cherry-tomatoes",
+      "name": "Cherry tomatoes",
+      "category": "Vegetables",
+      "perGram": 0.605,
+      "usedInLines": 1,
+      "recipes": [
+        "Summer Burrata Salad"
+      ]
+    },
+    {
+      "id": "m-cb-red-bell-peppers",
+      "name": "Red bell peppers",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Roasted Red Bell Pepper Soup"
+      ]
+    },
+    {
+      "id": "m-cb-roasted-bell-pepper-paste",
+      "name": "Roasted bell pepper paste",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Roasted Red Bell Pepper Soup"
+      ]
+    },
+    {
+      "id": "m-cb-garlic-butter",
+      "name": "Garlic butter",
+      "category": "Dairy",
+      "perGram": 0.6,
+      "usedInLines": 1,
+      "recipes": [
+        "Roasted Red Bell Pepper Soup"
+      ]
+    },
+    {
+      "id": "m-cb-green-garlic-garnish",
+      "name": "Green garlic (garnish)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Garlic Bread"
+      ]
+    },
+    {
+      "id": "m-cb-salt-pepper",
+      "name": "Salt & pepper",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Pasta Fritti 2.0"
+      ]
+    },
+    {
+      "id": "m-cb-brussels-sprouts-halved",
+      "name": "Brussels sprouts (halved)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Saucy Brussels Sprouts"
+      ]
+    },
+    {
+      "id": "m-cb-red-chilli-flakes",
+      "name": "Red chilli flakes",
+      "category": "Spices",
+      "perGram": 0.296,
+      "usedInLines": 1,
+      "recipes": [
+        "Saucy Brussels Sprouts"
+      ]
+    },
+    {
+      "id": "m-cb-fresh-bhavnagri-chilli",
+      "name": "Fresh Bhavnagri chilli",
+      "category": "Spices",
+      "perGram": 0.2,
+      "usedInLines": 1,
+      "recipes": [
+        "Saucy Brussels Sprouts"
+      ]
+    },
+    {
+      "id": "m-cb-pickled-onions",
+      "name": "Pickled onions",
+      "category": "Vegetables",
+      "perGram": 0.3333,
+      "usedInLines": 1,
+      "recipes": [
+        "Saucy Brussels Sprouts"
+      ]
+    },
+    {
+      "id": "m-cb-tomatoes",
+      "name": "Tomatoes",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Miso Tomato Soup"
+      ]
+    },
+    {
+      "id": "m-cb-chili-flakes-or-fresh-red-chili-5-g-deseeded",
+      "name": "Chili flakes (or fresh red chili - 5 g, deseeded)",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Miso Tomato Soup"
+      ]
+    },
+    {
+      "id": "m-cb-basil-fresh-chopped",
+      "name": "Basil (fresh, chopped)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Miso Tomato Soup"
+      ]
+    },
+    {
+      "id": "m-cb-thyme-sprigs-simmer-remove-before-blending",
+      "name": "Thyme (sprigs) (simmer, remove before blending)",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Miso Tomato Soup"
+      ]
+    },
+    {
+      "id": "m-cb-bay-leaf-remove-before-blending",
+      "name": "Bay leaf (remove before blending)",
+      "category": "Other",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Miso Tomato Soup"
+      ]
+    },
+    {
+      "id": "m-cb-parsley-stems-optional-simmer-with-base",
+      "name": "Parsley stems (optional, simmer with base)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Miso Tomato Soup"
+      ]
+    },
+    {
+      "id": "m-cb-orange-creamy-tomato-sauce",
+      "name": "Orange (creamy tomato) sauce",
+      "category": "Dairy",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Spicy Tomato & Cream Macaroni"
+      ]
+    },
+    {
+      "id": "m-cb-lemon-zest",
+      "name": "Lemon zest",
+      "category": "Fruits",
+      "perGram": 1,
+      "usedInLines": 1,
+      "recipes": [
+        "Lemon Linguini"
+      ]
+    },
+    {
+      "id": "m-cb-asparagus",
+      "name": "Asparagus",
+      "category": "Other",
+      "perGram": 0.9231,
+      "usedInLines": 1,
+      "recipes": [
+        "Risotto"
+      ]
+    },
+    {
+      "id": "m-cb-peas",
+      "name": "Peas",
+      "category": "Other",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Risotto"
+      ]
+    },
+    {
+      "id": "m-cb-onion-diced",
+      "name": "Onion (diced)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Lasagna"
+      ]
+    },
+    {
+      "id": "m-cb-carrot-diced",
+      "name": "Carrot (diced)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Lasagna"
+      ]
+    },
+    {
+      "id": "m-cb-celery-diced",
+      "name": "Celery (diced)",
+      "category": "Beverages",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Lasagna"
+      ]
+    },
+    {
+      "id": "m-cb-tomato-passata",
+      "name": "Tomato passata",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Lasagna"
+      ]
+    },
+    {
+      "id": "m-cb-dried-oregano",
+      "name": "Dried oregano",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Lasagna"
+      ]
+    },
+    {
+      "id": "m-cb-blanched-kale",
+      "name": "Blanched kale",
+      "category": "Other",
+      "perGram": 0.5,
+      "usedInLines": 1,
+      "recipes": [
+        "Stuffed Conchiglioni"
+      ]
+    },
+    {
+      "id": "m-cb-garlic-pomodoro-sauce",
+      "name": "Garlic pomodoro sauce",
+      "category": "Sauces & Condiments",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Stuffed Conchiglioni"
+      ]
+    },
+    {
+      "id": "m-cb-pumpkin-seeds-pistachios-crushed-mixed",
+      "name": "Pumpkin seeds & pistachios (crushed & mixed)",
+      "category": "Bakery",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Pink Burrata Pasta"
+      ]
+    },
+    {
+      "id": "m-cb-confit-cherry-tomatoes",
+      "name": "Confit cherry tomatoes",
+      "category": "Vegetables",
+      "perGram": 0.2,
+      "usedInLines": 1,
+      "recipes": [
+        "Tomato Butter Risotto"
+      ]
+    },
+    {
+      "id": "m-cb-mint-syrup",
+      "name": "Mint syrup",
+      "category": "Sauces & Condiments",
+      "perGram": 0.0333,
+      "usedInLines": 1,
+      "recipes": [
+        "Mint Mojito"
+      ]
+    },
+    {
+      "id": "m-cb-kara-coconut-milk",
+      "name": "Kara Coconut milk",
+      "category": "Dairy",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Pina Colada"
+      ]
+    },
+    {
+      "id": "m-cb-pineapple-jam",
+      "name": "Pineapple jam",
+      "category": "Fruits",
+      "perGram": 0.1375,
+      "usedInLines": 1,
+      "recipes": [
+        "Pina Colada"
+      ]
+    },
+    {
+      "id": "m-cb-fresh-ginger-zest",
+      "name": "Fresh ginger zest",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Moscow Mule"
+      ]
+    },
+    {
+      "id": "m-cb-gunsberg-ginger-beer",
+      "name": "Gunsberg Ginger Beer",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Moscow Mule"
+      ]
+    },
+    {
+      "id": "m-cb-orange-juice",
+      "name": "Orange juice",
+      "category": "Fruits",
+      "perGram": 0.405,
+      "usedInLines": 1,
+      "recipes": [
+        "Sunset Cocktail"
+      ]
+    },
+    {
+      "id": "m-cb-schweppes-ginger-ale",
+      "name": "Schweppes Ginger Ale",
+      "category": "Vegetables",
+      "perGram": 0.1667,
+      "usedInLines": 1,
+      "recipes": [
+        "Tamarind Fizz"
+      ]
+    },
+    {
+      "id": "m-cb-shiitake-mushroom",
+      "name": "Shiitake mushroom",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Tom Yum"
+      ]
+    },
+    {
+      "id": "m-cb-coriander-leaves",
+      "name": "Coriander Leaves",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Thai Spring Roll"
+      ]
+    },
+    {
+      "id": "m-cb-spring-onion-slit",
+      "name": "Spring Onion Slit",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Thai Spring Roll"
+      ]
+    },
+    {
+      "id": "m-cb-lotus-root",
+      "name": "Lotus root",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Kwispy Lotus Root"
+      ]
+    },
+    {
+      "id": "m-cb-pok-choy",
+      "name": "Pok choy",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Kwispy Lotus Root"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-crisps",
+      "name": "Chilli crisps",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Kwispy Wonton"
+      ]
+    },
+    {
+      "id": "m-cb-spring-onion-slit-garnish",
+      "name": "Spring onion slit (garnish)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Tteokbokki"
+      ]
+    },
+    {
+      "id": "m-cb-yellow-bell-pepper",
+      "name": "Yellow bell pepper",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "General Tso's Water Chestnuts"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-crisp-for-chilli-version",
+      "name": "Chilli Crisp (for chilli version)",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Steamed Edamame (Chilli / Salted)"
+      ]
+    },
+    {
+      "id": "m-cb-coriander-mayo",
+      "name": "Coriander mayo",
+      "category": "Sauces & Condiments",
+      "perGram": 0.1,
+      "usedInLines": 1,
+      "recipes": [
+        "Korean Mandu"
+      ]
+    },
+    {
+      "id": "m-cb-fried-corn",
+      "name": "Fried Corn",
+      "category": "Vegetables",
+      "perGram": 0.1,
+      "usedInLines": 1,
+      "recipes": [
+        "Creamy Corn Rocks"
+      ]
+    },
+    {
+      "id": "m-cb-corn-rocks-sauce",
+      "name": "Corn Rocks sauce",
+      "category": "Sauces & Condiments",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Creamy Corn Rocks"
+      ]
+    },
+    {
+      "id": "m-cb-sweet-corn-puree",
+      "name": "Sweet corn puree",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Creamy Corn Rocks"
+      ]
+    },
+    {
+      "id": "m-cb-scallion-pancake",
+      "name": "Scallion Pancake",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Kwispy Scallion Pancake"
+      ]
+    },
+    {
+      "id": "m-cb-green-garlic-cream-cheese",
+      "name": "Green garlic cream cheese",
+      "category": "Dairy",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Kwispy Scallion Pancake"
+      ]
+    },
+    {
+      "id": "m-cb-scallion-salad",
+      "name": "Scallion salad",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Kwispy Scallion Pancake"
+      ]
+    },
+    {
+      "id": "m-cb-cucumber-slice",
+      "name": "Cucumber slice",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Cold Spicy Sesame Noodles"
+      ]
+    },
+    {
+      "id": "m-cb-carrot-slice",
+      "name": "Carrot slice",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Cold Spicy Sesame Noodles"
+      ]
+    },
+    {
+      "id": "m-cb-peanut-crushed",
+      "name": "Peanut (crushed)",
+      "category": "Bakery",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Cold Spicy Sesame Noodles"
+      ]
+    },
+    {
+      "id": "m-cb-white-part-spring-onion",
+      "name": "White Part Spring Onion",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Cold Spicy Sesame Noodles"
+      ]
+    },
+    {
+      "id": "m-cb-mix-iceberg-romain-slice",
+      "name": "Mix iceberg romain slice",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Cold Spicy Sesame Noodles"
+      ]
+    },
+    {
+      "id": "m-kashmiri-red-paste",
+      "name": "Kashmiri Chilli Red Paste",
+      "category": "Sauces & Condiments",
+      "perGram": 0.8,
+      "usedInLines": 1,
+      "recipes": [
+        "Sri Lankan Curry"
+      ]
+    },
+    {
+      "id": "m-red-chilli-oil",
+      "name": "Red Chilli Oil",
+      "category": "Oils & Fats",
+      "perGram": 1,
+      "usedInLines": 1,
+      "recipes": [
+        "Sri Lankan Curry"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-garlic-sauce-sunflower-oil",
+      "name": "Chilli Garlic Sauce - Sunflower oil",
+      "category": "Oils & Fats",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Custom Stir Fry"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-garlic-sauce-chopped-garlic",
+      "name": "Chilli Garlic Sauce - Chopped garlic",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Custom Stir Fry"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-garlic-sauce-soy-sauce",
+      "name": "Chilli Garlic Sauce - Soy sauce",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Custom Stir Fry"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-garlic-sauce-hot-sauce",
+      "name": "Chilli Garlic Sauce - Hot sauce",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Custom Stir Fry"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-garlic-sauce-wok-hei-sauce",
+      "name": "Chilli Garlic Sauce - Wok hei sauce",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Custom Stir Fry"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-garlic-sauce-thai-red-chilli",
+      "name": "Chilli Garlic Sauce - Thai red chilli",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Custom Stir Fry"
+      ]
+    },
+    {
+      "id": "m-cb-wok-hei-sauce-chilli-bean",
+      "name": "Wok Hei Sauce - Chilli bean",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Custom Stir Fry"
+      ]
+    },
+    {
+      "id": "m-cb-wok-hei-sauce-black-pepper",
+      "name": "Wok Hei Sauce - Black pepper",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Custom Stir Fry"
+      ]
+    },
+    {
+      "id": "m-cb-teriyaki-sauce-corn-starch",
+      "name": "Teriyaki Sauce - Corn starch",
+      "category": "Sauces & Condiments",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Custom Stir Fry"
+      ]
+    },
+    {
+      "id": "m-cb-yaki-soba-sauce-black-pepper",
+      "name": "Yaki Soba Sauce - Black pepper",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Custom Stir Fry"
+      ]
+    },
+    {
+      "id": "m-cb-yaki-soba-sauce-crushed-black-pepper",
+      "name": "Yaki Soba Sauce - Crushed black pepper",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Custom Stir Fry"
+      ]
+    },
+    {
+      "id": "m-cb-yaki-soba-sauce-corn-starch",
+      "name": "Yaki Soba Sauce - Corn starch",
+      "category": "Sauces & Condiments",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Custom Stir Fry"
+      ]
+    },
+    {
+      "id": "m-cb-red-bhavnagri-chilli",
+      "name": "Red Bhavnagri chilli",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Chestnut Gyoza"
+      ]
+    },
+    {
+      "id": "m-cb-ginger-paste",
+      "name": "Ginger (paste)",
+      "category": "Sauces & Condiments",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Okonomiyaki Gyoza (6 Pcs)"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-besan-paste",
+      "name": "Chilli besan paste",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Okonomiyaki Gyoza (6 Pcs)"
+      ]
+    },
+    {
+      "id": "m-cb-coriander-leaf",
+      "name": "Coriander leaf",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Okonomiyaki Gyoza (6 Pcs)"
+      ]
+    },
+    {
+      "id": "m-cb-coriander-stem",
+      "name": "Coriander stem",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Okonomiyaki Gyoza (6 Pcs)"
+      ]
+    },
+    {
+      "id": "m-cb-coconut-cream",
+      "name": "Coconut cream",
+      "category": "Dairy",
+      "perGram": 0.4,
+      "usedInLines": 1,
+      "recipes": [
+        "Saucy Momos"
+      ]
+    },
+    {
+      "id": "m-cb-green-bhavnagari-chilli",
+      "name": "Green Bhavnagari chilli",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Cheese Chilli Dumplings"
+      ]
+    },
+    {
+      "id": "m-cb-kaffir-lime-leaf",
+      "name": "Kaffir lime leaf",
+      "category": "Fruits",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Cheese Chilli Dumplings"
+      ]
+    },
+    {
+      "id": "m-cb-lemongrass",
+      "name": "Lemongrass",
+      "category": "Fruits",
+      "perGram": 1,
+      "usedInLines": 1,
+      "recipes": [
+        "Cheese Chilli Dumplings"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-oil-dumplings-filling",
+      "name": "Chilli Oil Dumplings filling",
+      "category": "Oils & Fats",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Chilli Oil Dumplings"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-oil-dumplings-paste",
+      "name": "Chilli Oil Dumplings paste",
+      "category": "Oils & Fats",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Chilli Oil Dumplings"
+      ]
+    },
+    {
+      "id": "m-cb-toasted-peanuts",
+      "name": "Toasted Peanuts",
+      "category": "Bakery",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Chilli Oil Dumplings"
+      ]
+    },
+    {
+      "id": "m-cb-green-spring-onion",
+      "name": "Green spring onion",
+      "category": "Vegetables",
+      "perGram": 0.0667,
+      "usedInLines": 1,
+      "recipes": [
+        "Chilli Oil Dumplings"
+      ]
+    },
+    {
+      "id": "m-cb-cheese-chilli-dumplings",
+      "name": "Cheese & Chilli Dumplings",
+      "category": "Dairy",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "New Dimsum Platter"
+      ]
+    },
+    {
+      "id": "m-cb-broad-beans",
+      "name": "Broad Beans",
+      "category": "Other",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "New Dimsum Platter"
+      ]
+    },
+    {
+      "id": "m-cb-chili-crisp",
+      "name": "Chili Crisp",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "New Dimsum Platter"
+      ]
+    },
+    {
+      "id": "m-cb-avocado",
+      "name": "Avocado",
+      "category": "Other",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Avocado Roll"
+      ]
+    },
+    {
+      "id": "m-cb-fried-stem-lotus",
+      "name": "Fried stem lotus",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Dragon Roll"
+      ]
+    },
+    {
+      "id": "m-cb-dragon-sauce",
+      "name": "Dragon sauce",
+      "category": "Sauces & Condiments",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Dragon Roll"
+      ]
+    },
+    {
+      "id": "m-cb-alfanso-mango",
+      "name": "Alfanso mango",
+      "category": "Fruits",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Volcano 1"
+      ]
+    },
+    {
+      "id": "m-cb-ginger-pickled",
+      "name": "Ginger pickled",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Volcano 1"
+      ]
+    },
+    {
+      "id": "m-cb-pickled-radish",
+      "name": "Pickled radish",
+      "category": "Other",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Gimbap 1"
+      ]
+    },
+    {
+      "id": "m-cb-saute-ed-spinach-with-soy-garlic",
+      "name": "Sautéed spinach with soy & garlic",
+      "category": "Sauces & Condiments",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Gimbap 1"
+      ]
+    },
+    {
+      "id": "m-cb-red-capsicum",
+      "name": "Red capsicum",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Bombay Blues Roll"
+      ]
+    },
+    {
+      "id": "m-cb-sweet-chilli-sauce",
+      "name": "Sweet chilli sauce",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Bombay Blues Roll"
+      ]
+    },
+    {
+      "id": "m-cb-american-corn",
+      "name": "American corn",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Corn Tempura Roll"
+      ]
+    },
+    {
+      "id": "m-cb-ginger-minced",
+      "name": "Ginger (minced)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Fried Rice"
+      ]
+    },
+    {
+      "id": "m-cb-spinach",
+      "name": "Spinach",
+      "category": "Vegetables",
+      "perGram": 0.1143,
+      "usedInLines": 1,
+      "recipes": [
+        "Burnt Garlic Fried Rice"
+      ]
+    },
+    {
+      "id": "m-cb-chili-bean-paste",
+      "name": "Chili bean paste",
+      "category": "Spices",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Mushroom Truffle Fried Rice"
+      ]
+    },
+    {
+      "id": "m-cb-mixed-mushroom",
+      "name": "Mixed mushroom",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Drunken Noodles"
+      ]
+    },
+    {
+      "id": "m-cb-spring-onion-whites",
+      "name": "Spring onion whites",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Drunken Noodles"
+      ]
+    },
+    {
+      "id": "m-cb-thai-basil",
+      "name": "Thai basil",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Drunken Noodles"
+      ]
+    },
+    {
+      "id": "m-cb-mushrooms",
+      "name": "Mushrooms",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Pad Thai"
+      ]
+    },
+    {
+      "id": "m-cb-roasted-peanuts",
+      "name": "Roasted peanuts",
+      "category": "Bakery",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Pad Thai"
+      ]
+    },
+    {
+      "id": "m-cb-lemon-wedge",
+      "name": "Lemon wedge",
+      "category": "Fruits",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Pad Thai"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-powder",
+      "name": "Chilli powder",
+      "category": "Spices",
+      "perGram": 1.0667,
+      "usedInLines": 1,
+      "recipes": [
+        "Spiced Miso Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-peanuts-roasted",
+      "name": "Peanuts (roasted)",
+      "category": "Bakery",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Spiced Miso Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-coriander-chopped",
+      "name": "Coriander (chopped)",
+      "category": "Vegetables",
+      "perGram": 0.1825,
+      "usedInLines": 1,
+      "recipes": [
+        "Spiced Miso Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-spring-onion-chopped",
+      "name": "Spring onion (chopped)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Spiced Miso Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-pokchoy-blanched",
+      "name": "Pokchoy (blanched)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Spiced Miso Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-lemon-wedges",
+      "name": "Lemon wedges",
+      "category": "Fruits",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Spiced Miso Ramen"
+      ]
+    },
+    {
+      "id": "m-cb-chilli-crisp",
+      "name": "Chilli crisp",
+      "category": "Spices",
+      "perGram": 0.16,
+      "usedInLines": 1,
+      "recipes": [
+        "Buttery Chilli Garlic Noodles"
+      ]
+    },
+    {
+      "id": "m-cb-spring-onion-garnish",
+      "name": "Spring onion (garnish)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Buttery Chilli Garlic Noodles"
+      ]
+    },
+    {
+      "id": "m-cb-fried-garlic-garnish",
+      "name": "Fried garlic (garnish)",
+      "category": "Vegetables",
+      "perGram": null,
+      "usedInLines": 1,
+      "recipes": [
+        "Buttery Chilli Garlic Noodles"
+      ]
+    },
+    {
+      "id": "m-cb-ring-bell-pepper",
+      "name": "Ring bell pepper",
+      "category": "Vegetables",
+      "perGram": 0.2,
+      "usedInLines": 1,
+      "recipes": [
+        "Peperone Pizza"
+      ]
+    },
+    {
+      "id": "m-cb-ring-onion",
+      "name": "Ring onion",
+      "category": "Vegetables",
+      "perGram": 0.1,
+      "usedInLines": 1,
+      "recipes": [
+        "Peperone Pizza"
+      ]
+    },
+    {
+      "id": "m-cb-orange-sauce",
+      "name": "Orange sauce",
+      "category": "Sauces & Condiments",
+      "perGram": 0.25,
+      "usedInLines": 1,
+      "recipes": [
+        "Triple sauce"
+      ]
+    }
+  ],
+  "candidates": [
+    {
+      "name": "Alphonso Mango",
+      "category": "Fruits",
+      "perGram": 0.4269
+    },
+    {
+      "name": "Apple",
+      "category": "Fruits",
+      "perGram": 0.22
+    },
+    {
+      "name": "Apple (Premium)",
+      "category": "Fruits",
+      "perGram": 1.4667
+    },
+    {
+      "name": "Avocado Imported",
+      "category": "Fruits",
+      "perGram": 0.65
+    },
+    {
+      "name": "Banana",
+      "category": "Fruits",
+      "perGram": 0.0507
+    },
+    {
+      "name": "Black Grapes",
+      "category": "Fruits",
+      "perGram": 0.46
+    },
+    {
+      "name": "Edible Flowers",
+      "category": "Vegetables",
+      "perGram": 0.9266
+    },
+    {
+      "name": "Gauva",
+      "category": "Fruits",
+      "perGram": 0.14
+    },
+    {
+      "name": "Grapefruit",
+      "category": "Fruits",
+      "perGram": 0.2277
+    },
+    {
+      "name": "Green Apple",
+      "category": "Fruits",
+      "perGram": 0.33
+    },
+    {
+      "name": "Green Grapes",
+      "category": "Fruits",
+      "perGram": 0.32
+    },
+    {
+      "name": "Hass Avocado",
+      "category": "Fruits",
+      "perGram": 0.6054
+    },
+    {
+      "name": "Italian Lemon",
+      "category": "Fruits",
+      "perGram": 0.7072
+    },
+    {
+      "name": "Jackfruit",
+      "category": "Fruits",
+      "perGram": 0.07
+    },
+    {
+      "name": "Jamun",
+      "category": "Fruits",
+      "perGram": 0.3106
+    },
+    {
+      "name": "Kaffir Lime",
+      "category": "Fruits",
+      "perGram": 1.0273
+    },
+    {
+      "name": "Kiwi",
+      "category": "Fruits",
+      "perGram": 0.2286
+    },
+    {
+      "name": "Lemon",
+      "category": "Fruits",
+      "perGram": 0.0971
+    },
+    {
+      "name": "Litchi",
+      "category": "Fruits",
+      "perGram": 19.8367
+    },
+    {
+      "name": "Malta",
+      "category": "Fruits",
+      "perGram": 0.16
+    },
+    {
+      "name": "Mango",
+      "category": "Fruits",
+      "perGram": 0.2667
+    },
+    {
+      "name": "Orange Imported",
+      "category": "Fruits",
+      "perGram": 0.1463
+    },
+    {
+      "name": "Peach",
+      "category": "Fruits",
+      "perGram": 2
+    },
+    {
+      "name": "Pear",
+      "category": "Fruits",
+      "perGram": 0.32
+    },
+    {
+      "name": "Pineapple",
+      "category": "Fruits",
+      "perGram": 0.1343
+    },
+    {
+      "name": "Pineapple (Premium)",
+      "category": "Fruits",
+      "perGram": 0.1475
+    },
+    {
+      "name": "Pineapple Peeled",
+      "category": "Fruits",
+      "perGram": 0.15
+    },
+    {
+      "name": "Pineapple Peeled (Premium)",
+      "category": "Fruits",
+      "perGram": 0.1982
+    },
+    {
+      "name": "Pineapple Whole",
+      "category": "Fruits",
+      "perGram": 0.108
+    },
+    {
+      "name": "Pomegranate -anar",
+      "category": "Fruits",
+      "perGram": 0.1643
+    },
+    {
+      "name": "Raw Mango",
+      "category": "Fruits",
+      "perGram": 0.0564
+    },
+    {
+      "name": "Row Banana",
+      "category": "Fruits",
+      "perGram": 0.045
+    },
+    {
+      "name": "Watermelon",
+      "category": "Fruits",
+      "perGram": 0.0315
+    },
+    {
+      "name": "Baby Spinach 100gms",
+      "category": "Vegetables",
+      "perGram": 0.14
+    },
+    {
+      "name": "Basil",
+      "category": "Vegetables",
+      "perGram": 0.32
+    },
+    {
+      "name": "Bean Sprouts",
+      "category": "Vegetables",
+      "perGram": 0.3427
+    },
+    {
+      "name": "Beans Sprout",
+      "category": "Vegetables",
+      "perGram": 0.2504
+    },
+    {
+      "name": "Beetroot",
+      "category": "Vegetables",
+      "perGram": 0.05
+    },
+    {
+      "name": "Bhavnagari Red Chilli",
+      "category": "Vegetables",
+      "perGram": 0.12
+    },
+    {
+      "name": "Bird Eye Thai Red Chilli",
+      "category": "Vegetables",
+      "perGram": 1.0634
+    },
+    {
+      "name": "Bokchoy",
+      "category": "Vegetables",
+      "perGram": 0.1185
+    },
+    {
+      "name": "Brinjal",
+      "category": "Vegetables",
+      "perGram": 0.07
+    },
+    {
+      "name": "Broccoli",
+      "category": "Vegetables",
+      "perGram": 0.224
+    },
+    {
+      "name": "Brussels Sprouts.",
+      "category": "Vegetables",
+      "perGram": 0.8225
+    },
+    {
+      "name": "Button Mushrooms",
+      "category": "Vegetables",
+      "perGram": 0.1478
+    },
+    {
+      "name": "Cabbage",
+      "category": "Vegetables",
+      "perGram": 0.0311
+    },
+    {
+      "name": "Carrot",
+      "category": "Vegetables",
+      "perGram": 0.0506
+    },
+    {
+      "name": "Cherry Tomato",
+      "category": "Vegetables",
+      "perGram": 0.5053
+    },
+    {
+      "name": "Chilli Broad Beans 120gm",
+      "category": "Vegetables",
+      "perGram": 0.5345
+    },
+    {
+      "name": "Chinese Cabbage",
+      "category": "Vegetables",
+      "perGram": 0.1579
+    },
+    {
+      "name": "Chinese Cucumber",
+      "category": "Vegetables",
+      "perGram": 0.2857
+    },
+    {
+      "name": "Chinese Cucumber (Premium)",
+      "category": "Vegetables",
+      "perGram": 0.3002
+    },
+    {
+      "name": "Coriander",
+      "category": "Vegetables",
+      "perGram": 0.0721
+    },
+    {
+      "name": "Cucumber",
+      "category": "Vegetables",
+      "perGram": 0.0525
+    },
+    {
+      "name": "Curly Kale",
+      "category": "Vegetables",
+      "perGram": 0.35
+    },
+    {
+      "name": "Curry Leaves",
+      "category": "Vegetables",
+      "perGram": 0.025
+    },
+    {
+      "name": "Dil Leaves .",
+      "category": "Vegetables",
+      "perGram": 0.07
+    },
+    {
+      "name": "Edamame Kernal 500gm",
+      "category": "Vegetables",
+      "perGram": 0.3992
+    },
+    {
+      "name": "Edamame Pods 500gm",
+      "category": "Vegetables",
+      "perGram": 0.4
+    },
+    {
+      "name": "Edible Flower",
+      "category": "Vegetables",
+      "perGram": 0.1043
+    },
+    {
+      "name": "English Cucumber",
+      "category": "Vegetables",
+      "perGram": 0.054
+    },
+    {
+      "name": "Fansi- Beans",
+      "category": "Vegetables",
+      "perGram": 0.1625
+    },
+    {
+      "name": "Fennel Bulb",
+      "category": "Vegetables",
+      "perGram": 1.6
+    },
+    {
+      "name": "Flower",
+      "category": "Vegetables",
+      "perGram": 0.0878
+    },
+    {
+      "name": "Fresh Babycorn",
+      "category": "Vegetables",
+      "perGram": 0.1374
+    },
+    {
+      "name": "Fresh Jalapenos",
+      "category": "Vegetables",
+      "perGram": 0.2371
+    },
+    {
+      "name": "Fresh Jalepenos Green",
+      "category": "Vegetables",
+      "perGram": 0.2927
+    },
+    {
+      "name": "Fresh Jalepenos Red",
+      "category": "Vegetables",
+      "perGram": 0.2642
+    },
+    {
+      "name": "Frozen American Corn",
+      "category": "Vegetables",
+      "perGram": 0.0807
+    },
+    {
+      "name": "Garlic Chop",
+      "category": "Vegetables",
+      "perGram": 0.023
+    },
+    {
+      "name": "Ginger.",
+      "category": "Vegetables",
+      "perGram": 0.1295
+    },
+    {
+      "name": "Green Bell Pepper",
+      "category": "Vegetables",
+      "perGram": 0.1215
+    },
+    {
+      "name": "Green Bhavnagri",
+      "category": "Vegetables",
+      "perGram": 0.0825
+    },
+    {
+      "name": "Green Capsicum",
+      "category": "Vegetables",
+      "perGram": 0.0879
+    },
+    {
+      "name": "Green Chilli",
+      "category": "Vegetables",
+      "perGram": 0.0415
+    },
+    {
+      "name": "Green Chilli Small",
+      "category": "Vegetables",
+      "perGram": 0.0928
+    },
+    {
+      "name": "Green Garlic",
+      "category": "Vegetables",
+      "perGram": 0.2
+    },
+    {
+      "name": "Green Zucchini",
+      "category": "Vegetables",
+      "perGram": 0.1719
+    },
+    {
+      "name": "Hydronic Iceburg Lettuce",
+      "category": "Vegetables",
+      "perGram": 0.15
+    },
+    {
+      "name": "Hydronics Spinach",
+      "category": "Vegetables",
+      "perGram": 0.075
+    },
+    {
+      "name": "Hydroponic English Cucumber",
+      "category": "Vegetables",
+      "perGram": 0.05
+    },
+    {
+      "name": "Hydroponic Roquette Wild",
+      "category": "Vegetables",
+      "perGram": 0.66
+    },
+    {
+      "name": "Iceberg",
+      "category": "Vegetables",
+      "perGram": 0.1791
+    },
+    {
+      "name": "Iceberg Lettuce.",
+      "category": "Vegetables",
+      "perGram": 0.1547
+    },
+    {
+      "name": "Iceburg Lettuce",
+      "category": "Vegetables",
+      "perGram": 0.16
+    },
+    {
+      "name": "Jalapeno Hot Chill Red",
+      "category": "Vegetables",
+      "perGram": 0.185
+    },
+    {
+      "name": "Jalapeno Hot Chilly Green",
+      "category": "Vegetables",
+      "perGram": 0.3094
+    },
+    {
+      "name": "Kafir Lime Leaves.",
+      "category": "Vegetables",
+      "perGram": 1.05
+    },
+    {
+      "name": "King Oyster Mushroom",
+      "category": "Vegetables",
+      "perGram": 0.93
+    },
+    {
+      "name": "Leek",
+      "category": "Vegetables",
+      "perGram": 0.5484
+    },
+    {
+      "name": "Leeks",
+      "category": "Vegetables",
+      "perGram": 0.085
+    },
+    {
+      "name": "Lemon Grass",
+      "category": "Vegetables",
+      "perGram": 0.1239
+    },
+    {
+      "name": "Lemon Green",
+      "category": "Vegetables",
+      "perGram": 0.0958
+    },
+    {
+      "name": "Lollo Rosso",
+      "category": "Vegetables",
+      "perGram": 0.3731
+    },
+    {
+      "name": "Lolo Lettuce",
+      "category": "Vegetables",
+      "perGram": 0.4
+    },
+    {
+      "name": "Lotus Roots",
+      "category": "Vegetables",
+      "perGram": 0.1877
+    },
+    {
+      "name": "Lotus Stem",
+      "category": "Vegetables",
+      "perGram": 0.1865
+    },
+    {
+      "name": "Methi Big Fresh",
+      "category": "Vegetables",
+      "perGram": 0.1
+    },
+    {
+      "name": "Micro Green",
+      "category": "Vegetables",
+      "perGram": 1.0435
+    },
+    {
+      "name": "Microgreen",
+      "category": "Vegetables",
+      "perGram": 1.8261
+    },
+    {
+      "name": "Microgreens",
+      "category": "Vegetables",
+      "perGram": 1.5652
+    },
+    {
+      "name": "Mint",
+      "category": "Vegetables",
+      "perGram": 0.0257
+    },
+    {
+      "name": "Mint (Premium)",
+      "category": "Vegetables",
+      "perGram": 0.3449
+    },
+    {
+      "name": "Mint Bunch",
+      "category": "Vegetables",
+      "perGram": 0.2
+    },
+    {
+      "name": "Mint Leaves",
+      "category": "Vegetables",
+      "perGram": 0.2
+    },
+    {
+      "name": "Onion",
+      "category": "Vegetables",
+      "perGram": 0.0275
+    },
+    {
+      "name": "Onion Whole",
+      "category": "Vegetables",
+      "perGram": 0.023
+    },
+    {
+      "name": "Oyster Mushroom",
+      "category": "Vegetables",
+      "perGram": 0.375
+    },
+    {
+      "name": "Parsley",
+      "category": "Vegetables",
+      "perGram": 0.2891
+    },
+    {
+      "name": "Peeled Garlic.",
+      "category": "Vegetables",
+      "perGram": 0.1823
+    },
+    {
+      "name": "Potatoes",
+      "category": "Vegetables",
+      "perGram": 0.023
+    },
+    {
+      "name": "Pumpkin",
+      "category": "Vegetables",
+      "perGram": 0.045
+    },
+    {
+      "name": "Purple Cabbage",
+      "category": "Vegetables",
+      "perGram": 0.1881
+    },
+    {
+      "name": "Red Bellpepper",
+      "category": "Vegetables",
+      "perGram": 0.1807
+    },
+    {
+      "name": "Red Bhavnagri",
+      "category": "Vegetables",
+      "perGram": 0.12
+    },
+    {
+      "name": "Red Cabbage",
+      "category": "Vegetables",
+      "perGram": 0.1407
+    },
+    {
+      "name": "Red Chilli",
+      "category": "Vegetables",
+      "perGram": 0.0875
+    },
+    {
+      "name": "Red Chilli Small",
+      "category": "Vegetables",
+      "perGram": 0.0957
+    },
+    {
+      "name": "Red Potato",
+      "category": "Vegetables",
+      "perGram": 0.03
+    },
+    {
+      "name": "Rocket /arugula Leaves",
+      "category": "Vegetables",
+      "perGram": 0.4626
+    },
+    {
+      "name": "Rocket /arugula Leaves 100gm",
+      "category": "Vegetables",
+      "perGram": 0.4627
+    },
+    {
+      "name": "Rocket /arugula Leaves 100gm (Premium)",
+      "category": "Vegetables",
+      "perGram": 1.1095
+    },
+    {
+      "name": "Romaine",
+      "category": "Vegetables",
+      "perGram": 0.2413
+    },
+    {
+      "name": "Romaine Lettuce",
+      "category": "Vegetables",
+      "perGram": 0.2375
+    },
+    {
+      "name": "Rosemary",
+      "category": "Vegetables",
+      "perGram": 0.6
+    },
+    {
+      "name": "Shimeji Mushroom",
+      "category": "Vegetables",
+      "perGram": 0.4815
+    },
+    {
+      "name": "Shimeji Mushroom 125",
+      "category": "Vegetables",
+      "perGram": 1.0867
+    },
+    {
+      "name": "Shimeji White",
+      "category": "Vegetables",
+      "perGram": 0.95
+    },
+    {
+      "name": "Small Onion",
+      "category": "Vegetables",
+      "perGram": 0.02
+    },
+    {
+      "name": "Spinach Palak",
+      "category": "Vegetables",
+      "perGram": 0.06
+    },
+    {
+      "name": "Spring Onion .",
+      "category": "Vegetables",
+      "perGram": 0.0753
+    },
+    {
+      "name": "Suva (Premium)",
+      "category": "Vegetables",
+      "perGram": 2.8
+    },
+    {
+      "name": "Suva",
+      "category": "Vegetables",
+      "perGram": 0.07
+    },
+    {
+      "name": "Sweet Corn Bhutta",
+      "category": "Vegetables",
+      "perGram": 0.085
+    },
+    {
+      "name": "Sweet Corn Frozen Pkt",
+      "category": "Vegetables",
+      "perGram": 0.09
+    },
+    {
+      "name": "Thyme",
+      "category": "Vegetables",
+      "perGram": 0.6
+    },
+    {
+      "name": "Tomato",
+      "category": "Vegetables",
+      "perGram": 0.0683
+    },
+    {
+      "name": "Tomato Big",
+      "category": "Vegetables",
+      "perGram": 0.0478
+    },
+    {
+      "name": "Whole Parsley",
+      "category": "Vegetables",
+      "perGram": 0.3
+    },
+    {
+      "name": "Yellow Bellpepper",
+      "category": "Vegetables",
+      "perGram": 0.1661
+    },
+    {
+      "name": "Zucchini Cut",
+      "category": "Vegetables",
+      "perGram": 0.15
+    }
+  ]
+}

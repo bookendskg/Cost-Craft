@@ -1,0 +1,920 @@
+{
+ "totals": {
+  "reconcile": 84,
+  "composite": 84,
+  "unmatched": 47
+ },
+ "reconcile": [
+  {
+   "ingredient": "00 flour (Biga)",
+   "match": "00 Flour Bag",
+   "perGram": 0.11904,
+   "matchType": "exact",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Cooked arborio rice",
+   "match": "Arborio Rice",
+   "perGram": 0.3675,
+   "matchType": "prep-variant",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Chilli Garlic Sauce - Thai red chilli",
+   "match": "Bird Eye Thai Red Chilli",
+   "perGram": 1.0634,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Chopped Black sesame seeds",
+   "match": "Black Sesame",
+   "perGram": 0.273,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Panko crumbs",
+   "match": "Bread Crumbs",
+   "perGram": 0.1213,
+   "matchType": "prep-variant",
+   "confidence": 0.8
+  },
+  {
+   "ingredient": "Teriyaki Sauce - Brown sugar",
+   "match": "Brown Sugar",
+   "perGram": 0.082,
+   "matchType": "exact",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Burrata (smashed)",
+   "match": "Burrata Cheese",
+   "perGram": 0.79033,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Mushrooms",
+   "match": "Button Mushrooms",
+   "perGram": 0.1478,
+   "matchType": "exact",
+   "confidence": 0.75
+  },
+  {
+   "ingredient": "Chili bean paste",
+   "match": "Chilli Bean Sauce",
+   "perGram": 0.425,
+   "matchType": "spelling",
+   "confidence": 0.8
+  },
+  {
+   "ingredient": "Chilli bean paste",
+   "match": "Chilli Bean Sauce",
+   "perGram": 0.425,
+   "matchType": "spelling",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Wok Hei Sauce - Chilli bean",
+   "match": "Chilli Bean Sauce",
+   "perGram": 0.425,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Chili flakes (or fresh red chili - 5 g, deseeded)",
+   "match": "Chilli Flakes",
+   "perGram": 0.34,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Wok Hei Sauce - Cinnamon powder",
+   "match": "Cinnamon Stick",
+   "perGram": 0.43364,
+   "matchType": "prep-variant",
+   "confidence": 0.75
+  },
+  {
+   "ingredient": "Teriyaki Sauce - Corn starch",
+   "match": "Corn Flour",
+   "perGram": 0.068,
+   "matchType": "spelling",
+   "confidence": 0.78
+  },
+  {
+   "ingredient": "Tomato passata",
+   "match": "Dolce Vita Peeled Tomatoes",
+   "perGram": 0.189,
+   "matchType": "prep-variant",
+   "confidence": 0.7
+  },
+  {
+   "ingredient": "Dry yeast (Biga)",
+   "match": "Dry Yeast",
+   "perGram": 0.378,
+   "matchType": "exact",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Edamame",
+   "match": "Edamame Kernal",
+   "perGram": 0.3987,
+   "matchType": "exact",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Blanched edamame",
+   "match": "Edamame Pods",
+   "perGram": 0.45,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Edamame (boiled)",
+   "match": "Edamame Pods",
+   "perGram": 0.45,
+   "matchType": "prep-variant",
+   "confidence": 0.7
+  },
+  {
+   "ingredient": "With pods edamame",
+   "match": "Edamame Pods",
+   "perGram": 0.45,
+   "matchType": "exact",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Silken tofu",
+   "match": "Extra Firm Silken Tofu",
+   "perGram": 0.675,
+   "matchType": "prep-variant",
+   "confidence": 0.82
+  },
+  {
+   "ingredient": "Boiled fettuccine",
+   "match": "Fettuccine Pasta",
+   "perGram": 0.098,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Chilli Garlic Sauce - Chopped garlic",
+   "match": "Garlic Chop",
+   "perGram": 0.023,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Gyoza wrappers",
+   "match": "Gyoza Skin",
+   "perGram": 0.651,
+   "matchType": "spelling",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Wrappers",
+   "match": "Gyoza Skin",
+   "perGram": 0.651,
+   "matchType": "prep-variant",
+   "confidence": 0.7
+  },
+  {
+   "ingredient": "Flat noodles",
+   "match": "How How Rice Noodles",
+   "perGram": 0.2349,
+   "matchType": "prep-variant",
+   "confidence": 0.5
+  },
+  {
+   "ingredient": "Rice noodles (soaked)",
+   "match": "How How Rice Noodles",
+   "perGram": 0.2349,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Mix iceberg romain slice",
+   "match": "Iceberg",
+   "perGram": 0.1791,
+   "matchType": "prep-variant",
+   "confidence": 0.6
+  },
+  {
+   "ingredient": "Ginger pickled",
+   "match": "Japanese Pickled Ginger",
+   "perGram": 0.3486,
+   "matchType": "exact",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Pickled ginger",
+   "match": "Japanese Pickled Ginger",
+   "perGram": 0.3486,
+   "matchType": "exact",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Wok Hei Sauce - Sugar",
+   "match": "Madhur Sugar",
+   "perGram": 0.05194,
+   "matchType": "exact",
+   "confidence": 0.7
+  },
+  {
+   "ingredient": "Plain flour",
+   "match": "Maida",
+   "perGram": 0.03762,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Maple",
+   "match": "Maple Syrup",
+   "perGram": 1.90909,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Micro greens",
+   "match": "Micro Green",
+   "perGram": 1.0435,
+   "matchType": "spelling",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Tamarind paste",
+   "match": "Mothers Tamarind Paste",
+   "perGram": 0.24,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Mozzarella",
+   "match": "Mozzarella Cheese",
+   "perGram": 0.59922,
+   "matchType": "exact",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Mozzarella (shredded)",
+   "match": "Mozzarella Cheese",
+   "perGram": 0.59922,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Mozzarella 20 g each",
+   "match": "Mozzarella Cheese",
+   "perGram": 0.59922,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Dried oregano",
+   "match": "Oregano",
+   "perGram": 0.21833,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Parmesan (grated)",
+   "match": "Parmesan Block",
+   "perGram": 1.35037,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Peanut (crushed)",
+   "match": "Peanuts Loose",
+   "perGram": 0.19243,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Peanuts (roasted)",
+   "match": "Peanuts Loose",
+   "perGram": 0.19243,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Roasted peanuts",
+   "match": "Peanuts Loose",
+   "perGram": 0.19243,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Toasted Peanuts",
+   "match": "Peanuts Loose",
+   "perGram": 0.19243,
+   "matchType": "prep-variant",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Fried garlic (garnish)",
+   "match": "Peeled Garlic.",
+   "perGram": 0.1823,
+   "matchType": "prep-variant",
+   "confidence": 0.7
+  },
+  {
+   "ingredient": "Picked red paprika",
+   "match": "Red Paprika Slices",
+   "perGram": 0.105,
+   "matchType": "prep-variant",
+   "confidence": 0.8
+  },
+  {
+   "ingredient": "Pickled red paprika sliced",
+   "match": "Red Paprika Slices",
+   "perGram": 0.105,
+   "matchType": "prep-variant",
+   "confidence": 0.8
+  },
+  {
+   "ingredient": "Teriyaki Sauce - Rice vinegar",
+   "match": "Rice Vinegar",
+   "perGram": 0.21135,
+   "matchType": "exact",
+   "confidence": 0.92
+  },
+  {
+   "ingredient": "Pinch of salt",
+   "match": "Salt",
+   "perGram": 0.0285,
+   "matchType": "exact",
+   "confidence": 0.97
+  },
+  {
+   "ingredient": "Salt (for salted version)",
+   "match": "Salt",
+   "perGram": 0.0285,
+   "matchType": "exact",
+   "confidence": 0.97
+  },
+  {
+   "ingredient": "Salt (pinch)",
+   "match": "Salt",
+   "perGram": 0.0285,
+   "matchType": "exact",
+   "confidence": 0.97
+  },
+  {
+   "ingredient": "Salt & pepper",
+   "match": "Salt",
+   "perGram": 0.0285,
+   "matchType": "prep-variant",
+   "confidence": 0.6
+  },
+  {
+   "ingredient": "Sesame oil (for brushing)",
+   "match": "Sesame Oil",
+   "perGram": 0.66,
+   "matchType": "exact",
+   "confidence": 0.97
+  },
+  {
+   "ingredient": "Shaoxing wine",
+   "match": "Shao Xing Cooking Wine Vinegar",
+   "perGram": 0.2086,
+   "matchType": "spelling",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Wok Hei Sauce - Shao hsing",
+   "match": "Shao Xing Cooking Wine Vinegar",
+   "perGram": 0.2086,
+   "matchType": "spelling",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "White miso paste",
+   "match": "Shiro Miso Paste",
+   "perGram": 0.488,
+   "matchType": "spelling",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Shiitake mushroom",
+   "match": "Shitake Mushroom",
+   "perGram": 1.155,
+   "matchType": "spelling",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Boiled soba noodles",
+   "match": "Soba Noodles",
+   "perGram": 0.48234,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Chilli Garlic Sauce - Soy sauce",
+   "match": "Soya Sauce",
+   "perGram": 0.26109,
+   "matchType": "exact",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Light soy",
+   "match": "Soya Sauce",
+   "perGram": 0.26109,
+   "matchType": "spelling",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Soy",
+   "match": "Soya Sauce",
+   "perGram": 0.26109,
+   "matchType": "spelling",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Soy sauce (optional)",
+   "match": "Soya Sauce",
+   "perGram": 0.26109,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Teriyaki Sauce - Soy sauce",
+   "match": "Soya Sauce",
+   "perGram": 0.26109,
+   "matchType": "exact",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Wok Hei Sauce - Soy sauce",
+   "match": "Soya Sauce",
+   "perGram": 0.26109,
+   "matchType": "exact",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Fried spring roll (garnish)",
+   "match": "Spring Roll Sheet",
+   "perGram": 0.79418,
+   "matchType": "prep-variant",
+   "confidence": 0.75
+  },
+  {
+   "ingredient": "Spring Roll Sheets",
+   "match": "Spring Roll Sheet",
+   "perGram": 0.79418,
+   "matchType": "spelling",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Chilli Garlic Sauce - Hot sauce",
+   "match": "Sriracha Hot Chilli Sauce",
+   "perGram": 0.5,
+   "matchType": "prep-variant",
+   "confidence": 0.75
+  },
+  {
+   "ingredient": "Sriracha",
+   "match": "Sriracha Hot Chilli Sauce",
+   "perGram": 0.5,
+   "matchType": "exact",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Chilli Garlic Sauce - Sunflower oil",
+   "match": "Sunflower Refined Oil",
+   "perGram": 0.18714,
+   "matchType": "exact",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Frying oil",
+   "match": "Sunflower Refined Oil",
+   "perGram": 0.18714,
+   "matchType": "prep-variant",
+   "confidence": 0.8
+  },
+  {
+   "ingredient": "Oil (for frying)",
+   "match": "Sunflower Refined Oil",
+   "perGram": 0.18714,
+   "matchType": "prep-variant",
+   "confidence": 0.7
+  },
+  {
+   "ingredient": "Cooked rice",
+   "match": "Tanifuji Rice",
+   "perGram": 0.20066,
+   "matchType": "prep-variant",
+   "confidence": 0.8
+  },
+  {
+   "ingredient": "Tempura flakes",
+   "match": "Tempura",
+   "perGram": 0.13478,
+   "matchType": "prep-variant",
+   "confidence": 0.62
+  },
+  {
+   "ingredient": "Tempura flour",
+   "match": "Tempura",
+   "perGram": 0.13478,
+   "matchType": "prep-variant",
+   "confidence": 0.8
+  },
+  {
+   "ingredient": "Jasmine rice",
+   "match": "Thaiji Gold Jasmine Rice",
+   "perGram": 0.21,
+   "matchType": "prep-variant",
+   "confidence": 0.88
+  },
+  {
+   "ingredient": "Jasmine steamed rice",
+   "match": "Thaiji Gold Jasmine Rice",
+   "perGram": 0.21,
+   "matchType": "prep-variant",
+   "confidence": 0.85
+  },
+  {
+   "ingredient": "Togarashi",
+   "match": "Togarashi Chilli Pepper",
+   "perGram": 1.26,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Ketchup",
+   "match": "Tomato Ketchup",
+   "perGram": 0.076,
+   "matchType": "spelling",
+   "confidence": 0.93
+  },
+  {
+   "ingredient": "Rice cake (16 pcs)",
+   "match": "Tteokbokki Rice Cake",
+   "perGram": 0.56,
+   "matchType": "exact",
+   "confidence": 0.95
+  },
+  {
+   "ingredient": "Oyster",
+   "match": "Veg Oyester Sauce",
+   "perGram": 0.25305,
+   "matchType": "prep-variant",
+   "confidence": 0.6
+  },
+  {
+   "ingredient": "Water chestnut",
+   "match": "Water Chestnuts",
+   "perGram": 0.25573,
+   "matchType": "exact",
+   "confidence": 0.9
+  },
+  {
+   "ingredient": "Black & white sesame",
+   "match": "White Sesame",
+   "perGram": 0.19,
+   "matchType": "prep-variant",
+   "confidence": 0.75
+  },
+  {
+   "ingredient": "Fried sesame",
+   "match": "White Sesame",
+   "perGram": 0.19,
+   "matchType": "prep-variant",
+   "confidence": 0.75
+  },
+  {
+   "ingredient": "Toasted white sesame seeds",
+   "match": "White Sesame",
+   "perGram": 0.19,
+   "matchType": "prep-variant",
+   "confidence": 0.9
+  }
+ ],
+ "composite": [
+  "Scallion oil",
+  "Béchamel",
+  "Gyoza dip",
+  "Drunken sauce",
+  "Ginger-garlic paste",
+  "Ginger paste",
+  "Caesar mayo",
+  "Roasted bell pepper paste",
+  "Cooked risotto rice mix",
+  "Arancini batter",
+  "Bread base",
+  "Ricotta filling 15 g each",
+  "Batter",
+  "Seasoning",
+  "Orange (creamy tomato) sauce",
+  "Garlic pomodoro sauce",
+  "Mix seasoning",
+  "Pumpkin seeds & pistachios (crushed & mixed)",
+  "Pesto dollop",
+  "Sticky toffee pudding",
+  "Caramel sauce",
+  "Kunafa base",
+  "Pistachio sponge",
+  "Pistachio mousse",
+  "White chocolate décor",
+  "Coffee sponge",
+  "Tuile décor",
+  "Iced tea (Tata Gold)",
+  "Tamarind syrup",
+  "Thai Spring Filling",
+  "Sichuan Sauce",
+  "Lotus root sauce",
+  "Kwispy Wonton filling",
+  "Chilli crisps",
+  "Tteokbokki sauce",
+  "Tofu batter",
+  "Coleslaw",
+  "Bao sauce base",
+  "Korean Mandu filling",
+  "Corn Rocks sauce",
+  "Sweet corn puree",
+  "Scallion Pancake",
+  "Sichuan soy glaze",
+  "Green garlic cream cheese",
+  "Scallion salad",
+  "Cold Spicy Sesame sauce",
+  "Green paste",
+  "Sesame mix",
+  "Chilli Garlic Sauce - Wok hei sauce",
+  "Teriyaki Sauce - Sesame seed",
+  "Yaki Soba Sauce - Black pepper",
+  "Yaki Soba Sauce - Crushed black pepper",
+  "Yaki Soba Sauce - Oyster sauce",
+  "Yaki Soba Sauce - Soy sauce",
+  "Yaki Soba Sauce - Sugar",
+  "Yaki Soba Sauce - Corn starch",
+  "Yaki Soba Sauce - Water",
+  "Yaki Soba Sauce - Hot sauce",
+  "Slurry",
+  "Oil + Water (for steaming)",
+  "Chilli besan paste",
+  "Chilli Oil Dumplings filling",
+  "Chilli Oil Dumplings paste",
+  "Saucy Momos",
+  "Forest Dumplings",
+  "Truffle Edamame Dumplings",
+  "Cheese & Chilli Dumplings",
+  "Chestnut Gyoza",
+  "Chili Crisp",
+  "Forest Dip",
+  "Red Momos Sauce",
+  "Dragon sauce",
+  "Chilly crisps and oil",
+  "Fried Tofu toss on soy",
+  "Sautéed spinach with soy & garlic",
+  "Salsa",
+  "Fried spring roll",
+  "Boiled hakka noodles",
+  "Hakka sauce",
+  "Pad Thai sauce",
+  "Veg stock",
+  "Dashi",
+  "Shoyu tare",
+  "Boiled noodles"
+ ],
+ "unmatched": [
+  {
+   "ingredient": "Nori",
+   "kind": "raw",
+   "note": "No nori/seaweed candidate in price list."
+  },
+  {
+   "ingredient": "Salt & black pepper",
+   "kind": "raw",
+   "note": "Combined seasoning; only Salt exists as candidate (no pepper)."
+  },
+  {
+   "ingredient": "Chestnut",
+   "kind": "raw",
+   "note": "No chestnut candidate; Water Chestnuts is a different item."
+  },
+  {
+   "ingredient": "Ramen noodles",
+   "kind": "raw",
+   "note": "No ramen noodle candidate (soba/rice noodles are different)."
+  },
+  {
+   "ingredient": "Granola (chopped)",
+   "kind": "raw",
+   "note": "No granola candidate in price list."
+  },
+  {
+   "ingredient": "Sourdough",
+   "kind": "raw",
+   "note": "No bread/sourdough candidate in price list."
+  },
+  {
+   "ingredient": "Pasta sheet 22 g x 2",
+   "kind": "raw",
+   "note": "Fresh/made pasta sheet; no plain pasta-sheet candidate (only specific dry pasta shapes and lasagna sheets are not here as a generic sheet)."
+  },
+  {
+   "ingredient": "Plain mayonnaise",
+   "kind": "raw",
+   "note": "Purchasable condiment but no mayonnaise candidate in price master."
+  },
+  {
+   "ingredient": "Bay leaf (remove before blending)",
+   "kind": "raw",
+   "note": "Raw spice/herb but no bay leaf candidate in master list."
+  },
+  {
+   "ingredient": "Boiled linguini",
+   "kind": "raw",
+   "note": "No linguini candidate; closest shapes (spaghetti/fettuccine) are different. Left unmatched."
+  },
+  {
+   "ingredient": "Peas",
+   "kind": "raw",
+   "note": "Purchasable vegetable but no peas candidate (only edamame/corn/beans present)."
+  },
+  {
+   "ingredient": "Soy chunks (textured)",
+   "kind": "raw",
+   "note": "Textured soy/TVP is purchasable but no matching candidate (Soya Plain Paneer is a different product)."
+  },
+  {
+   "ingredient": "Celery (diced)",
+   "kind": "raw",
+   "note": "Raw vegetable but no celery candidate in produce list."
+  },
+  {
+   "ingredient": "Nutmeg",
+   "kind": "raw",
+   "note": "Raw spice but no nutmeg candidate in master list."
+  },
+  {
+   "ingredient": "Lasagna sheets (oven-ready)",
+   "kind": "raw",
+   "note": "Purchasable dry pasta but no lasagna/pasta-sheet candidate exists."
+  },
+  {
+   "ingredient": "Conchiglioni",
+   "kind": "raw",
+   "note": "Shell pasta; no conchiglioni candidate and no close generic dry-pasta proxy specified. Left unmatched."
+  },
+  {
+   "ingredient": "1 ladle water",
+   "kind": "other",
+   "note": "Plain water; no purchasable candidate, effectively free/negligible."
+  },
+  {
+   "ingredient": "Cookies & cream ice cream",
+   "kind": "other",
+   "note": "Finished ice cream; could be purchased tub or in-house churn, but no candidate exists. Unclear."
+  },
+  {
+   "ingredient": "Kinley Soda",
+   "kind": "raw",
+   "note": "Purchasable packaged soda water; no matching candidate in master list."
+  },
+  {
+   "ingredient": "Gunsberg Ginger Beer",
+   "kind": "raw",
+   "note": "Purchasable packaged ginger beer; no matching candidate (item miscategorised as Vegetables)."
+  },
+  {
+   "ingredient": "Black Vinegar",
+   "kind": "raw",
+   "note": "Purchasable Chinese black (Chinkiang) vinegar; no genuine candidate (Rice/Synthetic vinegar are different products)."
+  },
+  {
+   "ingredient": "Bao",
+   "kind": "raw",
+   "note": "Bao bun is purchasable but no bao/bun candidate exists."
+  },
+  {
+   "ingredient": "Water chestnut flour",
+   "kind": "raw",
+   "note": "No water chestnut flour candidate; Water Chestnuts is the vegetable, not a flour."
+  },
+  {
+   "ingredient": "Chilli Crisp (for chilli version)",
+   "kind": "raw",
+   "note": "Packaged chilli crisp condiment; no matching candidate in list."
+  },
+  {
+   "ingredient": "Julienne cut nori sheet",
+   "kind": "raw",
+   "note": "Nori sheet is purchasable but no nori candidate exists in list."
+  },
+  {
+   "ingredient": "Water (Biga)",
+   "kind": "raw",
+   "note": "Plain water; no candidate exists"
+  },
+  {
+   "ingredient": "Cold water",
+   "kind": "raw",
+   "note": "Plain water; no candidate exists"
+  },
+  {
+   "ingredient": "Wok Hei Sauce - Black pepper",
+   "kind": "raw",
+   "note": "Black pepper; no plain black pepper candidate exists"
+  },
+  {
+   "ingredient": "Wok Hei Sauce - Water",
+   "kind": "raw",
+   "note": "Plain water; no candidate exists"
+  },
+  {
+   "ingredient": "Teriyaki Sauce - Water",
+   "kind": "raw",
+   "note": "Plain water; no candidate exists"
+  },
+  {
+   "ingredient": "Stock pwd",
+   "kind": "raw",
+   "note": "Stock powder; no genuine stock-powder candidate (Dried Kombu Dashi is a different product)."
+  },
+  {
+   "ingredient": "Boiled soy keema",
+   "kind": "raw",
+   "note": "Boiled soy mince; no soy granule/keema candidate. Soya Plain Paneer is a different soy product."
+  },
+  {
+   "ingredient": "Cumin powder",
+   "kind": "raw",
+   "note": "Spice; no cumin candidate in price list."
+  },
+  {
+   "ingredient": "Hing",
+   "kind": "raw",
+   "note": "Asafoetida; no hing candidate in price list."
+  },
+  {
+   "ingredient": "Pickled red Bhavnagri",
+   "kind": "raw",
+   "note": "Pickled red Bhavnagri chilli; base produce is Red Bhavnagri."
+  },
+  {
+   "ingredient": "Sichuan powder",
+   "kind": "raw",
+   "note": "Sichuan pepper spice; no Sichuan/Szechuan candidate exists."
+  },
+  {
+   "ingredient": "Fried glass noodles",
+   "kind": "raw",
+   "note": "Glass (mung bean) noodles; only rice/soba noodle candidates exist, no glass noodle."
+  },
+  {
+   "ingredient": "Broad Beans",
+   "kind": "raw",
+   "note": "Only broad bean candidate; chilli variant. Edamame/other are distinct."
+  },
+  {
+   "ingredient": "Nori half sheet",
+   "kind": "raw",
+   "note": "Nori seaweed sheet; no nori candidate exists (Kombu Dashi is different)."
+  },
+  {
+   "ingredient": "Nori sheet",
+   "kind": "raw",
+   "note": "Nori seaweed sheet; no nori candidate exists."
+  },
+  {
+   "ingredient": "Wasabi paste",
+   "kind": "raw",
+   "note": "Only wasabi candidate; powder vs paste form."
+  },
+  {
+   "ingredient": "Nori sheets",
+   "kind": "raw",
+   "note": "Nori seaweed sheets; no nori candidate exists."
+  },
+  {
+   "ingredient": "Unagi",
+   "kind": "raw",
+   "note": "Eel (or unagi sauce); no unagi/eel candidate exists."
+  },
+  {
+   "ingredient": "Pickled radish",
+   "kind": "raw",
+   "note": "Danmuji pickled radish; no radish candidate exists."
+  },
+  {
+   "ingredient": "Tempura flex",
+   "kind": "raw",
+   "note": "Tempura flakes/flour -> Tempura candidate."
+  },
+  {
+   "ingredient": "Mixed mushroom",
+   "kind": "raw",
+   "note": "Mixed mushrooms; most generic produce candidate is 'Button Mushrooms'."
+  },
+  {
+   "ingredient": "Maida noodles",
+   "kind": "raw",
+   "note": "Fresh wheat (maida) ramen noodle; no matching noodle candidate."
+  }
+ ]
+}
