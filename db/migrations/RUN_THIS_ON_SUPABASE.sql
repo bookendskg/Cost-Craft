@@ -154,6 +154,11 @@ alter table recipes enable row level security;
 alter table raw_materials enable row level security;
 alter table audit_logs enable row level security;
 
+-- Drop-then-create so re-running this bundle never hits "policy already exists".
+drop policy if exists viewer_recipe_access on recipes;
+drop policy if exists editor_ingredient_access on raw_materials;
+drop policy if exists admin_only_audit on audit_logs;
+
 -- Viewers see only approved recipes assigned to them.
 create policy viewer_recipe_access on recipes
   for select using (
@@ -216,6 +221,7 @@ create index if not exists ingredient_yields_ingredient_idx on public.ingredient
 
 alter table public.ingredient_yields enable row level security;
 -- Staff (admin/editor) manage yield; everyone authenticated may read.
+drop policy if exists "ingredient_yields_read" on public.ingredient_yields;
 create policy "ingredient_yields_read" on public.ingredient_yields for select using (true);
 -- 0006_wastage.sql
 -- Operational wastage tracking across outlets (§11–§14). Kept SEPARATE from the
@@ -264,6 +270,7 @@ create index if not exists wastage_outlet_date_idx on public.wastage_entries (ou
 create index if not exists wastage_brand_date_idx  on public.wastage_entries (brand, wastage_date);
 
 alter table public.wastage_entries enable row level security;
+drop policy if exists "wastage_read" on public.wastage_entries;
 create policy "wastage_read" on public.wastage_entries for select using (true);
 -- 0007_user_profiles.sql — user profiles for SUPABASE AUTH (Phase 1).
 --
