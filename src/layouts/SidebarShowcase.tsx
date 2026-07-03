@@ -59,7 +59,7 @@ export function SidebarShowcase({ className }: { className?: string }) {
   const quote = QUOTES[i % QUOTES.length];
 
   return (
-    <div className={cn("mx-3 mb-2 rounded-lg border border-white/40 bg-background/40 p-3 backdrop-blur-sm dark:border-white/10", className)}>
+    <div className={cn("mx-3 mb-2 rounded-lg border border-black/10 bg-white/85 p-3 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-black/55", className)}>
       <div key={`p-${i}`} className="quote-fade flex justify-center">
         <span className="inline-flex h-10 items-center justify-center rounded-md bg-white px-2 shadow-sm ring-1 ring-black/5">
           <img
@@ -75,7 +75,7 @@ export function SidebarShowcase({ className }: { className?: string }) {
           />
         </span>
       </div>
-      <p key={`q-${i}`} className="quote-fade mt-2 text-center text-xs italic leading-snug text-foreground/80">
+      <p key={`q-${i}`} className="quote-fade mt-2 text-center text-xs italic leading-snug text-neutral-700 dark:text-neutral-200">
         “{quote}”
       </p>
     </div>

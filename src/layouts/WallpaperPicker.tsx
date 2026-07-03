@@ -31,6 +31,19 @@ export function brandWallpaperKey(brand: string): string {
   return "bookends"; // "all" / Bookends / anything else
 }
 
+/** Full-saturation solid brand colour for the sidebar + whether it needs light
+ *  (white) text for contrast. Drives the solid brand-colour sidebar background. */
+export const BRAND_SOLID: Record<string, { bg: string; onDark: boolean } | undefined> = {
+  bookends: { bg: "#1b35a8", onDark: true }, // blue → white text
+  capiche: { bg: "#ed1c24", onDark: true }, // red → white text
+  aiko: { bg: "#f5c107", onDark: false }, // yellow → dark text
+};
+
+/** The solid brand fill for a wallpaper key, or undefined for the animated looks. */
+export function brandSolid(wp: string) {
+  return BRAND_SOLID[wp];
+}
+
 /** Picker options. "auto" follows the selected brand; "none" is plain. */
 export const SIDEBAR_WALLPAPERS: { key: string; label: string }[] = [
   { key: "auto", label: "Auto (brand)" },

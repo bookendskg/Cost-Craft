@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, type CSSProperties } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   ChefHat,
@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWordmark } from "@/features/dashboard/brandTheme";
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
-import { WallpaperPicker, BrandSidebarWallpaper, brandWallpaperKey } from "./WallpaperPicker";
+import { WallpaperPicker, BrandSidebarWallpaper, brandWallpaperKey, brandSolid } from "./WallpaperPicker";
 import { SidebarShowcase } from "./SidebarShowcase";
 import { useBrands } from "@/features/brands/hooks";
 import { useRoles } from "@/features/roles/hooks";
@@ -47,6 +47,17 @@ export function AppLayout() {
   const wallpaperPref = usePrefs((s) => s.sidebarWallpaper);
   // "auto" follows the selected brand; otherwise the chosen fixed look ("none" = off).
   const wallpaper = wallpaperPref === "auto" ? brandWallpaperKey(brand) : wallpaperPref;
+  // A brand key (bookends/capiche/aiko) → full solid brand colour + text contrast.
+  const solid = brandSolid(wallpaper);
+  const solidStyle: CSSProperties | undefined = solid
+    ? ({
+        "--foreground": solid.onDark ? "0 0% 100%" : "0 0% 12%",
+        "--muted-foreground": solid.onDark ? "0 0% 82%" : "0 0% 30%",
+        "--primary": solid.onDark ? "0 0% 100%" : "0 0% 12%",
+        "--accent": solid.onDark ? "0 0% 100%" : "0 0% 12%",
+        "--accent-foreground": solid.onDark ? "222 47% 11%" : "0 0% 100%",
+      } as CSSProperties)
+    : undefined;
   const location = useLocation();
   const isAdmin = user?.role === "admin";
   const { data: allUsers = [] } = useUsers();
@@ -79,19 +90,28 @@ export function AppLayout() {
   // shows the full sidebar (rail=false).
   const sidebar = (rail: boolean) => (
     <div className="relative flex h-full flex-col overflow-hidden">
-      {wallpaper !== "none" && (
+      {solid ? (
+        // Full-saturation solid brand colour (blue / red / yellow).
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 transition-colors duration-500"
+          style={{ backgroundColor: solid.bg }}
+        />
+      ) : wallpaper !== "none" ? (
         <>
           {/* Brand-driven live wallpaper — crossfades when the brand changes. */}
           <BrandSidebarWallpaper wp={wallpaper} className="pointer-events-none" />
           {/* Frosted scrim keeps nav text readable while the colours flow through. */}
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-white/55 backdrop-blur-xl dark:bg-black/45" />
         </>
-      )}
-      <div className="relative z-10 flex h-full flex-col">
+      ) : null}
+      {/* On a solid brand colour, override the sidebar's text tokens so nav stays
+          readable (white on blue/red, dark on yellow). */}
+      <div className={cn("relative z-10 flex h-full flex-col", solid && "text-foreground")} style={solidStyle}>
       <div
         className={cn(
           "flex h-14 items-center gap-2 border-b border-black/5 px-4",
-          dark ? "" : brandAccentText(brand),
+          solid ? "text-foreground" : dark ? "" : brandAccentText(brand),
           rail && "justify-center px-2",
         )}
       >
