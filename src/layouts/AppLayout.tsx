@@ -23,6 +23,7 @@ import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWord
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
 import { WallpaperPicker, BrandSidebarWallpaper, brandWallpaperKey } from "./WallpaperPicker";
+import { SidebarShowcase } from "./SidebarShowcase";
 import { useBrands } from "@/features/brands/hooks";
 import { useRoles } from "@/features/roles/hooks";
 import { primeBrandCache } from "@/lib/data/brandCache";
@@ -143,6 +144,7 @@ export function AppLayout() {
           </div>
         ))}
       </nav>
+      {!rail && <SidebarShowcase />}
       {!rail && (
         <div className="border-t border-black/5 p-3">
           <div className="mb-2 px-1">
