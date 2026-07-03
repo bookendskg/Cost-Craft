@@ -11,10 +11,10 @@ type Theme = { c1: string; c2: string; c3: string; c4: string };
 /** Four-colour palettes for the live wallpaper's drifting blobs. The three brand
  *  palettes (bookends/capiche/aiko) drive the auto, brand-following wallpaper. */
 export const WALLPAPER_THEMES: Record<string, Theme | undefined> = {
-  // Brand looks
-  bookends: { c1: "#3b82f6", c2: "#1b35a8", c3: "#60a5fa", c4: "#1e3a8a" }, // All / Bookends — blue
-  capiche: { c1: "#f43f5e", c2: "#ed1c24", c3: "#fb7185", c4: "#b91c1c" }, // Capiche — red
-  aiko: { c1: "#fbbf24", c2: "#f5c107", c3: "#fcd34d", c4: "#d97706" }, // Aiko — gold
+  // Brand looks — a monochrome of each brand's MAIN colour (shades/tints only).
+  bookends: { c1: "#3b5bd9", c2: "#1b35a8", c3: "#6d8bff", c4: "#12246e" }, // Bookends — blue (#1b35a8)
+  capiche: { c1: "#ff3b3b", c2: "#ed1c24", c3: "#ff7a7a", c4: "#a30f14" }, // Capiche — red (#ed1c24)
+  aiko: { c1: "#ffd21a", c2: "#f5c107", c3: "#ffe066", c4: "#c99a00" }, // Aiko — yellow (#f5c107)
   // Extra looks
   aurora: { c1: "#22d3ee", c2: "#3b82f6", c3: "#8b5cf6", c4: "#10b981" },
   ocean: { c1: "#38bdf8", c2: "#2563eb", c3: "#06b6d4", c4: "#0e7490" },
