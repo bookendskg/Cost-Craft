@@ -21,8 +21,6 @@ const ApprovalsPage = lazy(() => import("@/features/approvals/ApprovalsPage").th
 const ReportsPage = lazy(() => import("@/features/reports/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const UsersPage = lazy(() => import("@/features/users/UsersPage").then((m) => ({ default: m.UsersPage })));
 const AuditPage = lazy(() => import("@/features/audit/AuditPage").then((m) => ({ default: m.AuditPage })));
-const ExportHistoryPage = lazy(() => import("@/features/exports/ExportHistoryPage").then((m) => ({ default: m.ExportHistoryPage })));
-const AccessHistoryPage = lazy(() => import("@/features/share/AccessHistoryPage").then((m) => ({ default: m.AccessHistoryPage })));
 const SettingsPage = lazy(() => import("@/features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const SharedRecipePage = lazy(() => import("@/features/share/SharedRecipePage").then((m) => ({ default: m.SharedRecipePage })));
@@ -146,22 +144,8 @@ export const router = createBrowserRouter([
           </RequireRole>
         ),
       },
-      {
-        path: "exports",
-        element: (
-          <RequireRole roles={["admin"]} cap="audit.view">
-            <ExportHistoryPage />
-          </RequireRole>
-        ),
-      },
-      {
-        path: "access",
-        element: (
-          <RequireRole roles={["admin"]} cap="audit.view">
-            <AccessHistoryPage />
-          </RequireRole>
-        ),
-      },
+      // Export History + Access History now live as tabs inside Reports (/reports);
+      // their old standalone routes are gone (stale links fall through to /dashboard).
       // Roles & Permissions and Viewer Access now live as tabs inside User
       // Management (/users). Their old standalone routes are intentionally gone;
       // the catch-all below redirects any stale links to /dashboard.

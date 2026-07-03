@@ -10,8 +10,6 @@ import {
   ChefHat,
   Sprout,
   Trash2,
-  FileClock,
-  Link2,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/lib/data/types";
@@ -43,13 +41,13 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/yield", label: "Yield Management", icon: Sprout, group: "Catalog", roles: ["admin", "editor", "head_chef"], cap: "yield.manage" },
   { to: "/wastage", label: "Wastage Management", icon: Trash2, group: "Operations", roles: ["admin", "editor", "head_chef"], cap: "wastage.create" },
   { to: "/approvals", label: "Approvals", icon: CheckCircle2, group: "Operations", roles: ["admin"], cap: "recipe.approve" },
+  // Reports now hosts its own tabs: Reports + (Admin-only) Export History &
+  // Access History — so those two no longer have their own nav items.
   { to: "/reports", label: "Reports", icon: FileBarChart, group: "Operations", roles: ["admin", "editor", "head_chef"], cap: "report.excel" },
   // User Management now hosts Users + Viewer Access (all Admins) + a Super-Admin-only
   // Roles & Permissions tab, so Viewer Access and Roles no longer have their own items.
   { to: "/users", label: "User Management", icon: Users, group: "Admin", roles: ["admin"], cap: "user.manage" },
   { to: "/audit", label: "Price Changes", icon: ScrollText, group: "Admin", roles: ["admin"], cap: "audit.view" },
-  { to: "/exports", label: "Export History", icon: FileClock, group: "Admin", roles: ["admin"], cap: "audit.view" },
-  { to: "/access", label: "Access History", icon: Link2, group: "Admin", roles: ["admin"], cap: "audit.view" },
   { to: "/settings", label: "Settings", icon: Settings, group: "Admin", roles: ["admin"], cap: "settings.manage" },
 ];
 

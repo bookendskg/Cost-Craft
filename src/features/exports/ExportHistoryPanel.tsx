@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { FileText } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
@@ -22,8 +21,9 @@ const fmtIST = (iso: string, part: "date" | "time") =>
       : { hour: "2-digit", minute: "2-digit" }),
   });
 
-/** §10 Export History — every successful export (who / what / brand / format / when, IST). */
-export function ExportHistoryPage() {
+/** §10 Export History — every successful export (who / what / brand / format / when,
+ *  IST). Rendered inside the Reports "Export History" tab (no PageHeader). */
+export function ExportHistoryPanel() {
   const { data: rows = [], isLoading, isError } = useExportHistory();
   const { data: brands = [] } = useBrands();
   const { data: roles = [] } = useRoles();
@@ -60,7 +60,9 @@ export function ExportHistoryPage() {
 
   return (
     <>
-      <PageHeader title="Export History" description="Every PDF / Excel / CSV export — who exported it, what, and when (IST)." />
+      <p className="mb-4 text-sm text-muted-foreground">
+        Every PDF / Excel / CSV export — who exported it, what, and when (IST).
+      </p>
 
       <Card className="mb-4 p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

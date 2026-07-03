@@ -39,6 +39,10 @@ import {
 } from "./hooks";
 import { generateExcelReport } from "./excel";
 import { generateReportPdf, type ReportRow } from "./pdf";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { can } from "@/lib/auth/permissions";
+import { ExportHistoryPanel } from "@/features/exports/ExportHistoryPanel";
+import { AccessHistoryPanel } from "@/features/share/AccessHistoryPanel";
 
 export function ReportsPage() {
   const { data: recipes = [], isLoading: recipesLoading, isError: recipesError } = useRecipes();
@@ -61,6 +65,8 @@ export function ReportsPage() {
   const [isPdfExporting, setIsPdfExporting] = useState(false);
   const user = useSession((s) => s.user);
   const recordExport = useRecordExport();
+  // Export History + Access History tabs are audit-only (their old routes were admin-gated).
+  const canAudit = user ? can(user.role, "audit.view") : false;
 
   const filtered = useMemo(
     () =>
@@ -193,9 +199,18 @@ export function ReportsPage() {
     <>
       <PageHeader
         title="Reports"
-        description="Filter recipes and export a multi-sheet Excel workbook"
-        actions={
-          <div className="flex items-center gap-2">
+        description="Recipe reports, plus export and share-link access history."
+      />
+
+      <Tabs defaultValue="reports">
+        <TabsList>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+          {canAudit && <TabsTrigger value="exports">Export History</TabsTrigger>}
+          {canAudit && <TabsTrigger value="access">Access History</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="reports">
+          <div className="mb-4 flex flex-wrap justify-end gap-2">
             <Button variant="outline" onClick={exportPdf} disabled={filtered.length === 0 || isPdfExporting}>
               {isPdfExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
               {isPdfExporting ? "Preparing…" : "Export PDF"}
@@ -205,8 +220,6 @@ export function ReportsPage() {
               {isExporting ? "Preparing…" : "Export Excel"}
             </Button>
           </div>
-        }
-      />
 
       <Card className="mb-4 p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -312,6 +325,19 @@ export function ReportsPage() {
           </Table>
         </Card>
       )}
+        </TabsContent>
+
+        {canAudit && (
+          <TabsContent value="exports">
+            <ExportHistoryPanel />
+          </TabsContent>
+        )}
+        {canAudit && (
+          <TabsContent value="access">
+            <AccessHistoryPanel />
+          </TabsContent>
+        )}
+      </Tabs>
     </>
   );
 }

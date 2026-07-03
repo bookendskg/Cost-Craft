@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Link2 } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,8 +23,9 @@ const ACCESS_LABELS: Record<AccessType, string> = {
 };
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" }) : "—");
 
-/** §17 Access History — all shared recipe links (Given By / Given To / status), with revoke. */
-export function AccessHistoryPage() {
+/** §17 Access History — all shared recipe links (Given By / Given To / status), with
+ *  revoke. Rendered inside the Reports "Access History" tab (no PageHeader). */
+export function AccessHistoryPanel() {
   const { data: links = [], isLoading, isError } = useAccessLinks();
   const { data: recipes = [] } = useRecipes();
   const { data: brands = [] } = useBrands();
@@ -55,7 +55,9 @@ export function AccessHistoryPage() {
 
   return (
     <>
-      <PageHeader title="Access History" description="Every temporary recipe share link — who granted access, to whom, and its status." />
+      <p className="mb-4 text-sm text-muted-foreground">
+        Every temporary recipe share link — who granted access, to whom, and its status.
+      </p>
 
       <Card className="mb-4 p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
