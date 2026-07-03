@@ -24,7 +24,7 @@ import { BrandFilter } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
 import { WallpaperPicker, BrandSidebarWallpaper, brandWallpaperKey, brandSolid } from "./WallpaperPicker";
 import { SidebarShowcase } from "./SidebarShowcase";
-import { SidebarLogoField } from "./SidebarLogoField";
+import { SidebarCanvas } from "./SidebarCanvas";
 import { useBrands } from "@/features/brands/hooks";
 import { useRoles } from "@/features/roles/hooks";
 import { primeBrandCache } from "@/lib/data/brandCache";
@@ -99,8 +99,8 @@ export function AppLayout() {
             className="pointer-events-none absolute inset-0 transition-colors duration-500"
             style={{ backgroundColor: solid.bg }}
           />
-          {/* Drifting brand-logo marks — the animated "live" layer. */}
-          <SidebarLogoField brand={brand} />
+          {/* Live bokeh particles drifting over the brand colour. */}
+          <SidebarCanvas brand={brand} />
         </>
       ) : wallpaper !== "none" ? (
         <>
