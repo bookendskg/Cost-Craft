@@ -40,6 +40,26 @@
   animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* --- Animated ("live") sidebar wallpapers -----------------------------------
+   A slowly drifting multi-stop gradient. A frosted scrim is layered on top in
+   the sidebar so the nav text stays readable. The global prefers-reduced-motion
+   rule neutralises the animation to a still gradient. */
+@keyframes wp-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+.wp {
+  background-size: 220% 220%;
+  animation: wp-shift 16s ease-in-out infinite;
+}
+.wp-aurora   { background-image: linear-gradient(135deg, #1b35a8, #6d28d9, #0ea5e9, #10b981); }
+.wp-ocean    { background-image: linear-gradient(135deg, #0ea5e9, #2563eb, #0891b2, #155e75); }
+.wp-sunset   { background-image: linear-gradient(135deg, #f59e0b, #ef4444, #db2777, #7c3aed); }
+.wp-bookends { background-image: linear-gradient(135deg, #1b35a8, #3b82f6, #1e3a8a, #2563eb); }
+.wp-forest   { background-image: linear-gradient(135deg, #059669, #16a34a, #0d9488, #065f46); }
+.wp-grape    { background-image: linear-gradient(135deg, #7c3aed, #a21caf, #6d28d9, #4c1d95); }
+.wp-ember    { background-image: linear-gradient(135deg, #f97316, #ef4444, #b91c1c, #7c2d12); }
+
 @layer base {
   :root {
     --background: 0 0% 100%;

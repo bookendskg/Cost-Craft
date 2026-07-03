@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWordmark } from "@/features/dashboard/brandTheme";
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
+import { WallpaperPicker, wallpaperClass } from "./WallpaperPicker";
 import { useBrands } from "@/features/brands/hooks";
 import { useRoles } from "@/features/roles/hooks";
 import { primeBrandCache } from "@/lib/data/brandCache";
@@ -42,6 +43,7 @@ export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const collapsed = usePrefs((s) => s.sidebarCollapsed);
   const toggleSidebar = usePrefs((s) => s.toggleSidebar);
+  const wpClass = wallpaperClass(usePrefs((s) => s.sidebarWallpaper));
   const location = useLocation();
   const isAdmin = user?.role === "admin";
   const { data: allUsers = [] } = useUsers();
@@ -73,7 +75,15 @@ export function AppLayout() {
   // `rail` collapses the desktop sidebar to icons only. The mobile drawer always
   // shows the full sidebar (rail=false).
   const sidebar = (rail: boolean) => (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col overflow-hidden">
+      {wpClass && (
+        <>
+          <div aria-hidden className={cn("pointer-events-none absolute inset-0", wpClass)} />
+          {/* Frosted scrim keeps nav text readable over the live gradient. */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-white/[0.72] backdrop-blur-md dark:bg-black/55" />
+        </>
+      )}
+      <div className="relative z-10 flex h-full flex-col">
       <div
         className={cn(
           "flex h-14 items-center gap-2 border-b border-black/5 px-4",
@@ -142,6 +152,7 @@ export function AppLayout() {
           </Button>
         </div>
       )}
+      </div>
     </div>
   );
 
@@ -232,6 +243,7 @@ export function AppLayout() {
           <div className="mr-1 hidden max-w-[min(46vw,560px)] overflow-x-auto sm:block">
             <BrandFilter value={brand} onChange={setBrand} />
           </div>
+          <WallpaperPicker />
           <Button variant="ghost" size="icon" onClick={toggle} title="Toggle light/dark" aria-label="Toggle light/dark">
             {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
