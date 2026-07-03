@@ -169,7 +169,7 @@ export function AppLayout() {
           </div>
         ))}
       </nav>
-      {!rail && <SidebarShowcase />}
+      {!rail && <SidebarShowcase brand={brand} />}
       {!rail && (
         <div className="border-t border-black/5 p-3">
           <div className="mb-2 px-1">

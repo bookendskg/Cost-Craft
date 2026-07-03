@@ -1,46 +1,65 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useReducedMotion } from "@/lib/useReducedMotion";
+import { brandWallpaperKey } from "./WallpaperPicker";
 
-// Every brand picture in /public/brands. Shown on a white chip so the mixed
-// backgrounds/aspect ratios sit consistently. Decorative only (aria-hidden).
-const PICTURES = [
-  "/brands/bookends.png",
-  "/brands/capiche.png",
-  "/brands/aiko.png",
-  "/brands/capiche-icon.png",
-  "/brands/aiko-icon.png",
-];
-
-// Truthful brand taglines + shared kitchen/costing lines. No fabricated stats.
-const QUOTES = [
-  "We believe in unreasonable hospitality.",
-  "It's always pizza time.",
-  "Asian Inspired Komfort.",
-  "Consistency is the secret ingredient.",
-  "Cost every gram — waste nothing.",
-  "Great food starts with great numbers.",
-  "Standardize once, serve perfectly always.",
-  "Precision in the kitchen, profit on the plate.",
-];
+// Per-brand pictures + quotes. Capiche shows Capiche, Aiko shows Aiko, All/Bookends
+// shows Bookends. Truthful brand taglines + on-brand lines — no fabricated stats.
+const CONTENT: Record<string, { pics: string[]; quotes: string[] }> = {
+  bookends: {
+    pics: ["/brands/bookends.png"],
+    quotes: [
+      "We believe in unreasonable hospitality.",
+      "One platform. Every brand. Total control.",
+      "Great hospitality is built on great detail.",
+      "Consistency across every outlet.",
+      "Precision from prep to plate.",
+    ],
+  },
+  capiche: {
+    pics: ["/brands/capiche.png", "/brands/capiche-icon.png"],
+    quotes: [
+      "It's always pizza time.",
+      "Naples in every bite.",
+      "Dough, fire, and a little magic.",
+      "Real ingredients, real Italian.",
+      "Every pizza, perfectly costed.",
+    ],
+  },
+  aiko: {
+    pics: ["/brands/aiko.png", "/brands/aiko-icon.png"],
+    quotes: [
+      "Asian Inspired Komfort.",
+      "Comfort, the Asian way.",
+      "Balance in every bowl.",
+      "Fresh, fragrant, and precise.",
+      "Where flavour meets consistency.",
+    ],
+  },
+};
 
 const ROTATE_MS = 5000;
 
 /**
- * A live overlay band for the sidebar: rotates through all brand pictures and
- * quotes with a soft crossfade, sitting over the brand-coloured live wallpaper.
- * Pauses when the tab is hidden and honours reduced-motion (shows a static slide).
+ * A live overlay band for the sidebar showing the SELECTED brand's logo + a
+ * rotating brand quote, soft-crossfading every 5s over the brand-coloured
+ * background. Pauses when the tab is hidden, honours reduced-motion (static
+ * slide), resets when the brand changes.
  */
-export function SidebarShowcase({ className }: { className?: string }) {
+export function SidebarShowcase({ brand, className }: { brand: string; className?: string }) {
   const reduced = useReducedMotion();
+  const key = brandWallpaperKey(brand);
+  const content = CONTENT[key] ?? CONTENT.bookends;
   const [i, setI] = useState(0);
 
+  // Restart the rotation from the brand's first slide when the brand changes.
+  useEffect(() => setI(0), [key]);
+
   useEffect(() => {
-    if (reduced) return; // static slide when reduced motion is on
+    if (reduced) return;
     let timer: ReturnType<typeof setInterval> | null = null;
     const start = () => {
-      if (timer) return;
-      timer = setInterval(() => setI((x) => x + 1), ROTATE_MS);
+      if (!timer) timer = setInterval(() => setI((x) => x + 1), ROTATE_MS);
     };
     const stop = () => {
       if (timer) clearInterval(timer);
@@ -53,29 +72,29 @@ export function SidebarShowcase({ className }: { className?: string }) {
       stop();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [reduced]);
+  }, [reduced, key]);
 
-  const pic = PICTURES[i % PICTURES.length];
-  const quote = QUOTES[i % QUOTES.length];
+  const pic = content.pics[i % content.pics.length];
+  const quote = content.quotes[i % content.quotes.length];
 
   return (
-    <div className={cn("mx-3 mb-2 rounded-lg border border-black/10 bg-white/85 p-3 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-black/55", className)}>
+    <div className={cn("mx-2 mb-2 rounded-xl border border-black/10 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-black/55", className)}>
       <div key={`p-${i}`} className="quote-fade flex justify-center">
-        <span className="inline-flex h-10 items-center justify-center rounded-md bg-white px-2 shadow-sm ring-1 ring-black/5">
+        <span className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-3 shadow-sm ring-1 ring-black/5">
           <img
             src={pic}
             alt=""
             aria-hidden
             loading="lazy"
             decoding="async"
-            className="h-7 w-auto max-w-[130px] object-contain"
+            className="h-9 w-auto max-w-[150px] object-contain"
             onError={(e) => {
               e.currentTarget.style.visibility = "hidden";
             }}
           />
         </span>
       </div>
-      <p key={`q-${i}`} className="quote-fade mt-2 text-center text-xs italic leading-snug text-neutral-700 dark:text-neutral-200">
+      <p key={`q-${i}`} className="quote-fade mt-3 text-center text-sm italic leading-snug text-neutral-700 dark:text-neutral-200">
         “{quote}”
       </p>
     </div>
