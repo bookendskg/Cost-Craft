@@ -1,7 +1,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  ChefHat,
   Loader2,
   LogOut,
   Menu,
@@ -12,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Logo, BrandMark } from "@/components/brand/Logo";
 import { useSession } from "@/lib/auth/session";
 import { useTheme } from "@/lib/theme";
 import { usePrefs } from "@/lib/prefs";
@@ -76,13 +76,11 @@ export function AppLayout() {
     <div className="flex h-full flex-col">
       <div
         className={cn(
-          "flex h-14 items-center gap-2 border-b border-black/5 px-4",
-          dark ? "" : brandAccentText(brand),
+          "flex h-14 items-center border-b border-black/5 px-4",
           rail && "justify-center px-2",
         )}
       >
-        <ChefHat className="h-6 w-6 shrink-0" />
-        {!rail && <span className="text-sm font-semibold leading-tight">Recipe Costing</span>}
+        {rail ? <BrandMark size="sm" /> : <Logo size="sm" />}
       </div>
       <nav className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
         {groups.map(({ group, items }) => (
