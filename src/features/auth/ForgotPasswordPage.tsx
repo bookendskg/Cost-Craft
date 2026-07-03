@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, ChefHat, Loader2, MailCheck } from "lucide-react";
+import { ChefHat, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/authError";
 
 export function ForgotPasswordPage() {
-  const [sent, setSent] = useState(false);
+  const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -25,19 +25,25 @@ export function ForgotPasswordPage() {
 
   const onSubmit = async (values: ForgotPasswordValues) => {
     setServerError(null);
+    const email = values.email.trim().toLowerCase();
     if (!isSupabaseConfigured || !supabase) {
       setServerError("Password reset is not configured. Contact your admin.");
       return;
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
+    // Sends the recovery email. With the "Reset Password" template exposing
+    // {{ .Token }}, the email contains a 6-digit OTP the user enters on the next
+    // screen (redirectTo keeps the click-through link working as a fallback).
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
+    // Do not reveal whether the account exists — proceed to the code screen either
+    // way, unless the request itself failed (config/network), which we surface.
     if (error) {
       console.error("Password reset failed:", error);
       setServerError(authErrorMessage(error));
       return;
     }
-    setSent(true);
+    navigate("/reset-password", { state: { email }, replace: true });
   };
 
   return (
@@ -45,41 +51,29 @@ export function ForgotPasswordPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
-            {sent ? <MailCheck className="h-7 w-7 text-accent" /> : <ChefHat className="h-7 w-7 text-accent" />}
+            <ChefHat className="h-7 w-7 text-accent" />
           </div>
-          <CardTitle>{sent ? "Check your email" : "Reset your password"}</CardTitle>
-          <CardDescription>
-            {sent
-              ? "If an account exists for that address, we've sent a reset link."
-              : "Enter your email and we'll send you a reset link."}
-          </CardDescription>
+          <CardTitle>Reset your password</CardTitle>
+          <CardDescription>Enter your email and we'll send you a verification code.</CardDescription>
         </CardHeader>
         <CardContent>
-          {sent ? (
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/login">
-                <ArrowLeft className="h-4 w-4" /> Back to sign in
-              </Link>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" autoComplete="username" {...register("email")} />
+              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+            </div>
+            {serverError && (
+              <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{serverError}</div>
+            )}
+            <Button type="submit" variant="accent" className="w-full" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              Send code
             </Button>
-          ) : (
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" autoComplete="username" {...register("email")} />
-                {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-              </div>
-              {serverError && (
-                <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{serverError}</div>
-              )}
-              <Button type="submit" variant="accent" className="w-full" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                Send reset link
-              </Button>
-              <Link to="/login" className="block text-center text-xs text-muted-foreground hover:underline">
-                Back to sign in
-              </Link>
-            </form>
-          )}
+            <Link to="/login" className="block text-center text-xs text-muted-foreground hover:underline">
+              Back to sign in
+            </Link>
+          </form>
         </CardContent>
       </Card>
     </div>

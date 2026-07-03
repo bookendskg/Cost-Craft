@@ -92,7 +92,27 @@ export const supabaseUsersRepo = {
     const { data, error } = await client().functions.invoke("delete-user", {
       body: { userId: id },
     });
-    if (error) fail("Delete user", error.message);
+    if (error) {
+      let msg = error.message || "Delete user failed";
+      // A FunctionsHttpError (e.g. the 401/403 auth guards) carries the Response;
+      // read its JSON body so the user sees the real reason, not a generic status.
+      const ctx = (error as { context?: Response }).context;
+      if (ctx && typeof ctx.json === "function") {
+        try {
+          const body = (await ctx.json()) as { error?: string };
+          if (body?.error) msg = body.error;
+        } catch {
+          // body wasn't JSON — keep the original message
+        }
+      }
+      // Most common cause: the Edge Function hasn't been deployed yet.
+      if (/failed to send a request|function not found|not found|failed to fetch/i.test(msg)) {
+        msg =
+          "User deletion isn't available yet — the delete-user Edge Function must be deployed " +
+          "(run: supabase functions deploy delete-user).";
+      }
+      fail("Delete user", msg);
+    }
     const res = data as { ok?: boolean; error?: string } | null;
     if (!res?.ok) fail("Delete user", res?.error || "Delete user failed");
   },
