@@ -10,6 +10,15 @@ import { generateRecipePdf } from "@/features/reports/pdf";
 import { toast } from "@/components/ui/use-toast";
 import { useResolveShareLink } from "@/features/exports/accessHooks";
 
+// Per-brand look for the public shared page: full-bleed brand-colour background
+// + the brand's official logo. `accent` is used for the bar/chip (white text
+// reads on all three). Falls back to Bookends for any other/dynamic brand.
+const SHARE_BRANDS: Record<string, { name: string; logo: string; accent: string; grad: string }> = {
+  capiche: { name: "Capiche", logo: "/brands/capiche.png", accent: "#ed1c24", grad: "linear-gradient(160deg, #ed1c24 0%, #9e0f16 100%)" },
+  aiko: { name: "Aiko", logo: "/brands/aiko.png", accent: "#b8860b", grad: "linear-gradient(160deg, #d99e06 0%, #a06f00 100%)" },
+  bookends: { name: "Bookends", logo: "/brands/bookends.png", accent: "#1b35a8", grad: "linear-gradient(160deg, #1b35a8 0%, #0f1f5e 100%)" },
+};
+
 // A shared link never exposes financial data (§19).
 const NO_FINANCIALS: ViewVisibility = {
   ingredients: true,
@@ -47,20 +56,41 @@ export function SharedRecipePage() {
 
   const recipe = data.recipe;
   const ingredients = data.ingredients ?? [];
-  const brandLabel = data.brand || recipe.brand;
+  const brandKey = String(data.brand || recipe.brand || "").toLowerCase();
+  const bc = SHARE_BRANDS[brandKey] ?? SHARE_BRANDS.bookends;
   const canDownload = data.access_type === "DOWNLOAD_PDF" || data.access_type === "VIEW_AND_DOWNLOAD";
   const method = (recipe.method ?? []).filter((s) => s.trim());
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
+    <div className="min-h-screen py-8 sm:py-10" style={{ background: bc.grad }}>
       <div className="mx-auto max-w-3xl px-4">
-        <Card className="p-6 sm:p-8">
+        {/* Branded header on the brand-colour background */}
+        <div className="mb-5 flex flex-col items-center gap-2 text-center">
+          <span className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 shadow-lg ring-1 ring-black/5">
+            <img
+              src={bc.logo}
+              alt={bc.name}
+              className="h-11 w-auto max-w-[200px] object-contain"
+              onError={(e) => (e.currentTarget.style.display = "none")}
+            />
+          </span>
+          <p className="text-sm font-semibold text-white/95 drop-shadow-sm">{bc.name}</p>
+        </div>
+
+        <Card className="overflow-hidden p-0 shadow-2xl">
+          <div className="h-1.5 w-full" style={{ backgroundColor: bc.accent }} />
+          <div className="p-6 sm:p-8">
           <div className="flex items-start justify-between gap-3 border-b pb-4">
             <div>
               <p className="text-sm font-bold">CostCraft</p>
               <p className="text-xs text-muted-foreground">Bookends Hospitality</p>
             </div>
-            <span className="rounded-md bg-slate-900 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">{brandLabel}</span>
+            <span
+              className="rounded-md px-3 py-1 text-xs font-bold uppercase tracking-wide text-white"
+              style={{ backgroundColor: bc.accent }}
+            >
+              {bc.name}
+            </span>
           </div>
 
           <div className="mt-4">
@@ -141,10 +171,12 @@ export function SharedRecipePage() {
             </div>
           )}
 
-          <p className="mt-6 text-center text-[11px] text-muted-foreground">
-            Confidential · Financial data hidden · Shared via CostCraft · Bookends Hospitality
-          </p>
+          </div>
         </Card>
+
+        <p className="mt-5 text-center text-[11px] text-white/85 drop-shadow-sm">
+          Confidential · Financial data hidden · Shared via CostCraft · Bookends Hospitality
+        </p>
       </div>
     </div>
   );
