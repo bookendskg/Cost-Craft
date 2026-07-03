@@ -40,44 +40,6 @@
   animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* --- Live sidebar wallpaper -------------------------------------------------
-   Four blurred colour blobs drift and morph on independent loops, so the
-   background flows continuously like a slow video. A frosted scrim is layered
-   over it in the sidebar so the nav text stays readable. The global
-   prefers-reduced-motion rule freezes it to a still composition. */
-.live-wp { position: absolute; inset: 0; overflow: hidden; }
-.lw-blob {
-  position: absolute;
-  width: 75%;
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
-  filter: blur(28px);
-  opacity: 0.9;
-  will-change: transform;
-}
-.lw-b1 { top: -14%; left: -14%; animation: lw-drift1 16s ease-in-out infinite; }
-.lw-b2 { top: 16%; right: -18%; animation: lw-drift2 20s ease-in-out infinite; }
-.lw-b3 { bottom: -16%; left: 6%; animation: lw-drift3 23s ease-in-out infinite; }
-.lw-b4 { bottom: 6%; right: -8%; animation: lw-drift4 18s ease-in-out infinite; }
-@keyframes lw-drift1 { 0%, 100% { transform: translate(0, 0) scale(1); }   50% { transform: translate(48%, 38%) scale(1.35); } }
-@keyframes lw-drift2 { 0%, 100% { transform: translate(0, 0) scale(1.1); } 50% { transform: translate(-42%, 30%) scale(0.85); } }
-@keyframes lw-drift3 { 0%, 100% { transform: translate(0, 0) scale(1); }   50% { transform: translate(32%, -34%) scale(1.3); } }
-@keyframes lw-drift4 { 0%, 100% { transform: translate(0, 0) scale(0.95); } 50% { transform: translate(-26%, -24%) scale(1.2); } }
-
-/* Crossfade a new wallpaper in over the old one (used when the brand changes). */
-@keyframes wp-fade { from { opacity: 0; } to { opacity: 1; } }
-.wp-fade-in { animation: wp-fade 0.5s ease both; }
-
-/* Rotating sidebar showcase (brand pictures + quotes) — soft fade + rise. */
-@keyframes quote-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-.quote-fade { animation: quote-in 0.6s ease both; }
-
-/* Floating brand-logo marks over the solid brand colour (the "live" wallpaper). */
-.logo-mark { position: absolute; will-change: transform; }
-@keyframes logo-float-a { 0%, 100% { transform: translate(0, 0) rotate(0deg); }        50% { transform: translate(14px, -20px) rotate(6deg); } }
-@keyframes logo-float-b { 0%, 100% { transform: translate(0, 0) rotate(0deg); }        50% { transform: translate(-16px, -12px) rotate(-8deg); } }
-@keyframes logo-float-c { 0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); } 50% { transform: translate(10px, 16px) rotate(5deg) scale(1.1); } }
-
 @layer base {
   :root {
     --background: 0 0% 100%;

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState, type CSSProperties } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   ChefHat,
@@ -22,9 +22,6 @@ import { Button } from "@/components/ui/button";
 import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWordmark } from "@/features/dashboard/brandTheme";
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
-import { WallpaperPicker, BrandSidebarWallpaper, brandWallpaperKey, brandSolid } from "./WallpaperPicker";
-import { SidebarShowcase } from "./SidebarShowcase";
-import { SidebarCanvas } from "./SidebarCanvas";
 import { useBrands } from "@/features/brands/hooks";
 import { useRoles } from "@/features/roles/hooks";
 import { primeBrandCache } from "@/lib/data/brandCache";
@@ -45,20 +42,6 @@ export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const collapsed = usePrefs((s) => s.sidebarCollapsed);
   const toggleSidebar = usePrefs((s) => s.toggleSidebar);
-  const wallpaperPref = usePrefs((s) => s.sidebarWallpaper);
-  // "auto" follows the selected brand; otherwise the chosen fixed look ("none" = off).
-  const wallpaper = wallpaperPref === "auto" ? brandWallpaperKey(brand) : wallpaperPref;
-  // A brand key (bookends/capiche/aiko) → full solid brand colour + text contrast.
-  const solid = brandSolid(wallpaper);
-  const solidStyle: CSSProperties | undefined = solid
-    ? ({
-        "--foreground": solid.onDark ? "0 0% 100%" : "0 0% 12%",
-        "--muted-foreground": solid.onDark ? "0 0% 82%" : "0 0% 30%",
-        "--primary": solid.onDark ? "0 0% 100%" : "0 0% 12%",
-        "--accent": solid.onDark ? "0 0% 100%" : "0 0% 12%",
-        "--accent-foreground": solid.onDark ? "222 47% 11%" : "0 0% 100%",
-      } as CSSProperties)
-    : undefined;
   const location = useLocation();
   const isAdmin = user?.role === "admin";
   const { data: allUsers = [] } = useUsers();
@@ -90,33 +73,11 @@ export function AppLayout() {
   // `rail` collapses the desktop sidebar to icons only. The mobile drawer always
   // shows the full sidebar (rail=false).
   const sidebar = (rail: boolean) => (
-    <div className="relative flex h-full flex-col overflow-hidden">
-      {solid ? (
-        <>
-          {/* Full-saturation solid brand colour (blue / red / yellow). */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 transition-colors duration-500"
-            style={{ backgroundColor: solid.bg }}
-          />
-          {/* Live bokeh particles drifting over the brand colour. */}
-          <SidebarCanvas brand={brand} />
-        </>
-      ) : wallpaper !== "none" ? (
-        <>
-          {/* Brand-driven live wallpaper — crossfades when the brand changes. */}
-          <BrandSidebarWallpaper wp={wallpaper} className="pointer-events-none" />
-          {/* Frosted scrim keeps nav text readable while the colours flow through. */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-white/55 backdrop-blur-xl dark:bg-black/45" />
-        </>
-      ) : null}
-      {/* On a solid brand colour, override the sidebar's text tokens so nav stays
-          readable (white on blue/red, dark on yellow). */}
-      <div className={cn("relative z-10 flex h-full flex-col", solid && "text-foreground")} style={solidStyle}>
+    <div className="flex h-full flex-col">
       <div
         className={cn(
           "flex h-14 items-center gap-2 border-b border-black/5 px-4",
-          solid ? "text-foreground" : dark ? "" : brandAccentText(brand),
+          dark ? "" : brandAccentText(brand),
           rail && "justify-center px-2",
         )}
       >
@@ -169,7 +130,6 @@ export function AppLayout() {
           </div>
         ))}
       </nav>
-      {!rail && <SidebarShowcase brand={brand} />}
       {!rail && (
         <div className="border-t border-black/5 p-3">
           <div className="mb-2 px-1">
@@ -182,7 +142,6 @@ export function AppLayout() {
           </Button>
         </div>
       )}
-      </div>
     </div>
   );
 
@@ -273,7 +232,6 @@ export function AppLayout() {
           <div className="mr-1 hidden max-w-[min(46vw,560px)] overflow-x-auto sm:block">
             <BrandFilter value={brand} onChange={setBrand} />
           </div>
-          <WallpaperPicker />
           <Button variant="ghost" size="icon" onClick={toggle} title="Toggle light/dark" aria-label="Toggle light/dark">
             {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
