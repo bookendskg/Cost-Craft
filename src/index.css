@@ -64,6 +64,10 @@
 @keyframes lw-drift3 { 0%, 100% { transform: translate(0, 0) scale(1); }   50% { transform: translate(32%, -34%) scale(1.3); } }
 @keyframes lw-drift4 { 0%, 100% { transform: translate(0, 0) scale(0.95); } 50% { transform: translate(-26%, -24%) scale(1.2); } }
 
+/* Crossfade a new wallpaper in over the old one (used when the brand changes). */
+@keyframes wp-fade { from { opacity: 0; } to { opacity: 1; } }
+.wp-fade-in { animation: wp-fade 0.5s ease both; }
+
 @layer base {
   :root {
     --background: 0 0% 100%;

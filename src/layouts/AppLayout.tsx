@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWordmark } from "@/features/dashboard/brandTheme";
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
-import { WallpaperPicker, LiveWallpaper } from "./WallpaperPicker";
+import { WallpaperPicker, BrandSidebarWallpaper, brandWallpaperKey } from "./WallpaperPicker";
 import { useBrands } from "@/features/brands/hooks";
 import { useRoles } from "@/features/roles/hooks";
 import { primeBrandCache } from "@/lib/data/brandCache";
@@ -43,7 +43,9 @@ export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const collapsed = usePrefs((s) => s.sidebarCollapsed);
   const toggleSidebar = usePrefs((s) => s.toggleSidebar);
-  const wallpaper = usePrefs((s) => s.sidebarWallpaper);
+  const wallpaperPref = usePrefs((s) => s.sidebarWallpaper);
+  // "auto" follows the selected brand; otherwise the chosen fixed look ("none" = off).
+  const wallpaper = wallpaperPref === "auto" ? brandWallpaperKey(brand) : wallpaperPref;
   const location = useLocation();
   const isAdmin = user?.role === "admin";
   const { data: allUsers = [] } = useUsers();
@@ -78,7 +80,8 @@ export function AppLayout() {
     <div className="relative flex h-full flex-col overflow-hidden">
       {wallpaper !== "none" && (
         <>
-          <LiveWallpaper wp={wallpaper} className="pointer-events-none" />
+          {/* Brand-driven live wallpaper — crossfades when the brand changes. */}
+          <BrandSidebarWallpaper wp={wallpaper} className="pointer-events-none" />
           {/* Frosted scrim keeps nav text readable while the colours flow through. */}
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-white/55 backdrop-blur-xl dark:bg-black/45" />
         </>
