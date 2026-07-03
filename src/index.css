@@ -40,25 +40,29 @@
   animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* --- Animated ("live") sidebar wallpapers -----------------------------------
-   A slowly drifting multi-stop gradient. A frosted scrim is layered on top in
-   the sidebar so the nav text stays readable. The global prefers-reduced-motion
-   rule neutralises the animation to a still gradient. */
-@keyframes wp-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
+/* --- Live sidebar wallpaper -------------------------------------------------
+   Four blurred colour blobs drift and morph on independent loops, so the
+   background flows continuously like a slow video. A frosted scrim is layered
+   over it in the sidebar so the nav text stays readable. The global
+   prefers-reduced-motion rule freezes it to a still composition. */
+.live-wp { position: absolute; inset: 0; overflow: hidden; }
+.lw-blob {
+  position: absolute;
+  width: 75%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  filter: blur(28px);
+  opacity: 0.9;
+  will-change: transform;
 }
-.wp {
-  background-size: 220% 220%;
-  animation: wp-shift 16s ease-in-out infinite;
-}
-.wp-aurora   { background-image: linear-gradient(135deg, #1b35a8, #6d28d9, #0ea5e9, #10b981); }
-.wp-ocean    { background-image: linear-gradient(135deg, #0ea5e9, #2563eb, #0891b2, #155e75); }
-.wp-sunset   { background-image: linear-gradient(135deg, #f59e0b, #ef4444, #db2777, #7c3aed); }
-.wp-bookends { background-image: linear-gradient(135deg, #1b35a8, #3b82f6, #1e3a8a, #2563eb); }
-.wp-forest   { background-image: linear-gradient(135deg, #059669, #16a34a, #0d9488, #065f46); }
-.wp-grape    { background-image: linear-gradient(135deg, #7c3aed, #a21caf, #6d28d9, #4c1d95); }
-.wp-ember    { background-image: linear-gradient(135deg, #f97316, #ef4444, #b91c1c, #7c2d12); }
+.lw-b1 { top: -14%; left: -14%; animation: lw-drift1 16s ease-in-out infinite; }
+.lw-b2 { top: 16%; right: -18%; animation: lw-drift2 20s ease-in-out infinite; }
+.lw-b3 { bottom: -16%; left: 6%; animation: lw-drift3 23s ease-in-out infinite; }
+.lw-b4 { bottom: 6%; right: -8%; animation: lw-drift4 18s ease-in-out infinite; }
+@keyframes lw-drift1 { 0%, 100% { transform: translate(0, 0) scale(1); }   50% { transform: translate(48%, 38%) scale(1.35); } }
+@keyframes lw-drift2 { 0%, 100% { transform: translate(0, 0) scale(1.1); } 50% { transform: translate(-42%, 30%) scale(0.85); } }
+@keyframes lw-drift3 { 0%, 100% { transform: translate(0, 0) scale(1); }   50% { transform: translate(32%, -34%) scale(1.3); } }
+@keyframes lw-drift4 { 0%, 100% { transform: translate(0, 0) scale(0.95); } 50% { transform: translate(-26%, -24%) scale(1.2); } }
 
 @layer base {
   :root {
