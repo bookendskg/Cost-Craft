@@ -399,10 +399,10 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
               <div className="col-span-3">Recipe Name</div>
               <div className="col-span-2">Category</div>
               <div className="col-span-1">Yield</div>
-              <div className="col-span-1 text-right">Unit Cost</div>
-              <div className="col-span-1 text-right">Menu Price</div>
-              <div className="col-span-2">Food Cost %</div>
-              <div className="col-span-1">Last Updated</div>
+              <div className="col-span-1 text-right">{prepMode ? "Total Cost" : "Unit Cost"}</div>
+              {!prepMode && <div className="col-span-1 text-right">Menu Price</div>}
+              {!prepMode && <div className="col-span-2">Food Cost %</div>}
+              <div className={prepMode ? "col-span-4" : "col-span-1"}>Last Updated</div>
               <div className="col-span-1" />
             </div>
 
@@ -646,7 +646,8 @@ function RecipeRow({
             {/* Mobile-only stat line (desktop shows these as columns) */}
             {canSeeCost && (
               <p className="mt-1 font-mono text-xs text-muted-foreground lg:hidden">
-                Cost {formatINR(unitCost)} · Price {formatINR(menuPrice)}
+                Cost {formatINR(unitCost)}
+                {!brandColored && <> · Price {formatINR(menuPrice)}</>}
               </p>
             )}
           </div>
@@ -658,7 +659,10 @@ function RecipeRow({
           <span className="font-mono">{recipe.serving_size} Port.</span>
         </div>
         <div className="hidden text-right font-mono lg:block lg:col-span-1">{canSeeCost ? formatINR(unitCost) : "—"}</div>
-        <div className="hidden text-right font-mono font-semibold lg:block lg:col-span-1">{canSeeCost ? formatINR(menuPrice) : "—"}</div>
+        {!brandColored && (
+          <div className="hidden text-right font-mono font-semibold lg:block lg:col-span-1">{canSeeCost ? formatINR(menuPrice) : "—"}</div>
+        )}
+        {!brandColored && (
         <div className="col-span-2 lg:col-span-2">
           {canSeeCost ? (
           <div className="flex items-center gap-2">
@@ -676,7 +680,8 @@ function RecipeRow({
             <span className="text-muted-foreground">—</span>
           )}
         </div>
-        <div className="hidden text-xs text-muted-foreground lg:block lg:col-span-1">
+        )}
+        <div className={cn("hidden text-xs text-muted-foreground lg:block", brandColored ? "lg:col-span-4" : "lg:col-span-1")}>
           <div>{formatDateTime(recipe.updated_at)}</div>
           {updatedBy && <div className="text-[11px]">by {updatedBy}</div>}
         </div>
