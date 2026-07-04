@@ -13,3 +13,10 @@ coverage
 # Large source cookbook PDFs (extracted into src/lib/data/cookbook.ts)
 assets/*.pdf
 assets/*.xlsx
+
+# Adobe Illustrator brand-source art (large binaries — never commit)
+*.ai
+assets/*.ai
+
+# Supabase CLI local link state
+supabase/.temp/

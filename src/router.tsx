@@ -21,7 +21,6 @@ const ApprovalsPage = lazy(() => import("@/features/approvals/ApprovalsPage").th
 const ReportsPage = lazy(() => import("@/features/reports/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const UsersPage = lazy(() => import("@/features/users/UsersPage").then((m) => ({ default: m.UsersPage })));
 const AuditPage = lazy(() => import("@/features/audit/AuditPage").then((m) => ({ default: m.AuditPage })));
-const SettingsPage = lazy(() => import("@/features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const SharedRecipePage = lazy(() => import("@/features/share/SharedRecipePage").then((m) => ({ default: m.SharedRecipePage })));
 // Public marketing landing page (code-split; the app's public entry point at "/").
@@ -152,12 +151,11 @@ export const router = createBrowserRouter([
       // "Brands & Outlets" management has been removed. The old /brands route is
       // intentionally gone; the catch-all below redirects it to /dashboard.
       {
+        // The old global cost-config Settings page has been removed. "Settings" now
+        // opens the user's Profile Settings (the same page as /profile) — every
+        // authenticated user manages their own account, so there is no admin gate.
         path: "settings",
-        element: (
-          <RequireRole roles={["admin"]} cap="settings.manage">
-            <SettingsPage />
-          </RequireRole>
-        ),
+        element: <ProfilePage />,
       },
     ],
   },

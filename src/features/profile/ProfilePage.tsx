@@ -103,7 +103,7 @@ export function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="My Profile" description="Manage your account details, password, and preferences." />
+      <PageHeader title="Profile Settings" description="Manage your account details and password." />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
