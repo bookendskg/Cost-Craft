@@ -1,7 +1,7 @@
 // Zod schemas. Error messages copied verbatim from PRD §12 where specified.
 
 import { z } from "zod";
-import { BASE_UNITS, PURCHASE_UNITS, canConvert } from "../units";
+import { PURCHASE_UNITS } from "../units";
 import { toBaseQuantity } from "../yield";
 import { WASTAGE_TYPES, DEPARTMENTS } from "../data/types";
 
@@ -89,16 +89,10 @@ export const materialSchema = z
       .gt(0, "Purchase price must be greater than 0")
       .refine((v) => Number(v.toFixed(2)) === v, "Use at most two decimal places")
       .nullish(),
-    purchase_quantity: z
-      .number({ invalid_type_error: "Purchase quantity must be greater than 0" })
-      .finite("Enter a valid quantity")
-      .gt(0, "Purchase quantity must be greater than 0"),
-    purchase_unit: z.enum(PURCHASE_UNITS),
-    base_unit: z.enum(BASE_UNITS),
-  })
-  .refine((v) => canConvert(v.purchase_unit, v.base_unit), {
-    message: "Cannot convert this purchase unit to the chosen base unit",
-    path: ["base_unit"],
+    // The purchase unit (1 kg / 1 litre / 1 piece) is derived from this — the user
+    // never picks units manually. Internally the repo stores purchase_quantity=1 +
+    // the canonical purchase/base unit.
+    measurement_type: z.enum(["weight", "volume", "count"]),
   });
 export type MaterialValues = z.infer<typeof materialSchema>;
 

@@ -85,3 +85,39 @@ export function getConversionFactor(from: string, to: string): number {
   if (from === "Piece" && to === "Dozen") return 1 / 12;
   throw new Error(`Invalid unit conversion: ${from} → ${to}`);
 }
+
+// --- Simplified raw-material purchase model -----------------------------------
+// A raw material's price is entered per ONE automatic purchase unit, chosen by
+// its measurement type: Weight → 1 kg, Liquid → 1 litre, Count → 1 piece. The
+// user never picks a purchase/base unit manually. Internally we still store
+// purchase_quantity=1 + the canonical purchase/base unit, so the existing costing
+// engine is unchanged.
+export type MeasurementType = "weight" | "volume" | "count";
+
+export const MEASUREMENT_TYPE_LABELS: Record<MeasurementType, string> = {
+  weight: "Weight (per 1 kg)",
+  volume: "Liquid (per 1 litre)",
+  count: "Count (per 1 piece)",
+};
+
+/** Canonical purchase basis for a measurement type. The purchase price is "per 1
+ *  of `displayUnit`"; `baseUnitsPerCanonical` = base units in one purchase unit. */
+export function canonicalPurchase(type: MeasurementType): {
+  purchase_unit: string;
+  base_unit: string;
+  baseUnitsPerCanonical: number;
+  displayUnit: string;
+} {
+  if (type === "volume") return { purchase_unit: "Litre", base_unit: "ML", baseUnitsPerCanonical: 1000, displayUnit: "1 litre" };
+  if (type === "count") return { purchase_unit: "Piece", base_unit: "Piece", baseUnitsPerCanonical: 1, displayUnit: "1 piece" };
+  return { purchase_unit: "KG", base_unit: "Gram", baseUnitsPerCanonical: 1000, displayUnit: "1 kg" };
+}
+
+/** Derive a material's measurement type from its stored base unit (edit + migration):
+ *  volume base (ML) → liquid, weight base (Gram) → weight, everything else → count. */
+export function measurementTypeFromBaseUnit(baseUnit: string): MeasurementType {
+  const fam = getUnitFamily(baseUnit);
+  if (fam === "volume") return "volume";
+  if (fam === "weight") return "weight";
+  return "count";
+}
