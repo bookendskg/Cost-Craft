@@ -15,14 +15,8 @@ import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { yieldSchema, type YieldValues } from "@/lib/validation/schemas";
+import { IngredientPicker } from "@/features/recipes/IngredientPicker";
 import { canonicalPurchase, measurementTypeFromBaseUnit } from "@/lib/units";
 import { computeYield, toBaseQuantity } from "@/lib/yield";
 import { round2 } from "@/lib/costing";
@@ -170,18 +164,20 @@ export function YieldForm({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label>Ingredient *</Label>
-            <Select value={ingredientId} onValueChange={onPickIngredient} disabled={isEdit}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select ingredient" />
-              </SelectTrigger>
-              <SelectContent>
-                {materials.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.ingredient_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isEdit ? (
+              <div className="flex h-10 items-center rounded-md border bg-muted px-3 text-sm">
+                {selectedMaterial?.ingredient_name ?? "—"}
+              </div>
+            ) : (
+              <IngredientPicker
+                materials={materials}
+                preps={[]}
+                value={ingredientId || null}
+                onSelect={(pick) => {
+                  if (pick.type === "material") onPickIngredient(pick.material.id);
+                }}
+              />
+            )}
             {formState.errors.ingredient_id && (
               <p className="text-xs text-destructive">{formState.errors.ingredient_id.message}</p>
             )}
