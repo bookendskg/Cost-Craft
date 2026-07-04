@@ -233,7 +233,6 @@ export interface RawMaterial {
   id: string;
   ingredient_name: string;
   category: string;
-  supplier_name: string | null;
   /** Free-text note about the ingredient (storage, brand, prep, etc.). */
   notes: string | null;
   purchase_price: number | null;

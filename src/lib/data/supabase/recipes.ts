@@ -327,7 +327,6 @@ export const supabaseRecipesRepo = {
         id: uid(),
         ingredient_name: name,
         category: "Other",
-        supplier_name: null,
         notes: null,
         purchase_price: null,
         purchase_quantity: 1,

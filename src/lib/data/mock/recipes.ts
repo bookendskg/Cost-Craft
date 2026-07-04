@@ -292,7 +292,7 @@ export const recipesRepo = {
           const found = matByName.get(key);
           if (found) return found.id;
           const m = {
-            id: uid(), ingredient_name: name, category: "Other", supplier_name: null, notes: null,
+            id: uid(), ingredient_name: name, category: "Other", notes: null,
             purchase_price: null, purchase_quantity: 1, purchase_unit: "Gram", base_unit: "Gram",
             cost_per_base_unit: null, last_price_update: null, status: "active" as const,
             created_by: actorId, created_at: nowISO(),

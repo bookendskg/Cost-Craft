@@ -7,7 +7,6 @@ import { cascadeFromMaterial, recordAudit } from "./recompute";
 export interface MaterialInput {
   ingredient_name: string;
   category: string;
-  supplier_name?: string | null;
   notes?: string | null;
   purchase_price: number | null;
   purchase_quantity: number;
@@ -55,7 +54,6 @@ export const materialsRepo = {
           id: uid(),
           ingredient_name: input.ingredient_name,
           category: input.category,
-          supplier_name: input.supplier_name ?? null,
           notes: input.notes ?? null,
           purchase_price: input.purchase_price,
           purchase_quantity: input.purchase_quantity,
@@ -101,7 +99,6 @@ export const materialsRepo = {
 
         m.ingredient_name = input.ingredient_name;
         m.category = input.category;
-        m.supplier_name = input.supplier_name ?? null;
         m.notes = input.notes ?? null;
         m.purchase_price = input.purchase_price;
         m.purchase_quantity = input.purchase_quantity;
@@ -161,7 +158,6 @@ export const materialsRepo = {
             if (existing) {
               if (mode === "add") { summary.skipped++; return; }
               existing.category = input.category || existing.category;
-              existing.supplier_name = input.supplier_name ?? existing.supplier_name;
               existing.notes = input.notes ?? existing.notes;
               existing.purchase_price = input.purchase_price;
               existing.purchase_quantity = input.purchase_quantity;
@@ -177,7 +173,6 @@ export const materialsRepo = {
                 id: uid(),
                 ingredient_name: input.ingredient_name,
                 category: input.category,
-                supplier_name: input.supplier_name ?? null,
                 notes: input.notes ?? null,
                 purchase_price: input.purchase_price,
                 purchase_quantity: input.purchase_quantity,

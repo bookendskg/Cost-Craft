@@ -29,7 +29,6 @@ describe("price cascade", () => {
       {
         ingredient_name: oil!.ingredient_name,
         category: oil!.category,
-        supplier_name: oil!.supplier_name,
         purchase_price: newPrice,
         purchase_quantity: 1,
         purchase_unit: "KG",

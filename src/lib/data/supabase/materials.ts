@@ -66,7 +66,6 @@ export const supabaseMaterialsRepo = {
       .insert({
         ingredient_name: input.ingredient_name,
         category: input.category,
-        supplier_name: input.supplier_name ?? null,
         notes: input.notes ?? null,
         purchase_price: input.purchase_price,
         purchase_quantity: input.purchase_quantity,
@@ -112,7 +111,6 @@ export const supabaseMaterialsRepo = {
       .update({
         ingredient_name: input.ingredient_name,
         category: input.category,
-        supplier_name: input.supplier_name ?? null,
         notes: input.notes ?? null,
         purchase_price: input.purchase_price,
         purchase_quantity: input.purchase_quantity,
@@ -197,7 +195,6 @@ export const supabaseMaterialsRepo = {
             .from("raw_materials")
             .update({
               category: input.category || existing.category,
-              supplier_name: input.supplier_name ?? existing.supplier_name,
               notes: input.notes ?? existing.notes,
               purchase_price: input.purchase_price,
               purchase_quantity: input.purchase_quantity,
@@ -224,7 +221,6 @@ export const supabaseMaterialsRepo = {
             .insert({
               ingredient_name: input.ingredient_name,
               category: input.category,
-              supplier_name: input.supplier_name ?? null,
               notes: input.notes ?? null,
               purchase_price: input.purchase_price,
               purchase_quantity: input.purchase_quantity,

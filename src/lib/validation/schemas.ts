@@ -80,7 +80,6 @@ export const materialSchema = z
   .object({
     ingredient_name: z.string().min(1, "Ingredient name is required"),
     category: z.string().min(1, "Category is required"),
-    supplier_name: z.string().optional().or(z.literal("")),
     notes: z.string().optional().or(z.literal("")),
     // Optional: an ingredient can be created with its price pending (null/empty).
     // When a price IS entered it must be > 0 with at most two decimals.

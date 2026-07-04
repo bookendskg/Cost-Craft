@@ -44,7 +44,6 @@ describe("sub-recipe (in-house prep) costing", () => {
       {
         ingredient_name: chilli!.ingredient_name,
         category: chilli!.category,
-        supplier_name: chilli!.supplier_name,
         purchase_price: chilli!.purchase_price! + 500,
         purchase_quantity: 1,
         purchase_unit: "KG",

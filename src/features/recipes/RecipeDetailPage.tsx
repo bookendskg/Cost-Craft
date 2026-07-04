@@ -673,7 +673,7 @@ export function RecipeDetailPage() {
                 <div className="flex gap-3">
                   <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
                   <div>
-                    <p className="text-sm font-semibold text-red-700">Supplier Price Volatility</p>
+                    <p className="text-sm font-semibold text-red-700">Ingredient Price Volatility</p>
                     <p className="mt-1 text-xs text-red-600">
                       Ingredient prices can shift weekly. Review costing before locking the menu price.
                     </p>

@@ -50,7 +50,6 @@ export function MaterialForm({
     defaultValues: {
       ingredient_name: "",
       category: "",
-      supplier_name: "",
       notes: "",
       purchase_price: undefined as unknown as number,
       purchase_quantity: undefined as unknown as number,
@@ -68,7 +67,6 @@ export function MaterialForm({
           ? {
               ingredient_name: material.ingredient_name,
               category: material.category,
-              supplier_name: material.supplier_name ?? "",
               notes: material.notes ?? "",
               purchase_price: material.purchase_price ?? (undefined as unknown as number),
               purchase_quantity: material.purchase_quantity,
@@ -78,7 +76,6 @@ export function MaterialForm({
           : {
               ingredient_name: "",
               category: categories[0] ?? "",
-              supplier_name: "",
               notes: "",
               purchase_price: undefined as unknown as number,
               purchase_quantity: undefined as unknown as number,
@@ -103,7 +100,6 @@ export function MaterialForm({
   const onSubmit = async (values: MaterialValues) => {
     const input = {
       ...values,
-      supplier_name: values.supplier_name || null,
       notes: values.notes || null,
       purchase_price: values.purchase_price ?? null,
     };
@@ -161,11 +157,6 @@ export function MaterialForm({
             {formState.errors.category && (
               <p className="text-xs text-destructive">{formState.errors.category.message}</p>
             )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Supplier</Label>
-            <Input {...register("supplier_name")} placeholder="Optional" />
           </div>
 
           <div className="rounded-md border p-3">

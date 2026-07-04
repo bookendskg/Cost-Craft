@@ -7,7 +7,6 @@ export async function exportMaterials(materials: RawMaterial[], label: string) {
   const rows = materials.map((m) => ({
     Ingredient: m.ingredient_name,
     Category: m.category,
-    Supplier: m.supplier_name ?? "",
     "Purchase Price (₹)": m.purchase_price ?? "",
     Quantity: formatQuantityWithUnit(m.purchase_quantity, m.purchase_unit, { humanize: false }),
     "Base Unit": m.base_unit,

@@ -73,7 +73,6 @@ const PAGE_SIZE = 10;
 
 const COLUMN_DEFS = [
   { key: "category", label: "Category" },
-  { key: "supplier", label: "Supplier" },
   { key: "price", label: "Purchase Price" },
   { key: "packSize", label: "Quantity" },
 ] as const;
@@ -96,7 +95,6 @@ export function MaterialsPage() {
     columns: [
       { label: "Ingredient", required: true },
       { label: "Category" },
-      { label: "Supplier" },
       { label: "Purchase Price" },
       { label: "Purchase Quantity" },
       { label: "Purchase Unit" },
@@ -106,7 +104,6 @@ export function MaterialsPage() {
     sample: {
       Ingredient: "Onion",
       Category: "Vegetables",
-      Supplier: "",
       "Purchase Price": 2400,
       "Purchase Quantity": 20,
       "Purchase Unit": "KG",
@@ -129,7 +126,6 @@ export function MaterialsPage() {
         value: {
           ingredient_name: name,
           category: toText(pick(row, ["Category"])) || "Other",
-          supplier_name: toText(pick(row, ["Supplier", "Supplier Name"])) || null,
           notes: toText(pick(row, ["Notes"])) || null,
           purchase_price: price,
           purchase_quantity: qty,
@@ -157,7 +153,6 @@ export function MaterialsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [cols, setCols] = useState<Record<ColKey, boolean>>({
     category: true,
-    supplier: false,
     price: true,
     packSize: true,
   });
@@ -464,7 +459,6 @@ export function MaterialsPage() {
                     )}
                     <SortHead label="Name" k="name" />
                     {cols.category && <SortHead label="Category" k="category" />}
-                    {cols.supplier && <TableHead>Supplier</TableHead>}
                     {cols.price && <SortHead label="Purchase Price" k="price" />}
                     {cols.packSize && <TableHead>Quantity</TableHead>}
                     <TableHead className="w-10" />
@@ -491,7 +485,6 @@ export function MaterialsPage() {
                         </div>
                       </TableCell>
                       {cols.category && <TableCell>{m.category}</TableCell>}
-                      {cols.supplier && <TableCell>{m.supplier_name ?? "—"}</TableCell>}
                       {cols.price && (
                         <TableCell>{priceLabel(m) ?? <Badge variant="warning">No Price</Badge>}</TableCell>
                       )}
