@@ -383,7 +383,7 @@ export function RecipeEditorPage() {
                 <Input
                   type="number"
                   step="0.01"
-                  placeholder="Leave blank to use the suggested price"
+                  placeholder="Optional — e.g. 250"
                   {...register("selling_price", {
                     setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
                   })}
@@ -613,9 +613,7 @@ export function RecipeEditorPage() {
           <CostSummary
             recipeCost={costing.totalCost}
             packagingCost={costing.packagingCost}
-            sellingPrice={(watch("selling_price") || 0) > 0 ? (watch("selling_price") as number) : costing.suggestedPrice}
-            isSuggested={!((watch("selling_price") || 0) > 0)}
-            foodCostPct={foodCostPct}
+            sellingPrice={(watch("selling_price") as number) || 0}
             prepOnly={effectiveIsPrep}
           />
           {costing.hasMissingPrice && (

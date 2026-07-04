@@ -47,7 +47,7 @@ import { useSession } from "@/lib/auth/session";
 import { can, canEditRecipe, viewerBrands, viewerShowCost } from "@/lib/auth/permissions";
 import type { Recipe } from "@/lib/data/types";
 import { toast } from "@/components/ui/use-toast";
-import { useRecipeCategories, useFoodCostPct, useAllSettings } from "@/features/settings/hooks";
+import { useRecipeCategories, useAllSettings } from "@/features/settings/hooks";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useUsersMap } from "@/features/users/hooks";
 import { useDashboardBrand } from "@/features/dashboard/brandTheme";
@@ -57,6 +57,7 @@ import {
   FC_TONE_STYLES,
   fcTone,
   foodCostPctOf,
+  hasMenuPrice,
   menuPriceOf,
   profitMarginOf,
 } from "./recipeMetrics";
@@ -129,7 +130,6 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
     return m;
   }, [allRecipes]);
   const { data: categories = [] } = useRecipeCategories();
-  const { data: foodCostPct = 30 } = useFoodCostPct();
   const { data: settings = [] } = useAllSettings();
   const { data: materials = [] } = useMaterials();
   const { map: usersMap } = useUsersMap();
@@ -249,23 +249,28 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
       if (search && !r.recipe_name.toLowerCase().includes(search.toLowerCase())) return false;
       if (category !== "all" && r.category !== category) return false;
       if (fcRange !== "all") {
-        const fc = foodCostPctOf(r, foodCostPct);
+        // A food-cost % only exists once a menu price is saved — unpriced recipes
+        // match no FC band.
+        if (!hasMenuPrice(r)) return false;
+        const fc = foodCostPctOf(r);
         if (fcRange === "low" && !(fc < 25)) return false;
         if (fcRange === "mid" && !(fc >= 25 && fc <= 35)) return false;
         if (fcRange === "high" && !(fc > 35)) return false;
       }
       return true;
     });
-  }, [recipes, search, category, status, fcRange, foodCostPct]);
+  }, [recipes, search, category, status, fcRange]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const pageItems = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const kpis = useMemo(() => {
-    const withFc = recipes.map((r) => foodCostPctOf(r, foodCostPct));
+    // FC% only exists for priced recipes; unpriced ones are excluded from the averages.
+    const priced = recipes.filter(hasMenuPrice);
+    const withFc = priced.map((r) => foodCostPctOf(r));
     const avgFc = withFc.length ? withFc.reduce((a, b) => a + b, 0) / withFc.length : 0;
-    const critical = recipes.filter((r) => foodCostPctOf(r, foodCostPct) >= criticalPct).length;
+    const critical = priced.filter((r) => foodCostPctOf(r) >= criticalPct).length;
     const activeMaterials = materials.filter((m) => m.status === "active");
     const pendingPrices = materials.filter((m) => m.purchase_price === null).length;
     const inventoryValue = activeMaterials.reduce((sum, m) => sum + (m.purchase_price ?? 0), 0);
@@ -276,7 +281,7 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
       inventoryValue,
       activeCount: activeMaterials.length,
     };
-  }, [recipes, materials, foodCostPct, criticalPct]);
+  }, [recipes, materials, criticalPct]);
 
   const clearFilters = () => {
     setSearch("");
@@ -411,7 +416,6 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
                 <RecipeRow
                   key={r.id}
                   recipe={r}
-                  foodCostPct={foodCostPct}
                   criticalPct={criticalPct}
                   expanded={expanded === r.id}
                   onToggle={() => setExpanded(expanded === r.id ? null : r.id)}
@@ -559,7 +563,6 @@ function StatCard({
 
 function RecipeRow({
   recipe,
-  foodCostPct,
   criticalPct,
   expanded,
   onToggle,
@@ -579,7 +582,6 @@ function RecipeRow({
   sizes,
 }: {
   recipe: Recipe;
-  foodCostPct: number;
   criticalPct: number;
   expanded: boolean;
   onToggle: () => void;
@@ -601,8 +603,9 @@ function RecipeRow({
   sizes?: string[];
 }) {
   const unitCost = recipe.cost_per_portion ?? 0;
-  const menuPrice = menuPriceOf(recipe, foodCostPct);
-  const fc = foodCostPctOf(recipe, foodCostPct);
+  const priced = hasMenuPrice(recipe);
+  const menuPrice = menuPriceOf(recipe);
+  const fc = foodCostPctOf(recipe);
   const tone = fcTone(fc, criticalPct);
   const toneStyle = FC_TONE_STYLES[tone];
   // Preps follow the brand accent (--primary); menu recipes keep the FC tone.
@@ -647,7 +650,7 @@ function RecipeRow({
             {canSeeCost && (
               <p className="mt-1 font-mono text-xs text-muted-foreground lg:hidden">
                 Cost {formatINR(unitCost)}
-                {!brandColored && <> · Price {formatINR(menuPrice)}</>}
+                {!brandColored && <> · Price {priced ? formatINR(menuPrice) : "—"}</>}
               </p>
             )}
           </div>
@@ -660,11 +663,11 @@ function RecipeRow({
         </div>
         <div className="hidden text-right font-mono lg:block lg:col-span-1">{canSeeCost ? formatINR(unitCost) : "—"}</div>
         {!brandColored && (
-          <div className="hidden text-right font-mono font-semibold lg:block lg:col-span-1">{canSeeCost ? formatINR(menuPrice) : "—"}</div>
+          <div className="hidden text-right font-mono font-semibold lg:block lg:col-span-1">{canSeeCost && priced ? formatINR(menuPrice) : "—"}</div>
         )}
         {!brandColored && (
         <div className="col-span-2 lg:col-span-2">
-          {canSeeCost ? (
+          {canSeeCost && priced ? (
           <div className="flex items-center gap-2">
             <span className={cn("rounded px-1.5 py-0.5 text-xs font-semibold", badgeClass)}>
               {fc}%
@@ -693,7 +696,6 @@ function RecipeRow({
       {expanded && canSeeCost && (
         <ExpandedBreakdown
           recipe={recipe}
-          foodCostPct={foodCostPct}
           onView={onView}
           canEdit={canEdit}
           canDuplicate={canDuplicate}
@@ -712,7 +714,6 @@ function RecipeRow({
 
 function ExpandedBreakdown({
   recipe,
-  foodCostPct,
   onView,
   canEdit,
   canDuplicate,
@@ -725,7 +726,6 @@ function ExpandedBreakdown({
   onUnarchive,
 }: {
   recipe: Recipe;
-  foodCostPct: number;
   onView: () => void;
   canEdit: boolean;
   canDuplicate: boolean;
@@ -739,9 +739,10 @@ function ExpandedBreakdown({
 }) {
   const isArchived = !!recipe.archived_at;
   const { data, isLoading } = useRecipe(recipe.id);
-  const margin = profitMarginOf(recipe, foodCostPct);
-  const actualFc = foodCostPctOf(recipe, foodCostPct);
-  const variance = Number((actualFc - foodCostPct).toFixed(1));
+  const priced = hasMenuPrice(recipe);
+  const menuPrice = menuPriceOf(recipe);
+  const margin = profitMarginOf(recipe);
+  const actualFc = foodCostPctOf(recipe);
 
   // Use the persisted (yield-adjusted) line cost — single source of truth (§9).
   const lines = (data?.ingredients ?? []).map((ing) => ({
@@ -815,22 +816,29 @@ function ExpandedBreakdown({
         )}
       </div>
 
-      {/* Profit margin card */}
+      {/* Profit margin card — only when a menu price has been saved (no suggestion). */}
       <div className="rounded-lg border bg-muted/40 p-4 text-center">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Profit Margin</p>
-        <p className="my-1 text-3xl font-bold text-emerald-700">{formatINR(margin)}</p>
-        <div className="mt-3 grid grid-cols-2 gap-2 border-t pt-3 text-left">
-          <div>
-            <p className="text-[11px] uppercase text-muted-foreground">Target FC %</p>
-            <p className="font-mono font-semibold">{foodCostPct.toFixed(1)}%</p>
-          </div>
-          <div>
-            <p className="text-[11px] uppercase text-muted-foreground">Variance</p>
-            <p className={cn("font-mono font-semibold", variance <= 0 ? "text-emerald-600" : "text-red-600")}>
-              {variance > 0 ? "+" : ""}{variance}%
-            </p>
-          </div>
-        </div>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Profit / Portion</p>
+        {priced ? (
+          <>
+            <p className="my-1 text-3xl font-bold text-emerald-700">{formatINR(margin)}</p>
+            <div className="mt-3 grid grid-cols-2 gap-2 border-t pt-3 text-left">
+              <div>
+                <p className="text-[11px] uppercase text-muted-foreground">Menu Price</p>
+                <p className="font-mono font-semibold">{formatINR(menuPrice)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase text-muted-foreground">Food Cost %</p>
+                <p className="font-mono font-semibold">{actualFc.toFixed(1)}%</p>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="my-1 text-3xl font-bold text-muted-foreground">—</p>
+            <p className="text-[11px] text-muted-foreground">No menu price set</p>
+          </>
+        )}
       </div>
     </div>
   );

@@ -28,7 +28,7 @@ import { brandLabel as resolveBrandLabel } from "@/lib/data/brandCache";
 import { useRecipes } from "@/features/recipes/hooks";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useUsers } from "@/features/users/hooks";
-import { useRecipeCategories, useFoodCostPct } from "@/features/settings/hooks";
+import { useRecipeCategories } from "@/features/settings/hooks";
 import { useSession } from "@/lib/auth/session";
 import { useRecordExport } from "@/features/exports/hooks";
 import { RecipePdfButton } from "./RecipePdfButton";
@@ -49,7 +49,6 @@ export function ReportsPage() {
   const { data: materials = [] } = useMaterials();
   const { data: users = [] } = useUsers();
   const { data: categories = [] } = useRecipeCategories();
-  const { data: foodCostPct = 30 } = useFoodCostPct();
   const ingredients = useAllRecipeIngredients();
   const costHistory = useAllCostHistory();
   const priceHistory = useAllPriceHistory();
@@ -114,7 +113,6 @@ export function ReportsPage() {
           priceHistory: (priceHistory.data ?? []).filter((p) => usedIngIds.has(p.ingredient_id ?? "")),
           usersById: new Map(users.map((u) => [u.id, u])),
           materialsById: new Map(materials.map((m) => [m.id, m])),
-          foodCostPct,
         },
         `${brandLabel}_${new Date().toISOString().slice(0, 10)}`,
       );
@@ -316,7 +314,6 @@ export function ReportsPage() {
                     <RecipePdfButton
                       recipe={r}
                       ingredients={ingredientsByRecipe.get(r.id) ?? []}
-                      foodCostPct={foodCostPct}
                     />
                   </TableCell>
                 </TableRow>

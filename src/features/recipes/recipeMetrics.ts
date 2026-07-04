@@ -11,22 +11,30 @@ export function fullCostPerPortion(recipe: Recipe): number {
   return round2((recipe.cost_per_portion ?? 0) + packagingOf(recipe));
 }
 
-/** Menu price = chef-set selling price, or the suggested price as a fallback. */
-export function menuPriceOf(recipe: Recipe, foodCostPct: number): number {
-  if (recipe.selling_price && recipe.selling_price > 0) return recipe.selling_price;
-  const cpp = fullCostPerPortion(recipe);
-  return foodCostPct > 0 ? round2(cpp / (foodCostPct / 100)) : 0;
+/** True when a chef has manually saved a menu price. The app never suggests one. */
+export function hasMenuPrice(recipe: Recipe): boolean {
+  return !!(recipe.selling_price && recipe.selling_price > 0);
 }
 
-/** Actual food cost % = full per-portion cost ÷ menu price. */
-export function foodCostPctOf(recipe: Recipe, foodCostPct: number): number {
-  const menu = menuPriceOf(recipe, foodCostPct);
+/**
+ * Menu price = the chef-set selling price. Returns 0 when none is set — the app
+ * does NOT suggest a price from a target food-cost %; callers show "–" instead.
+ */
+export function menuPriceOf(recipe: Recipe): number {
+  return hasMenuPrice(recipe) ? (recipe.selling_price as number) : 0;
+}
+
+/** Actual food cost % = full per-portion cost ÷ menu price. 0 when no price set. */
+export function foodCostPctOf(recipe: Recipe): number {
+  const menu = menuPriceOf(recipe);
   const cpp = fullCostPerPortion(recipe);
   return menu > 0 ? round2((cpp / menu) * 100) : 0;
 }
 
-export function profitMarginOf(recipe: Recipe, foodCostPct: number): number {
-  return round2(menuPriceOf(recipe, foodCostPct) - fullCostPerPortion(recipe));
+/** Profit per portion = menu price − full per-portion cost. 0 when no price set. */
+export function profitMarginOf(recipe: Recipe): number {
+  const menu = menuPriceOf(recipe);
+  return menu > 0 ? round2(menu - fullCostPerPortion(recipe)) : 0;
 }
 
 export type FcTone = "good" | "warn" | "bad";

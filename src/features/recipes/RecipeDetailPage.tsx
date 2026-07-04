@@ -52,7 +52,6 @@ import { useSession } from "@/lib/auth/session";
 import { can, canEditRecipe, viewerCanAccess, visibilityForUser } from "@/lib/auth/permissions";
 import { toast } from "@/components/ui/use-toast";
 import { useUsersMap } from "@/features/users/hooks";
-import { useFoodCostPct } from "@/features/settings/hooks";
 import { menuPriceOf, fullCostPerPortion, packagingOf } from "./recipeMetrics";
 import { RecipePdfButton } from "@/features/reports/RecipePdfButton";
 import {
@@ -85,7 +84,6 @@ export function RecipeDetailPage() {
   const { data: allRecipes = [] } = useRecipes();
   const { data: brandRecords = [] } = useBrands();
   const allBrandIds = brandRecords.map((b) => b.id);
-  const { data: foodCostPct = 30 } = useFoodCostPct();
   const { map: usersMap } = useUsersMap();
 
   // Pizza size family: the master + its size variants, for the size switcher (§16).
@@ -201,12 +199,12 @@ export function RecipeDetailPage() {
   const portionCost = recipe.cost_per_portion ?? 0;
   const packaging = packagingOf(recipe);
   const fullCpp = fullCostPerPortion(recipe); // food cost + packaging
-  const menuPrice = menuPriceOf(recipe, foodCostPct);
-  const marginPct = menuPrice > 0 ? round2(((menuPrice - fullCpp) / menuPrice) * 100) : 0;
+  // The app never suggests a price — metrics exist only once a menu price is saved.
+  const menuPrice = menuPriceOf(recipe);
+  const priced = menuPrice > 0;
+  const marginPct = priced ? round2(((menuPrice - fullCpp) / menuPrice) * 100) : 0;
+  const actualFc = priced ? round2((fullCpp / menuPrice) * 100) : 0;
   const brandLabel = brandRecords.find((b) => b.id === recipe.brand)?.name ?? recipe.brand;
-
-  const actualFc = menuPrice > 0 ? round2((fullCpp / menuPrice) * 100) : foodCostPct;
-  const efficiency = Math.max(0, Math.min(100, Math.round((foodCostPct / Math.max(actualFc, 1)) * 100)));
 
   return (
     <>
@@ -273,7 +271,7 @@ export function RecipeDetailPage() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <RecipePdfButton recipe={recipe} ingredients={ingredients} foodCostPct={foodCostPct} visibility={vis} />
+          <RecipePdfButton recipe={recipe} ingredients={ingredients} visibility={vis} />
           {editable && (
             <Button variant="outline" onClick={() => setShareOpen(true)}>
               <Share2 className="h-4 w-4" /> Create Temporary Link
@@ -542,11 +540,15 @@ export function RecipeDetailPage() {
                     )}
                     {/* In-house preps are internal sub-recipes — no menu price / margin. */}
                     {!recipe.is_prep && (
-                      <>
-                        <FinRow label={`Suggested Price (${foodCostPct}% food cost)`} value={formatINR(round2(fullCpp / (foodCostPct / 100)))} strong />
-                        <FinRow label="Menu Price" value={formatINR(menuPrice)} />
-                        <FinRow label="Gross Margin" value={`${marginPct}%`} />
-                      </>
+                      priced ? (
+                        <>
+                          <FinRow label="Menu Price" value={formatINR(menuPrice)} strong />
+                          <FinRow label="Food Cost %" value={`${actualFc}%`} />
+                          <FinRow label="Gross Margin" value={`${marginPct}%`} />
+                        </>
+                      ) : (
+                        <FinRow label="Menu Price" value="—" strong />
+                      )
                     )}
                   </div>
                 </TabsContent>
@@ -609,11 +611,11 @@ export function RecipeDetailPage() {
                 <div className="my-4 grid grid-cols-2 gap-3 rounded-lg bg-emerald-50 p-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase text-muted-foreground">Current Margin</p>
-                    <p className="text-xl font-bold text-emerald-700">{marginPct}%</p>
+                    <p className="text-xl font-bold text-emerald-700">{priced ? `${marginPct}%` : "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase text-muted-foreground">Selling Price</p>
-                    <p className="text-xl font-bold">{formatINR(menuPrice)}</p>
+                    <p className="text-xl font-bold">{priced ? formatINR(menuPrice) : "—"}</p>
                   </div>
                 </div>
 
@@ -631,7 +633,7 @@ export function RecipeDetailPage() {
                           className="pl-6"
                           value={sellingInput}
                           onChange={(e) => setSellingInput(e.target.value)}
-                          placeholder="Suggested"
+                          placeholder="e.g. 250"
                         />
                       </div>
                       <Button
@@ -651,19 +653,9 @@ export function RecipeDetailPage() {
                         Save
                       </Button>
                     </div>
-                    <p className="mt-1 text-[11px] text-muted-foreground">Leave blank to use the suggested price.</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">Leave blank if there's no menu price yet.</p>
                   </div>
                 )}
-
-                <div className="mt-4 border-t pt-3">
-                  <div className="mb-1 flex items-center justify-between text-xs">
-                    <span className="font-semibold uppercase tracking-wide text-muted-foreground">Efficiency vs Target</span>
-                    <span className="font-semibold">{efficiency}%</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-emerald-600" style={{ width: `${efficiency}%` }} />
-                  </div>
-                </div>
                   </>
                 )}
               </Card>

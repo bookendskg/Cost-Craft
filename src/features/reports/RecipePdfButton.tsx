@@ -11,12 +11,10 @@ import { toast } from "@/components/ui/use-toast";
 export function RecipePdfButton({
   recipe,
   ingredients,
-  foodCostPct,
   visibility,
 }: {
   recipe: Recipe;
   ingredients: RecipeIngredientWithMaterial[];
-  foodCostPct: number;
   visibility?: ViewVisibility;
 }) {
   const [busy, setBusy] = useState(false);
@@ -30,7 +28,7 @@ export function RecipePdfButton({
         if (busy) return; // block rapid double-clicks → no duplicate exports
         setBusy(true);
         try {
-          await generateRecipePdf(recipe, ingredients, foodCostPct, {
+          await generateRecipePdf(recipe, ingredients, {
             visibility,
             // Exporter identity is taken from the authenticated session — never typed.
             exporter: user ? { name: user.name, role: user.role } : undefined,

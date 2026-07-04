@@ -51,7 +51,6 @@ async function loadPdfMake() {
 export async function generateRecipePdf(
   recipe: Recipe,
   ingredients: RecipeIngredientWithMaterial[],
-  foodCostPct: number,
   opts: { visibility?: ViewVisibility; exporter?: PdfExporter; brandLabel?: string } = {},
 ) {
   const { visibility, exporter } = opts;
@@ -94,9 +93,13 @@ export async function generateRecipePdf(
   const perPortion = recipe.cost_per_portion ?? 0;
   const packaging = recipe.packaging_cost ?? 0;
   const fullPerPortion = round2(perPortion + packaging);
-  const suggested = fullPerPortion > 0 ? round2(fullPerPortion / (foodCostPct / 100)) : 0;
-  const grossProfit = round2(suggested - fullPerPortion);
-  const grossMargin = suggested > 0 ? round2((grossProfit / suggested) * 100) : 0;
+  // The app never suggests a price — profit/margin appear only when a chef has saved
+  // a menu price, and are derived from that actual price (not a target food-cost %).
+  const menuPrice = recipe.selling_price != null && recipe.selling_price > 0 ? recipe.selling_price : 0;
+  const priced = menuPrice > 0;
+  const grossProfit = priced ? round2(menuPrice - fullPerPortion) : 0;
+  const grossMargin = priced ? round2((grossProfit / menuPrice) * 100) : 0;
+  const actualFc = priced ? round2((fullPerPortion / menuPrice) * 100) : 0;
 
   const summary: [string, string][] = [];
   if (showCost) {
@@ -108,11 +111,14 @@ export async function generateRecipePdf(
     }
   }
   if (showPrice && !recipe.is_prep) {
-    summary.push(["Food Cost %", `${foodCostPct}%`]);
-    summary.push(["Suggested Selling Price", formatINR(suggested)]);
-    if (recipe.selling_price != null) summary.push(["Menu Price", formatINR(recipe.selling_price)]);
-    summary.push(["Gross Profit", formatINR(grossProfit)]);
-    summary.push(["Gross Margin", `${grossMargin}%`]);
+    if (priced) {
+      summary.push(["Menu Price", formatINR(menuPrice)]);
+      summary.push(["Food Cost %", `${actualFc}%`]);
+      summary.push(["Gross Profit", formatINR(grossProfit)]);
+      summary.push(["Gross Margin", `${grossMargin}%`]);
+    } else {
+      summary.push(["Menu Price", "—"]);
+    }
   }
 
   const subtitle = [recipe.category, recipe.is_prep ? "In-House Prep" : null, recipe.size_label ?? null]

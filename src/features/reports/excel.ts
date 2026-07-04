@@ -19,7 +19,6 @@ export interface ExcelExportData {
   priceHistory: IngredientPriceHistory[];
   usersById: Map<string, User>;
   materialsById: Map<string, RawMaterial>;
-  foodCostPct: number;
 }
 
 export async function generateExcelReport(data: ExcelExportData, label: string) {
@@ -34,7 +33,9 @@ export async function generateExcelReport(data: ExcelExportData, label: string) 
     const perPortion = r.cost_per_portion ?? 0;
     const packaging = r.packaging_cost ?? 0;
     const full = round2(perPortion + packaging);
-    const suggested = full > 0 ? round2(full / (data.foodCostPct / 100)) : 0;
+    // No suggested price — report the actual saved menu price (blank when none) and
+    // the food-cost % derived from it.
+    const menuPrice = r.selling_price != null && r.selling_price > 0 ? r.selling_price : null;
     return {
       "Recipe Name": r.recipe_name,
       Category: r.category,
@@ -42,7 +43,8 @@ export async function generateExcelReport(data: ExcelExportData, label: string) 
       "Total Cost": r.total_cost ?? 0,
       "Cost/Portion": perPortion,
       Packaging: packaging,
-      "Suggested Price": suggested,
+      "Menu Price": menuPrice ?? "",
+      "Food Cost %": menuPrice ? round2((full / menuPrice) * 100) : "",
       Status: r.status,
       "Approved By": name(r.approved_by),
       Date: formatDate(r.approved_at ?? r.created_at),

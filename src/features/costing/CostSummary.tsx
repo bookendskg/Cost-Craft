@@ -14,11 +14,9 @@ interface CostSummaryProps {
   /** Ingredient cost incl. wastage (per portion / single-portion recipe). */
   recipeCost: number;
   packagingCost: number;
-  /** Price the metrics use — the chef-set menu price, or the suggested price. */
+  /** The chef-set menu price. 0/undefined when none is saved — the app never
+   *  suggests a price, so the price-dependent metrics show "–" until one is set. */
   sellingPrice: number;
-  /** True when `sellingPrice` is the suggested fallback (no menu price set). */
-  isSuggested: boolean;
-  foodCostPct: number;
   criticalPct?: number;
   /** In-House Prep: show ONLY the calculated Total Cost — no packaging / selling
    *  price / food-cost / margin / profit. */
@@ -57,8 +55,6 @@ export function CostSummary({
   recipeCost,
   packagingCost,
   sellingPrice,
-  isSuggested,
-  foodCostPct,
   criticalPct = 35,
   prepOnly = false,
 }: CostSummaryProps) {
@@ -76,10 +72,13 @@ export function CostSummary({
     );
   }
 
+  // No menu price saved → the app never suggests one, so price-dependent metrics
+  // stay blank ("–") until a chef sets the price.
+  const priced = sellingPrice > 0;
   const fullCost = round2(recipeCost + packagingCost);
   const profit = round2(sellingPrice - fullCost);
-  const fcPct = sellingPrice > 0 ? round2((fullCost / sellingPrice) * 100) : 0;
-  const marginPct = sellingPrice > 0 ? round2((profit / sellingPrice) * 100) : 0;
+  const fcPct = priced ? round2((fullCost / sellingPrice) * 100) : 0;
+  const marginPct = priced ? round2((profit / sellingPrice) * 100) : 0;
   const tone = fcTone(fcPct, criticalPct);
 
   return (
@@ -91,21 +90,21 @@ export function CostSummary({
         <Stat
           icon={<Tag className="h-3.5 w-3.5" />}
           label="Selling Price"
-          value={formatINR(sellingPrice)}
-          hint={isSuggested ? `Suggested @ ${foodCostPct}%` : "Your menu price"}
+          value={priced ? formatINR(sellingPrice) : "—"}
+          hint={priced ? "Your menu price" : "Set a menu price to see margins"}
           className="col-span-2"
         />
         <Stat
           icon={<Percent className="h-3.5 w-3.5" />}
           label="Food Cost %"
-          value={`${fcPct}%`}
-          valueClass={TONE_TEXT[tone]}
+          value={priced ? `${fcPct}%` : "—"}
+          valueClass={priced ? TONE_TEXT[tone] : undefined}
         />
-        <Stat icon={<TrendingUp className="h-3.5 w-3.5" />} label="Gross Margin" value={`${marginPct}%`} />
+        <Stat icon={<TrendingUp className="h-3.5 w-3.5" />} label="Gross Margin" value={priced ? `${marginPct}%` : "—"} />
         <Stat
           icon={<Wallet className="h-3.5 w-3.5" />}
           label="Profit / Portion"
-          value={formatINR(profit)}
+          value={priced ? formatINR(profit) : "—"}
           className="col-span-2"
         />
       </div>

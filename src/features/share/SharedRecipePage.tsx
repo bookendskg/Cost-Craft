@@ -152,7 +152,7 @@ export function SharedRecipePage() {
                   if (busy) return;
                   setBusy(true);
                   try {
-                    await generateRecipePdf(recipe, ingredients, 30, {
+                    await generateRecipePdf(recipe, ingredients, {
                       visibility: NO_FINANCIALS,
                       exporter: { name: `Shared by ${data.granted_by_name}`, role: "viewer" },
                       brandLabel: data.brand || undefined,
