@@ -23,19 +23,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { yieldSchema, type YieldValues } from "@/lib/validation/schemas";
-import { PURCHASE_UNITS, getUnitFamily } from "@/lib/units";
+import { canonicalPurchase, measurementTypeFromBaseUnit } from "@/lib/units";
 import { computeYield, toBaseQuantity } from "@/lib/yield";
+import { round2 } from "@/lib/costing";
 import { formatINR } from "@/lib/utils";
 import { todayISO } from "@/lib/data/mock/db";
 import type { IngredientYield } from "@/lib/data/types";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useCreateYield, useUpdateYield } from "./hooks";
 import { toast } from "@/components/ui/use-toast";
-
-const baseUnitOf = (unit: string) => {
-  const fam = getUnitFamily(unit);
-  return fam === "weight" ? "Gram" : fam === "volume" ? "ML" : unit;
-};
 
 export function YieldForm({
   open,
@@ -56,6 +52,8 @@ export function YieldForm({
     defaultValues: {
       ingredient_id: "",
       purchase_cost: undefined as unknown as number,
+      // Purchase is always per ONE canonical unit (1 kg / 1 litre / 1 piece) —
+      // quantity is fixed at 1 and the unit is derived from the ingredient.
       purchase_quantity: 1,
       purchase_unit: "KG",
       wastage_quantity: undefined as unknown as number,
@@ -72,8 +70,10 @@ export function YieldForm({
         ? {
             ingredient_id: record.ingredient_id,
             purchase_cost: record.purchase_cost,
-            purchase_quantity: record.purchase_quantity,
-            purchase_unit: record.purchase_unit as YieldValues["purchase_unit"],
+            // Normalise onto the fixed per-1-unit model regardless of any legacy qty.
+            purchase_quantity: 1,
+            purchase_unit: canonicalPurchase(measurementTypeFromBaseUnit(record.purchase_unit))
+              .purchase_unit as YieldValues["purchase_unit"],
             wastage_quantity: record.wastage_quantity,
             effective_from: record.effective_from,
             notes: record.notes ?? "",
@@ -93,35 +93,51 @@ export function YieldForm({
 
   const ingredientId = watch("ingredient_id");
   const cost = watch("purchase_cost");
-  const qty = watch("purchase_quantity");
-  const unit = watch("purchase_unit");
   const wastage = watch("wastage_quantity");
-  const baseUnit = baseUnitOf(unit);
 
-  // Prefill purchase details from the chosen ingredient's current pricing.
+  // The purchase basis follows the chosen ingredient: Weight → 1 kg, Liquid → 1 litre,
+  // Count → 1 piece. The user never picks a quantity or unit.
+  const selectedMaterial = materials.find((m) => m.id === ingredientId) ?? null;
+  const canon = canonicalPurchase(
+    measurementTypeFromBaseUnit(selectedMaterial ? selectedMaterial.base_unit : watch("purchase_unit")),
+  );
+  const baseUnit = canon.base_unit;
+
+  // Prefill the per-1-unit cost from the chosen ingredient's current pricing, and pin
+  // the purchase unit to its canonical basis.
   const onPickIngredient = (id: string) => {
     setValue("ingredient_id", id);
     const m = materials.find((x) => x.id === id);
     if (m && !isEdit) {
-      if (m.purchase_price != null) setValue("purchase_cost", m.purchase_price, { shouldValidate: true });
-      setValue("purchase_quantity", m.purchase_quantity || 1);
-      setValue("purchase_unit", m.purchase_unit as YieldValues["purchase_unit"]);
+      const c = canonicalPurchase(measurementTypeFromBaseUnit(m.base_unit));
+      const perUnit =
+        m.cost_per_base_unit != null
+          ? round2(m.cost_per_base_unit * c.baseUnitsPerCanonical)
+          : m.purchase_price;
+      if (perUnit != null) setValue("purchase_cost", perUnit, { shouldValidate: true });
+      setValue("purchase_quantity", 1);
+      setValue("purchase_unit", c.purchase_unit as YieldValues["purchase_unit"]);
     }
   };
 
   const preview =
-    cost > 0 && qty > 0 && wastage != null && wastage >= 0 && wastage < toBaseQuantity(qty, unit)
-      ? computeYield({ purchaseCost: cost, purchaseQuantity: qty, purchaseUnit: unit, wastageQty: wastage })
+    ingredientId &&
+    cost > 0 &&
+    wastage != null &&
+    wastage >= 0 &&
+    wastage < toBaseQuantity(1, canon.purchase_unit)
+      ? computeYield({ purchaseCost: cost, purchaseQuantity: 1, purchaseUnit: canon.purchase_unit, wastageQty: wastage })
       : null;
 
   const onSubmit = async (values: YieldValues) => {
+    const c = canonicalPurchase(measurementTypeFromBaseUnit(values.purchase_unit));
     const input = {
       ingredient_id: values.ingredient_id,
       purchase_cost: values.purchase_cost,
-      purchase_quantity: values.purchase_quantity,
-      purchase_unit: values.purchase_unit,
+      purchase_quantity: 1,
+      purchase_unit: c.purchase_unit,
       wastage_quantity: values.wastage_quantity,
-      wastage_unit: baseUnitOf(values.purchase_unit),
+      wastage_unit: c.base_unit,
       effective_from: values.effective_from,
       notes: values.notes || null,
     };
@@ -172,10 +188,13 @@ export function YieldForm({
           </div>
 
           <div className="rounded-md border p-3">
-            <p className="mb-3 text-sm font-medium">Purchase</p>
+            <p className="text-sm font-medium">Purchase</p>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Priced per one purchase unit ({canon.displayUnit}), set automatically from the ingredient.
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Purchase Cost (₹) *</Label>
+                <Label>Purchase Cost (₹ per {canon.displayUnit}) *</Label>
                 <CurrencyInput
                   value={cost ?? undefined}
                   onChange={(v) => setValue("purchase_cost", v as number, { shouldValidate: true })}
@@ -186,34 +205,21 @@ export function YieldForm({
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label>Purchase Quantity *</Label>
-                <Input
-                  type="number"
-                  step="0.001"
-                  {...register("purchase_quantity", { valueAsNumber: true })}
-                />
-                {formState.errors.purchase_quantity && (
-                  <p className="text-xs text-destructive">{formState.errors.purchase_quantity.message}</p>
-                )}
+                <Label>Purchase Unit</Label>
+                <div className="flex h-10 items-center rounded-md border bg-muted px-3 text-sm font-medium">
+                  {canon.displayUnit}
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Purchase Unit *</Label>
-                <Select value={unit} onValueChange={(v) => setValue("purchase_unit", v as YieldValues["purchase_unit"])}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PURCHASE_UNITS.map((u) => (
-                      <SelectItem key={u} value={u}>{u}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
+              <div className="col-span-2 space-y-1.5">
                 <Label>Wastage ({baseUnit}) *</Label>
                 <Input
                   type="number"
                   step="0.001"
                   {...register("wastage_quantity", { valueAsNumber: true })}
                 />
+                <p className="text-xs text-muted-foreground">
+                  How much of one {canon.displayUnit} is lost in prep, measured in {baseUnit}.
+                </p>
                 {formState.errors.wastage_quantity && (
                   <p className="text-xs text-destructive">{formState.errors.wastage_quantity.message}</p>
                 )}
