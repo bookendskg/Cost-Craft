@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { ImportDialog } from "@/components/ImportDialog";
 import { materialsRepo, type MaterialInput } from "@/lib/data";
-import { PURCHASE_UNITS, BASE_UNITS } from "@/lib/units";
+import { canonicalPurchase, type MeasurementType } from "@/lib/units";
 import { pick, toNum, toText, type ImportConfig } from "@/lib/import/importTypes";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/TableSkeleton";
@@ -95,19 +95,15 @@ export function MaterialsPage() {
     columns: [
       { label: "Ingredient", required: true },
       { label: "Category" },
+      { label: "Material Type" },
       { label: "Purchase Price" },
-      { label: "Purchase Quantity" },
-      { label: "Purchase Unit" },
-      { label: "Base Unit" },
       { label: "Notes" },
     ],
     sample: {
       Ingredient: "Onion",
       Category: "Vegetables",
-      "Purchase Price": 2400,
-      "Purchase Quantity": 20,
-      "Purchase Unit": "KG",
-      "Base Unit": "Gram",
+      "Material Type": "Weight",
+      "Purchase Price": 100,
       Notes: "",
     },
     parseRow: (row, n) => {
@@ -115,22 +111,26 @@ export function MaterialsPage() {
       if (!name) return { error: `Row ${n}: ingredient name is required` };
       const price = toNum(pick(row, ["Purchase Price", "Purchase Price (₹)", "Price"]));
       if (price !== null && (Number.isNaN(price) || price < 0)) return { error: `Row ${n}: invalid purchase price` };
-      const qtyRaw = toNum(pick(row, ["Purchase Quantity", "Pack Size", "Quantity"]));
-      const qty = qtyRaw == null || Number.isNaN(qtyRaw) ? 1 : qtyRaw;
-      if (qty <= 0) return { error: `Row ${n}: purchase quantity must be greater than 0` };
-      const purchaseUnit = toText(pick(row, ["Purchase Unit", "Unit"])) || "KG";
-      if (!(PURCHASE_UNITS as readonly string[]).includes(purchaseUnit)) return { error: `Row ${n}: unknown purchase unit "${purchaseUnit}"` };
-      const baseUnit = toText(pick(row, ["Base Unit"])) || "Gram";
-      if (!(BASE_UNITS as readonly string[]).includes(baseUnit)) return { error: `Row ${n}: unknown base unit "${baseUnit}"` };
+      // Material Type → automatic purchase unit (1 kg / 1 litre / 1 piece). Case +
+      // whitespace insensitive; blank defaults to Weight.
+      const typeRaw = toText(pick(row, ["Material Type", "Type"])).trim().toLowerCase();
+      const type: MeasurementType | null =
+        typeRaw === "" ? "weight"
+          : /^(weight|kg|kilogram|gram|g)$/.test(typeRaw) ? "weight"
+            : /^(liquid|volume|litre|liter|l|ml)$/.test(typeRaw) ? "volume"
+              : /^(count|piece|pcs?|pc|unit|each|nos?)$/.test(typeRaw) ? "count"
+                : null;
+      if (!type) return { error: `Row ${n}: Material Type must be Weight, Liquid or Count (got "${typeRaw}")` };
+      const canon = canonicalPurchase(type);
       return {
         value: {
           ingredient_name: name,
           category: toText(pick(row, ["Category"])) || "Other",
           notes: toText(pick(row, ["Notes"])) || null,
           purchase_price: price,
-          purchase_quantity: qty,
-          purchase_unit: purchaseUnit,
-          base_unit: baseUnit,
+          purchase_quantity: 1,
+          purchase_unit: canon.purchase_unit,
+          base_unit: canon.base_unit,
         },
       };
     },
