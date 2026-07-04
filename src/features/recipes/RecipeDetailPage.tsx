@@ -486,7 +486,7 @@ export function RecipeDetailPage() {
                             {formatINR(batchCost)}
                           </TableCell>
                         </TableRow>
-                        {packaging > 0 && (
+                        {!recipe.is_prep && packaging > 0 && (
                           <>
                             <TableRow>
                               <TableCell colSpan={vis.quantities ? 3 : 1} className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -534,7 +534,7 @@ export function RecipeDetailPage() {
                     {recipe.serving_size > 1 && (
                       <FinRow label={`Cost Per Portion (÷${recipe.serving_size})`} value={formatINR(portionCost)} />
                     )}
-                    {packaging > 0 && (
+                    {!recipe.is_prep && packaging > 0 && (
                       <>
                         <FinRow label="Packaging / Portion" value={formatINR(packaging)} />
                         <FinRow label="Full Cost / Portion" value={formatINR(fullCpp)} />

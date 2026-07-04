@@ -393,32 +393,36 @@ export function RecipeEditorPage() {
                 </p>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Wastage (%)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  {...register("wastage_pct", { setValueAs: (v) => (v === "" ? 0 : Number(v)) })}
-                />
-                {formState.errors.wastage_pct && (
-                  <p className="text-xs text-destructive">{formState.errors.wastage_pct.message}</p>
-                )}
-                <p className="text-xs text-muted-foreground">Trimming/peeling loss, on top of cost.</p>
+            {/* In-House Prep is an internal sub-recipe — no wastage/packaging/selling
+                price/food cost. Only its Total Cost matters. */}
+            {!effectiveIsPrep && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Wastage (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    {...register("wastage_pct", { setValueAs: (v) => (v === "" ? 0 : Number(v)) })}
+                  />
+                  {formState.errors.wastage_pct && (
+                    <p className="text-xs text-destructive">{formState.errors.wastage_pct.message}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">Trimming/peeling loss, on top of cost.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Packaging (₹/portion)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    {...register("packaging_cost", { setValueAs: (v) => (v === "" ? 0 : Number(v)) })}
+                  />
+                  {formState.errors.packaging_cost && (
+                    <p className="text-xs text-destructive">{formState.errors.packaging_cost.message}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">Box/container cost per portion.</p>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Packaging (₹/portion)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...register("packaging_cost", { setValueAs: (v) => (v === "" ? 0 : Number(v)) })}
-                />
-                {formState.errors.packaging_cost && (
-                  <p className="text-xs text-destructive">{formState.errors.packaging_cost.message}</p>
-                )}
-                <p className="text-xs text-muted-foreground">Box/container cost per portion.</p>
-              </div>
-            </div>
+            )}
             <div className="space-y-1.5">
               <Label>Description</Label>
               <Textarea rows={2} {...register("description")} />
@@ -612,6 +616,7 @@ export function RecipeEditorPage() {
             sellingPrice={(watch("selling_price") || 0) > 0 ? (watch("selling_price") as number) : costing.suggestedPrice}
             isSuggested={!((watch("selling_price") || 0) > 0)}
             foodCostPct={foodCostPct}
+            prepOnly={effectiveIsPrep}
           />
           {costing.hasMissingPrice && (
             <div className="flex items-start gap-2 rounded-md bg-amber-500/10 p-3 text-sm text-amber-700">

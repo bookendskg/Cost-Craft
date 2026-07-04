@@ -20,6 +20,9 @@ interface CostSummaryProps {
   isSuggested: boolean;
   foodCostPct: number;
   criticalPct?: number;
+  /** In-House Prep: show ONLY the calculated Total Cost — no packaging / selling
+   *  price / food-cost / margin / profit. */
+  prepOnly?: boolean;
 }
 
 /** A compact metric tile. */
@@ -57,7 +60,22 @@ export function CostSummary({
   isSuggested,
   foodCostPct,
   criticalPct = 35,
+  prepOnly = false,
 }: CostSummaryProps) {
+  if (prepOnly) {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm font-semibold">Cost Summary</p>
+        <Stat
+          icon={<Receipt className="h-3.5 w-3.5" />}
+          label="Total Cost"
+          value={formatINR(recipeCost)}
+          hint="Sum of all ingredient costs"
+        />
+      </div>
+    );
+  }
+
   const fullCost = round2(recipeCost + packagingCost);
   const profit = round2(sellingPrice - fullCost);
   const fcPct = sellingPrice > 0 ? round2((fullCost / sellingPrice) * 100) : 0;
