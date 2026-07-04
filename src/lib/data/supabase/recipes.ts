@@ -310,6 +310,7 @@ export const supabaseRecipesRepo = {
     mode: "add" | "update" | "upsert",
     rows: ImportRecipeLine[],
     actorId: string,
+    isPrep = false,
   ): Promise<ImportSummary> {
     const c = sb();
     const S: ImportSummary = { total: 0, imported: 0, updated: 0, skipped: 0, failed: 0, errors: [] };
@@ -383,8 +384,9 @@ export const supabaseRecipesRepo = {
           updated_at: nowISO(),
           updated_by: actorId,
         };
-        if (selling != null) patch.selling_price = selling;
-        if (pkg != null) patch.packaging_cost = pkg;
+        // In-House Prep has no menu price / packaging (Total Cost only).
+        if (!isPrep && selling != null) patch.selling_price = selling;
+        if (!isPrep && pkg != null) patch.packaging_cost = pkg;
         recipeUpdates.push({ id: existing.id, patch });
         recomputeIds.push(existing.id);
         return { id: existing.id, action: "updated" };
@@ -405,13 +407,13 @@ export const supabaseRecipesRepo = {
         preparation_time: null,
         serving_size: 1,
         status: "draft",
-        selling_price: selling,
-        packaging_cost: pkg ?? 0,
+        selling_price: isPrep ? null : selling,
+        packaging_cost: isPrep ? 0 : pkg ?? 0,
         total_cost: 0,
         cost_per_portion: 0,
         wastage_pct: 5,
-        is_prep: false,
-        yield_quantity: 0,
+        is_prep: isPrep,
+        yield_quantity: isPrep ? ls.reduce((s, l) => s + (l.quantity || 0), 0) : 0,
         yield_unit: "Gram",
         created_by: actorId,
         approved_by: null,
