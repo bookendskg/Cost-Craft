@@ -119,7 +119,20 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
       avgWithout: avg(rows, (r) => r.fcWithout),
       highCost: rows.filter((r) => r.fcWith != null && r.fcWith > HIGH_FC).length,
       missing: rows.filter((r) => r.missing).length,
-      missingItems: rows.filter((r) => r.missing).map((r) => ({ id: r.id, name: r.name, category: r.category })),
+      missingItems: rows.filter((r) => r.missing).map((r) => ({
+        id: r.id,
+        name: r.name,
+        category: r.category,
+        // Why it's counted as missing — a recipe needs BOTH a cost per portion and a
+        // selling (menu) price to compute food-cost %. Ingredients/method being filled
+        // in doesn't matter here.
+        reason:
+          r.making <= 0 && r.selling <= 0
+            ? "No cost & no selling price"
+            : r.making <= 0
+              ? "No cost per portion (price the ingredients)"
+              : "No selling price set",
+      })),
       lastUpdated,
     };
   }, [recipes, brand, weightByRecipe]);
@@ -171,7 +184,9 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
             <DialogTitle>Missing data — {data.missing} recipe(s)</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            No food cost or selling price yet, so these are excluded from the averages. Tap one to open and fix it.
+            A recipe is counted here when it has <strong>no cost per portion</strong> or <strong>no selling
+            (menu) price</strong> — so food-cost % can't be computed and it's excluded from the averages. This is
+            not about ingredients or method being blank. Tap one to open and set the missing value.
           </p>
           <ul className="divide-y">
             {data.missingItems.map((r) => (
@@ -181,8 +196,13 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
                   onClick={() => { setShowMissing(false); navigate(`/recipes/${r.id}`); }}
                   className="flex w-full items-center justify-between gap-3 py-2 text-left text-sm hover:text-emerald-700"
                 >
-                  <span className="font-medium">{r.name}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{r.category}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{r.name}</span>
+                    <span className="block text-xs text-muted-foreground">{r.category}</span>
+                  </span>
+                  <span className="shrink-0 rounded bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                    {r.reason}
+                  </span>
                 </button>
               </li>
             ))}
