@@ -107,6 +107,8 @@ export const yieldsRepo = {
           performed_by: actorId,
           notes: `Added yield (${row.yield_percentage}% yield)`,
         });
+        // Recompute every recipe using this ingredient with the yield-adjusted cost.
+        cascadeFromMaterial(db, input.ingredient_id, actorId, "Yield added");
         return row;
       }),
     );
@@ -118,6 +120,7 @@ export const yieldsRepo = {
         const y = db.ingredient_yields.find((x) => x.id === id);
         if (!y) throw new Error("Yield record not found");
         const before = { yield_pct: y.yield_percentage, adj_cost: y.yield_adjusted_unit_cost };
+        const prevIngredient = y.ingredient_id;
         Object.assign(y, derive(input), { updated_at: nowISO() });
         recordAudit(db, {
           entity_type: "ingredient",
@@ -128,6 +131,9 @@ export const yieldsRepo = {
           performed_by: actorId,
           notes: `Updated yield (${y.yield_percentage}% yield)`,
         });
+        // Recompute recipes using this ingredient (and the old one, if it changed).
+        cascadeFromMaterial(db, y.ingredient_id, actorId, "Yield updated");
+        if (prevIngredient !== y.ingredient_id) cascadeFromMaterial(db, prevIngredient, actorId, "Yield updated");
         return y;
       }),
     );
@@ -231,6 +237,8 @@ export const yieldsRepo = {
           performed_by: actorId,
           notes: "Deleted yield record",
         });
+        // Removing the yield reverts affected recipes to the standard (un-adjusted) cost.
+        cascadeFromMaterial(db, y.ingredient_id, actorId, "Yield removed");
       }),
     );
   },
