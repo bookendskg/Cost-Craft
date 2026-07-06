@@ -8,9 +8,12 @@
 // domain types; getWithIngredients joins raw_materials and sub-recipes like the mock.
 
 import type {
+  PackagingItem,
   Recipe,
   RecipeCostHistory,
   RecipeIngredient,
+  RecipePackaging,
+  RecipePackagingWithItem,
   RecipeIngredientWithMaterial,
   RecipeVersion,
 } from "../types";
@@ -27,6 +30,7 @@ import type {
   ImportRecipeLine,
   RecipeHeaderInput,
   RecipeLineInput,
+  RecipePackagingInput,
 } from "../mock/recipes";
 
 export type { ImportRecipeLine, RecipeHeaderInput, RecipeLineInput };
@@ -64,6 +68,37 @@ async function replaceLines(recipeId: string, rows: RecipeIngredient[]): Promise
     const ins = await c.from("recipe_ingredients").insert(rows);
     if (ins.error) fail("Save recipe ingredients", ins.error.message);
   }
+}
+
+/** Replace a recipe's packaging lines, snapshotting master unit prices. Undefined
+ *  packaging means "not managed in this save" — leave existing lines untouched. */
+async function replacePackaging(recipeId: string, lines: RecipePackagingInput[] | undefined): Promise<void> {
+  if (lines === undefined) return;
+  const c = sb();
+  const del = await c.from("recipe_packaging").delete().eq("recipe_id", recipeId);
+  if (del.error) fail("Save recipe packaging", del.error.message);
+  const valid = lines.filter((l) => l.packaging_item_id && l.quantity_used > 0);
+  if (!valid.length) return;
+  const ids = [...new Set(valid.map((l) => l.packaging_item_id))];
+  const itemsRes = await c.from("packaging_items").select("id,unit,unit_price").in("id", ids);
+  if (itemsRes.error) fail("Load packaging items", itemsRes.error.message);
+  const priceMap = new Map(
+    ((itemsRes.data ?? []) as { id: string; unit: string; unit_price: number | null }[]).map((i) => [i.id, i]),
+  );
+  const rows = valid.map((l) => {
+    const it = priceMap.get(l.packaging_item_id);
+    return {
+      id: uid(),
+      recipe_id: recipeId,
+      packaging_item_id: l.packaging_item_id,
+      quantity_used: l.quantity_used,
+      unit: it?.unit ?? "Piece",
+      unit_price: it?.unit_price ?? 0,
+      created_at: nowISO(),
+    };
+  });
+  const ins = await c.from("recipe_packaging").insert(rows);
+  if (ins.error) fail("Save recipe packaging", ins.error.message);
 }
 
 /** Snapshot the current recipe + its lines into recipe_versions (mirrors mock). */
@@ -123,7 +158,7 @@ export const supabaseRecipesRepo = {
 
   async getWithIngredients(
     id: string,
-  ): Promise<{ recipe: Recipe; ingredients: RecipeIngredientWithMaterial[] } | null> {
+  ): Promise<{ recipe: Recipe; ingredients: RecipeIngredientWithMaterial[]; packaging: RecipePackagingWithItem[] } | null> {
     const c = sb();
     const recRes = await c.from("recipes").select("*").eq("id", id).maybeSingle();
     if (recRes.error) fail("Load recipe", recRes.error.message);
@@ -155,7 +190,19 @@ export const supabaseRecipesRepo = {
     );
     const recs = new Map(((subsRes.data ?? []) as Recipe[]).map((r) => [r.id, r]));
 
-    return { recipe, ingredients: attach(lines, mats, recs) };
+    // Packaging lines joined to their master items.
+    const pkgRes = await c.from("recipe_packaging").select("*").eq("recipe_id", id);
+    if (pkgRes.error) fail("Load recipe packaging", pkgRes.error.message);
+    const pkgLines = (pkgRes.data ?? []) as RecipePackaging[];
+    const pkgItemIds = pkgLines.map((p) => p.packaging_item_id);
+    const itemsRes = pkgItemIds.length
+      ? await c.from("packaging_items").select("*").in("id", pkgItemIds)
+      : { data: [], error: null };
+    if (itemsRes.error) fail("Load packaging items", itemsRes.error.message);
+    const itemsMap = new Map(((itemsRes.data ?? []) as PackagingItem[]).map((i) => [i.id, i]));
+    const packaging: RecipePackagingWithItem[] = pkgLines.map((p) => ({ ...p, item: itemsMap.get(p.packaging_item_id) ?? null }));
+
+    return { recipe, ingredients: attach(lines, mats, recs), packaging };
   },
 
   async create(
@@ -213,6 +260,7 @@ export const supabaseRecipesRepo = {
     if (insRecipe.error) fail("Create recipe", insRecipe.error.message);
 
     await replaceLines(id, lineRows(id, lines));
+    await replacePackaging(id, header.packaging);
     await recomputeRecipes([id], actorId, "Recipe created");
     const saved = await reloadRecipe(id, "Create recipe");
     await snapshotVersion(saved, actorId, "Initial version");
@@ -284,6 +332,7 @@ export const supabaseRecipesRepo = {
     if (upd.error) fail("Update recipe", upd.error.message);
 
     await replaceLines(id, lineRows(id, lines));
+    await replacePackaging(id, header.packaging);
     await recomputeRecipes([id], actorId, "Recipe edited");
     const saved = await reloadRecipe(id, "Update recipe");
     await snapshotVersion(saved, actorId, `Version ${saved.version_no}`);

@@ -35,8 +35,10 @@ import { type RawMaterial } from "@/lib/data/types";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useBrands } from "@/features/brands/hooks";
 import { useYields } from "@/features/yield/hooks";
+import { usePackagingItems } from "@/features/packaging/hooks";
 import { useFoodCostPct, useRecipeCategories } from "@/features/settings/hooks";
 import { useRecipeCosting, type EditorLine } from "@/features/costing/useRecipeCosting";
+import { RecipePackagingSection, packagingLinesTotal, type PackagingLine } from "./RecipePackagingSection";
 import { CostSummary } from "@/features/costing/CostSummary";
 import { IngredientPicker, type ComponentPick } from "./IngredientPicker";
 import { useCreateRecipe, useRecipe, useRecipes, useSubmitRecipe, useUpdateRecipe } from "./hooks";
@@ -83,8 +85,11 @@ export function RecipeEditorPage() {
     [allRecipes, id],
   );
   const prepsById = useMemo(() => new Map<string, Recipe>(allRecipes.map((r) => [r.id, r])), [allRecipes]);
+  const { data: packagingItemsAll = [] } = usePackagingItems();
+  const activePackaging = useMemo(() => packagingItemsAll.filter((p) => p.status === "active"), [packagingItemsAll]);
 
   const [lines, setLines] = useState<GridLine[]>([]);
+  const [packagingLines, setPackagingLines] = useState<PackagingLine[]>([]);
   const [method, setMethod] = useState("");
   const [touched, setTouched] = useState(false);
   const savedRef = useRef(false);
@@ -134,6 +139,13 @@ export function RecipeEditorPage() {
           cut_type: i.cut_type ?? null,
         })),
       );
+      setPackagingLines(
+        (existing.packaging ?? []).map((p) => ({
+          key: newKey(),
+          packaging_item_id: p.packaging_item_id,
+          quantity_used: p.quantity_used,
+        })),
+      );
     } else if (!isEdit) {
       setValue("category", newPrep ? "In-House Prep" : categories[0] ?? "");
     }
@@ -141,6 +153,7 @@ export function RecipeEditorPage() {
   }, [isEdit, existing, categories.length]);
 
   const servingSize = watch("serving_size") || 1;
+  const packagingCost = useMemo(() => packagingLinesTotal(packagingLines, activePackaging), [packagingLines, activePackaging]);
   const costing = useRecipeCosting(
     lines.map((l) => ({
       ingredient_id: l.ingredient_id,
@@ -155,7 +168,7 @@ export function RecipeEditorPage() {
     servingSize,
     foodCostPct,
     watch("wastage_pct") || 0,
-    watch("packaging_cost") || 0,
+    packagingCost,
     yields,
   );
 
@@ -170,6 +183,19 @@ export function RecipeEditorPage() {
   const patchLine = (key: string, patch: Partial<GridLine>) => {
     setTouched(true);
     setLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+  };
+
+  const addPackaging = () => {
+    setTouched(true);
+    setPackagingLines((prev) => [...prev, { key: newKey(), packaging_item_id: "", quantity_used: 1 }]);
+  };
+  const removePackaging = (key: string) => {
+    setTouched(true);
+    setPackagingLines((prev) => prev.filter((l) => l.key !== key));
+  };
+  const patchPackaging = (key: string, patch: Partial<PackagingLine>) => {
+    setTouched(true);
+    setPackagingLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   };
 
   // §12: warn before leaving with unsaved changes (in-app nav + browser unload).
@@ -232,6 +258,13 @@ export function RecipeEditorPage() {
     ...h,
     is_prep: effectiveIsPrep,
     method: method.split("\n").map((s) => s.trim()).filter(Boolean),
+    // Packaging is now line-based: derive the cost from the lines and persist them.
+    packaging_cost: effectiveIsPrep ? 0 : packagingCost,
+    packaging: effectiveIsPrep
+      ? []
+      : packagingLines
+          .filter((l) => l.packaging_item_id && l.quantity_used > 0)
+          .map((l) => ({ packaging_item_id: l.packaging_item_id, quantity_used: l.quantity_used })),
   });
 
   const saveDraft = handleSubmit(async (h) => {
@@ -396,8 +429,8 @@ export function RecipeEditorPage() {
             {/* In-House Prep is an internal sub-recipe — no wastage/packaging/selling
                 price/food cost. Only its Total Cost matters. */}
             {!effectiveIsPrep && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
+              <div className="space-y-3">
+                <div className="max-w-xs space-y-1.5">
                   <Label>Wastage (%)</Label>
                   <Input
                     type="number"
@@ -409,18 +442,13 @@ export function RecipeEditorPage() {
                   )}
                   <p className="text-xs text-muted-foreground">Trimming/peeling loss, on top of cost.</p>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Packaging (₹/portion)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    {...register("packaging_cost", { setValueAs: (v) => (v === "" ? 0 : Number(v)) })}
-                  />
-                  {formState.errors.packaging_cost && (
-                    <p className="text-xs text-destructive">{formState.errors.packaging_cost.message}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">Box/container cost per portion.</p>
-                </div>
+                <RecipePackagingSection
+                  lines={packagingLines}
+                  items={activePackaging}
+                  onAdd={addPackaging}
+                  onRemove={removePackaging}
+                  onPatch={patchPackaging}
+                />
               </div>
             )}
             <div className="space-y-1.5">

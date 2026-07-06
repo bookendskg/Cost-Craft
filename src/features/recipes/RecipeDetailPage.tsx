@@ -505,6 +505,32 @@ export function RecipeDetailPage() {
                     )}
                   </TableBody>
                 </Table>
+
+                {showFinancials && !recipe.is_prep && (data?.packaging?.length ?? 0) > 0 && (
+                  <div className="mt-5">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Packaging</p>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item</TableHead>
+                          <TableHead className="text-right">Qty</TableHead>
+                          <TableHead className="text-right">Unit Price</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data!.packaging.map((p) => (
+                          <TableRow key={p.id}>
+                            <TableCell>{p.item?.name ?? "—"}</TableCell>
+                            <TableCell className="text-right font-mono">{p.quantity_used}</TableCell>
+                            <TableCell className="text-right font-mono">{formatINR(p.unit_price)}</TableCell>
+                            <TableCell className="text-right font-mono">{formatINR(p.quantity_used * p.unit_price)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="method">
