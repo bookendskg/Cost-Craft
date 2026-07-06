@@ -12,24 +12,23 @@ const mkSuper = (i: number) =>
 describe("super admin count limits", () => {
   beforeEach(() => resetDb());
 
-  it("allows up to 5 active super admins and rejects the 6th", async () => {
-    // moin (1) + 4 created = 5 active supers.
-    for (let i = 1; i <= 4; i++) await mkSuper(i);
-    await expect(mkSuper(5)).rejects.toThrow(/maximum of 5/i);
+  it("allows up to 2 active super admins and rejects the 3rd", async () => {
+    // seed owner (1) + 1 created = 2 active supers.
+    await mkSuper(1);
+    await expect(mkSuper(2)).rejects.toThrow(/maximum of 2/i);
   });
 
   it("exempts owner emails from the maximum", async () => {
     // The seed owner (mspatel05831) already occupies the single owner email, so to
     // exercise the exemption we bootstrap a second super, demote the owner (min-1
-    // still holds), fill the 5-cap with non-owner supers, then re-promote the owner.
+    // still holds), fill the 2-cap with non-owner supers, then re-promote the owner.
     const s0 = await mkSuper(0); // supers: owner + s0
     await usersRepo.update("u-owner", { role: "admin" }, s0.id); // demote owner → 1 super (s0)
-    for (let i = 1; i <= 4; i++)
-      await usersRepo.create(
-        { name: `S${i}`, email: `s${i}@x.com`, role: "super_admin", password: "password1" },
-        s0.id,
-      ); // → 5 active supers (s0 + s1..s4)
-    // The owner email is exempt from the 5-cap, so re-promoting is allowed as a 6th.
+    await usersRepo.create(
+      { name: "S1", email: "s1@x.com", role: "super_admin", password: "password1" },
+      s0.id,
+    ); // → 2 active supers (s0 + s1) = the cap
+    // The owner email is exempt from the 2-cap, so re-promoting is allowed as a 3rd.
     const owner = await usersRepo.update("u-owner", { role: "super_admin" }, s0.id);
     expect(owner.role).toBe("super_admin");
   });
@@ -70,12 +69,12 @@ describe("super admin count limits", () => {
     );
   });
 
-  it("blocks promoting a 6th active super admin via update", async () => {
-    for (let i = 1; i <= 4; i++) await mkSuper(i); // 5 active supers
+  it("blocks promoting a 3rd active super admin via update", async () => {
+    await mkSuper(1); // seed owner + s1 = 2 active supers (the cap)
     const editor = await usersRepo.create(
       { name: "Ed", email: "ed@x.com", role: "editor", password: "password1" },
       "u-owner",
     );
-    await expect(usersRepo.update(editor.id, { role: "super_admin" }, "u-owner")).rejects.toThrow(/maximum of 5/i);
+    await expect(usersRepo.update(editor.id, { role: "super_admin" }, "u-owner")).rejects.toThrow(/maximum of 2/i);
   });
 });

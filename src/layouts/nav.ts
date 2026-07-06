@@ -10,6 +10,7 @@ import {
   ChefHat,
   Sprout,
   Trash2,
+  Store,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/lib/data/types";
@@ -47,6 +48,10 @@ export const NAV_ITEMS: NavItem[] = [
   // User Management now hosts Users + Viewer Access (all Admins) + a Super-Admin-only
   // Roles & Permissions tab, so Viewer Access and Roles no longer have their own items.
   { to: "/users", label: "User Management", icon: Users, group: "Admin", roles: ["admin"], cap: "user.manage" },
+  // Brands & Outlets is Super-Admin only (creating/editing the brand + outlet master
+  // data). No capability — the early return in navForRole shows every item to a
+  // super_admin, and no other role matches roles:["super_admin"].
+  { to: "/brands", label: "Brands & Outlets", icon: Store, group: "Admin", roles: ["super_admin"] },
   { to: "/audit", label: "Price Changes", icon: ScrollText, group: "Admin", roles: ["admin"], cap: "audit.view" },
   { to: "/settings", label: "Settings", icon: Settings, group: "Admin", roles: ["admin"], cap: "settings.manage" },
 ];

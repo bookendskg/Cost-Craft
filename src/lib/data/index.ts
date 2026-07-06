@@ -35,6 +35,8 @@ export type { YieldInput, ImportYieldRow } from "./mock/yields";
 export type { WastageInput } from "./mock/wastage";
 export type { RecipeHeaderInput, RecipeLineInput, ImportRecipeLine } from "./mock/recipes";
 export type { RoleInput } from "./mock/roles";
+export type { BrandInput } from "./mock/brands";
+export type { OutletInput } from "./mock/outlets";
 
 export const usersRepo = isSupabaseConfigured ? supabaseUsersRepo : mockUsersRepo;
 export const materialsRepo = isSupabaseDataBackend ? supabaseMaterialsRepo : mockMaterialsRepo;

@@ -191,8 +191,32 @@ export const recipeLineSchema = z.object({
 });
 export type RecipeLineValues = z.infer<typeof recipeLineSchema>;
 
-// Brand & outlet management (and their create/edit schemas) has been removed —
-// the fixed Capiche/Aiko brands + outlets are read-only.
+// --- Brand & outlet management (Super-Admin managed) -----------------------
+export const brandSchema = z.object({
+  name: z.string().min(1, "Brand name is required"),
+  brand_code: z.string().min(1, "Brand code is required"),
+  display_name: z.string().optional().or(z.literal("")),
+  accent_color: z.string().optional().or(z.literal("")),
+  status: z.enum(["active", "inactive", "archived"]),
+  notes: z.string().optional().or(z.literal("")),
+});
+export type BrandValues = z.infer<typeof brandSchema>;
+
+export const outletSchema = z.object({
+  brand_id: z.string().min(1, "Select a brand"),
+  name: z.string().min(1, "Outlet name is required"),
+  outlet_code: z.string().min(1, "Outlet code is required"),
+  city: z.string().optional().or(z.literal("")),
+  state: z.string().optional().or(z.literal("")),
+  address: z.string().optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  email: z.string().email("Enter a valid email").optional().or(z.literal("")),
+  opening_date: z.string().optional().or(z.literal("")),
+  timezone: z.string().optional().or(z.literal("")),
+  status: z.enum(["active", "inactive", "archived"]),
+  notes: z.string().optional().or(z.literal("")),
+});
+export type OutletValues = z.infer<typeof outletSchema>;
 
 // --- Custom roles (Super-Admin managed) ------------------------------------
 export const roleSchema = z.object({

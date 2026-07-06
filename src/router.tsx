@@ -22,6 +22,7 @@ const ReportsPage = lazy(() => import("@/features/reports/ReportsPage").then((m)
 const UsersPage = lazy(() => import("@/features/users/UsersPage").then((m) => ({ default: m.UsersPage })));
 const AuditPage = lazy(() => import("@/features/audit/AuditPage").then((m) => ({ default: m.AuditPage })));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
+const BrandsOutletsPage = lazy(() => import("@/features/brands/BrandsOutletsPage").then((m) => ({ default: m.BrandsOutletsPage })));
 const SharedRecipePage = lazy(() => import("@/features/share/SharedRecipePage").then((m) => ({ default: m.SharedRecipePage })));
 // Public marketing landing page (code-split; the app's public entry point at "/").
 const LandingPage = lazy(() => import("@/features/marketing/LandingPage").then((m) => ({ default: m.LandingPage })));
@@ -150,6 +151,15 @@ export const router = createBrowserRouter([
       // the catch-all below redirects any stale links to /dashboard.
       // "Brands & Outlets" management has been removed. The old /brands route is
       // intentionally gone; the catch-all below redirects it to /dashboard.
+      {
+        // Brands & Outlets master-data management — Super Admin only.
+        path: "brands",
+        element: (
+          <RequireRole roles={["super_admin"]}>
+            <BrandsOutletsPage />
+          </RequireRole>
+        ),
+      },
       {
         // The old global cost-config Settings page has been removed. "Settings" now
         // opens the user's Profile Settings (the same page as /profile) — every
