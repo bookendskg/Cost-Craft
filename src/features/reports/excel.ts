@@ -104,8 +104,41 @@ export async function generateExcelReport(data: ExcelExportData, label: string) 
     Date: formatDate(h.changed_at),
   }));
 
+  // Sheet 5 — Packaging: per-recipe packaging cost + by-category / by-brand rollups.
+  const menuRecipes = data.recipes.filter((r) => !r.is_prep);
+  const packagingByRecipe = menuRecipes
+    .filter((r) => (r.packaging_cost ?? 0) > 0)
+    .map((r) => ({
+      "Recipe Name": r.recipe_name,
+      Brand: r.brand,
+      Category: r.category,
+      "Packaging Cost": round2(r.packaging_cost ?? 0),
+      "Menu Price": r.selling_price ?? "",
+      "Packaging % of Price": r.selling_price ? round2(((r.packaging_cost ?? 0) / r.selling_price) * 100) : "",
+    }))
+    .sort((a, b) => b["Packaging Cost"] - a["Packaging Cost"]);
+  const rollup = (key: "brand" | "category") => {
+    const m = new Map<string, { total: number; count: number }>();
+    for (const r of menuRecipes) {
+      const k = (key === "brand" ? r.brand : r.category) || "—";
+      const cur = m.get(k) ?? { total: 0, count: 0 };
+      cur.total += r.packaging_cost ?? 0;
+      cur.count += 1;
+      m.set(k, cur);
+    }
+    return [...m.entries()].map(([k, v]) => ({
+      [key === "brand" ? "Brand" : "Category"]: k,
+      Recipes: v.count,
+      "Total Packaging": round2(v.total),
+      "Avg Packaging": round2(v.count ? v.total / v.count : 0),
+    }));
+  };
+
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Recipe Summary");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(breakdown), "Ingredient Detail");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(packagingByRecipe), "Packaging by Recipe");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rollup("brand")), "Packaging by Brand");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rollup("category")), "Packaging by Category");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cost), "Cost History");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(price), "Price History");
 

@@ -117,6 +117,9 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
       totalItems: rows.length,
       avgWith: avg(rows, (r) => r.fcWith),
       avgWithout: avg(rows, (r) => r.fcWithout),
+      avgPackaging: avg(rows, (r) => (r.pkg > 0 ? r.pkg : null)),
+      packagingSpend: round2(rows.reduce((s, r) => s + r.pkg, 0)),
+      topPackaging: [...rows].filter((r) => r.pkg > 0).sort((a, b) => b.pkg - a.pkg).slice(0, 5),
       highCost: rows.filter((r) => r.fcWith != null && r.fcWith > HIGH_FC).length,
       missing: rows.filter((r) => r.missing).length,
       missingItems: rows.filter((r) => r.missing).map((r) => ({
@@ -168,6 +171,8 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
         <Kpi label="Total Items" value={String(data.totalItems)} accent={accent} />
         <Kpi label="Avg FC % With Pkg" value={`${data.avgWith.toFixed(2)}%`} accent={accent} />
         <Kpi label="Avg FC % Without Pkg" value={`${data.avgWithout.toFixed(2)}%`} accent={accent} />
+        <Kpi label="Avg Packaging Cost" value={formatINR(data.avgPackaging)} accent={accent} />
+        <Kpi label="Packaging Spend" value={formatINR(data.packagingSpend)} accent={accent} />
         <Kpi label="High Cost Items" value={String(data.highCost)} tone={data.highCost > 0 ? "high" : undefined} />
         <Kpi
           label="Missing Data"
@@ -305,6 +310,28 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
                   ))}
                 </tbody>
               </table>
+            )}
+          </Card>
+
+          <Card className="p-4">
+            <p className="mb-2 text-sm font-semibold">Highest Packaging Cost</p>
+            {data.topPackaging.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No packaging costs recorded yet.</p>
+            ) : (
+              <ul className="space-y-1.5 text-sm">
+                {data.topPackaging.map((r) => (
+                  <li key={r.id}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/recipes/${r.id}`)}
+                      className="flex w-full items-center justify-between gap-2 text-left hover:text-emerald-700"
+                    >
+                      <span className="min-w-0 truncate">{r.name}</span>
+                      <span className="shrink-0 font-mono font-semibold">{formatINR(r.pkg)}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </Card>
 
