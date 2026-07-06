@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import { useUnsavedChanges, useFormDirty } from "@/lib/hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import {
   Dialog,
   DialogContent,
@@ -48,14 +50,12 @@ export function BrandForm({
   const createMut = useCreateBrand();
   const updateMut = useUpdateBrand();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<BrandValues>({ resolver: zodResolver(brandSchema), defaultValues: EMPTY });
+  const form = useForm<BrandValues>({ resolver: zodResolver(brandSchema), defaultValues: EMPTY });
+  const { register, handleSubmit, reset, watch, setValue, formState } = form;
+  const { errors } = formState;
+
+  const { dirty, capture, markSaved } = useFormDirty(form, open);
+  const unsaved = useUnsavedChanges(dirty);
 
   useEffect(() => {
     if (open) {
@@ -71,6 +71,7 @@ export function BrandForm({
             }
           : EMPTY,
       );
+      capture();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, brand]);
@@ -92,6 +93,7 @@ export function BrandForm({
         await createMut.mutateAsync(input);
         toast.success("Brand created");
       }
+      markSaved();
       onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
@@ -101,7 +103,8 @@ export function BrandForm({
   const busy = createMut.isPending || updateMut.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : unsaved.guardClose(() => onOpenChange(false)))}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Brand" : "New Brand"}</DialogTitle>
@@ -158,7 +161,7 @@ export function BrandForm({
             <Textarea rows={2} {...register("notes")} />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => unsaved.guardClose(() => onOpenChange(false))}>
               Cancel
             </Button>
             <Button type="submit" variant="accent" disabled={busy}>
@@ -169,5 +172,13 @@ export function BrandForm({
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      open={unsaved.promptOpen}
+      onContinueEditing={unsaved.continueEditing}
+      onDiscard={unsaved.discardChanges}
+      message="You have unsaved changes in this brand. If you leave now, all entered information will be lost."
+    />
+    </>
   );
 }

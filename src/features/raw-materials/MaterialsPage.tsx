@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowDown,
@@ -62,7 +63,6 @@ import {
   useBulkDeleteMaterial,
 } from "./hooks";
 import { useCategories } from "@/features/settings/hooks";
-import { MaterialForm } from "./MaterialForm";
 import { PriceHistoryDialog } from "./PriceHistoryDialog";
 import { exportMaterials } from "./exportMaterials";
 import { toast } from "@/components/ui/use-toast";
@@ -157,8 +157,7 @@ export function MaterialsPage() {
     packSize: true,
   });
 
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<RawMaterial | null>(null);
+  const navigate = useNavigate();
   const [historyFor, setHistoryFor] = useState<RawMaterial | null>(null);
   const [deleting, setDeleting] = useState<RawMaterial | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -216,14 +215,8 @@ export function MaterialsPage() {
   const toggleSort = (key: SortKey) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
 
-  const openAdd = () => {
-    setEditing(null);
-    setFormOpen(true);
-  };
-  const openEdit = (m: RawMaterial) => {
-    setEditing(m);
-    setFormOpen(true);
-  };
+  const openAdd = () => navigate("/materials/new");
+  const openEdit = (m: RawMaterial) => navigate(`/materials/${m.id}/edit`);
 
   const [isExporting, setIsExporting] = useState(false);
   const doExport = async () => {
@@ -544,7 +537,6 @@ export function MaterialsPage() {
         )}
       </Card>
 
-      <MaterialForm open={formOpen} onOpenChange={setFormOpen} material={editing} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} config={importConfig} />
       <PriceHistoryDialog
         material={historyFor}

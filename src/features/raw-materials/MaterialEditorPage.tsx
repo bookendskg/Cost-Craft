@@ -1,27 +1,16 @@
 import { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { materialSchema, type MaterialValues } from "@/lib/validation/schemas";
 import {
   canonicalPurchase,
@@ -31,26 +20,27 @@ import {
 } from "@/lib/units";
 import { round2 } from "@/lib/costing";
 import { formatINR } from "@/lib/utils";
-import type { RawMaterial } from "@/lib/data/types";
-import { useCreateMaterial, useUpdateMaterial } from "./hooks";
-import { useCategories } from "@/features/settings/hooks";
 import { toast } from "@/components/ui/use-toast";
+import { useUnsavedChanges, useFormDirty } from "@/lib/hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
+import { useCategories } from "@/features/settings/hooks";
+import { useCreateMaterial, useMaterial, useUpdateMaterial } from "./hooks";
 
 const TYPES: MeasurementType[] = ["weight", "volume", "count"];
 
-export function MaterialForm({
-  open,
-  onOpenChange,
-  material,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  material?: RawMaterial | null;
-}) {
+/**
+ * Full-page Add / Edit Raw Material — mirrors the Recipe editor page (dedicated
+ * route, page chrome, unsaved-changes protection) rather than a modal dialog.
+ * Routes: /materials/new and /materials/:id/edit.
+ */
+export function MaterialEditorPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEdit = !!id;
   const { data: categories = [] } = useCategories();
+  const { data: material, isLoading } = useMaterial(id);
   const createMut = useCreateMaterial();
   const updateMut = useUpdateMaterial();
-  const isEdit = !!material;
 
   const form = useForm<MaterialValues>({
     resolver: zodResolver(materialSchema),
@@ -62,16 +52,17 @@ export function MaterialForm({
       measurement_type: "weight",
     },
   });
-
   const { register, handleSubmit, reset, watch, setValue, formState } = form;
 
+  const { dirty, capture, markSaved } = useFormDirty(form, true);
+  const unsaved = useUnsavedChanges(dirty);
+
+  // Populate: existing material (once loaded) or a blank create form.
   useEffect(() => {
-    if (!open) return;
+    if (isEdit && !material) return; // wait for the record to load
     if (material) {
       const type = measurementTypeFromBaseUnit(material.base_unit);
       const canon = canonicalPurchase(type);
-      // Normalise the stored price to "per 1 canonical unit" regardless of any
-      // legacy purchase_quantity, so editing never misrepresents (or corrupts) it.
       const normalizedPrice =
         material.cost_per_base_unit != null
           ? round2(material.cost_per_base_unit * canon.baseUnitsPerCanonical)
@@ -92,14 +83,14 @@ export function MaterialForm({
         measurement_type: "weight",
       });
     }
+    capture();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, material]);
+  }, [material, isEdit]);
 
   const price = watch("purchase_price");
   const type = watch("measurement_type");
   const canon = canonicalPurchase(type);
-  const costPerBase =
-    price != null && price > 0 ? round2(price / canon.baseUnitsPerCanonical) : null;
+  const costPerBase = price != null && price > 0 ? round2(price / canon.baseUnitsPerCanonical) : null;
 
   const onSubmit = async (values: MaterialValues) => {
     const c = canonicalPurchase(values.measurement_type);
@@ -108,8 +99,6 @@ export function MaterialForm({
       category: values.category,
       notes: values.notes || null,
       purchase_price: values.purchase_price ?? null,
-      // Derived internally — the user never picks units. purchase_quantity is
-      // always 1 so the price is "per 1 kg / 1 litre / 1 piece".
       purchase_quantity: 1,
       purchase_unit: c.purchase_unit,
       base_unit: c.base_unit,
@@ -122,7 +111,8 @@ export function MaterialForm({
         await createMut.mutateAsync(input);
         toast.success("Ingredient added");
       }
-      onOpenChange(false);
+      markSaved(); // suppress the unsaved-changes prompt on the navigation below
+      navigate("/materials");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
     }
@@ -130,17 +120,22 @@ export function MaterialForm({
 
   const busy = createMut.isPending || updateMut.isPending;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Ingredient" : "Add Ingredient"}</DialogTitle>
-          <DialogDescription>
-            Price is per one purchase unit ({canon.displayUnit}), set automatically from the material type.
-          </DialogDescription>
-        </DialogHeader>
+  if (isEdit && isLoading) {
+    return <p className="p-8 text-center text-sm text-muted-foreground">Loading ingredient…</p>;
+  }
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+  return (
+    <>
+      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="-ml-2 mb-1 gap-1.5 text-muted-foreground">
+        <ArrowLeft className="h-4 w-4" /> Back
+      </Button>
+      <PageHeader
+        title={isEdit ? "Edit Ingredient" : "Add Ingredient"}
+        description={`Price is per one purchase unit (${canon.displayUnit}), set automatically from the material type.`}
+      />
+
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl">
+        <Card className="space-y-4 p-5">
           <div className="space-y-1.5">
             <Label>Ingredient Name *</Label>
             <Input {...register("ingredient_name")} />
@@ -171,10 +166,7 @@ export function MaterialForm({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Material Type *</Label>
-              <Select
-                value={type}
-                onValueChange={(v) => setValue("measurement_type", v as MeasurementType)}
-              >
+              <Select value={type} onValueChange={(v) => setValue("measurement_type", v as MeasurementType)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -219,17 +211,24 @@ export function MaterialForm({
             <Textarea {...register("notes")} placeholder="Optional — storage, brand, prep notes…" rows={2} />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <div className="flex justify-end gap-2 border-t pt-4">
+            <Button type="button" variant="outline" onClick={() => unsaved.guardClose(() => navigate("/materials"))}>
               Cancel
             </Button>
             <Button type="submit" variant="accent" disabled={busy}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {isEdit ? "Save Changes" : "Save Ingredient"}
             </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </div>
+        </Card>
+      </form>
+
+      <UnsavedChangesDialog
+        open={unsaved.promptOpen}
+        onContinueEditing={unsaved.continueEditing}
+        onDiscard={unsaved.discardChanges}
+        message="You have unsaved changes in this Raw Material. If you leave now, all entered information will be lost."
+      />
+    </>
   );
 }

@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
 import { resetDb } from "@/lib/data/mock/db";
 import { useSession } from "@/lib/auth/session";
 import { renderWithProviders } from "@/test/renderWithProviders";
@@ -29,11 +28,7 @@ describe("ProfilePage — is the Profile Settings screen", () => {
   });
 
   it("shows the Profile Settings heading and the account fields", async () => {
-    renderWithProviders(
-      <MemoryRouter>
-        <ProfilePage />
-      </MemoryRouter>,
-    );
+    renderWithProviders(<ProfilePage />);
 
     expect(await screen.findByText("Profile Settings")).toBeInTheDocument();
     expect(screen.getByText("Full Name")).toBeInTheDocument();

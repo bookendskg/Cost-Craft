@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, ShieldCheck } from "lucide-react";
+import { useUnsavedChanges, useFormDirty } from "@/lib/hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import {
   Dialog,
   DialogContent,
@@ -52,17 +54,12 @@ export function UserForm({
   const activeBrands = brands.filter((b) => b.status === "active");
   const activeOutlets = outlets.filter((o) => o.status === "active");
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<UserValues>({
+  const form = useForm<UserValues>({
     resolver: zodResolver(userSchema),
     defaultValues: { name: "", email: "", role: "editor", status: "active", password: "" },
   });
+  const { register, handleSubmit, reset, watch, setValue, formState } = form;
+  const { errors } = formState;
 
   // Access scopes are managed outside RHF (dynamic lists + a "Default" sentinel).
   const [brandScope, setBrandScope] = useState<BrandScopeUi>("DEFAULT");
@@ -71,6 +68,18 @@ export function UserForm({
   const [outletScope, setOutletScope] = useState<OutletScopeUi>("DEFAULT");
   const [selectedOutletIds, setSelectedOutletIds] = useState<string[]>([]);
   const [assignedOutlet, setAssignedOutlet] = useState<string>("");
+
+  // Dirty tracking spans RHF fields AND all the access-scope state (extra).
+  const scopeState = {
+    bs: brandScope,
+    sb: [...selectedBrandIds].sort(),
+    ab: assignedBrand,
+    os: outletScope,
+    so: [...selectedOutletIds].sort(),
+    ao: assignedOutlet,
+  };
+  const { dirty, capture, markSaved } = useFormDirty(form, open, scopeState);
+  const unsaved = useUnsavedChanges(dirty);
 
   useEffect(() => {
     if (!open) return;
@@ -85,6 +94,14 @@ export function UserForm({
     setOutletScope(user?.outlet_scope ?? "DEFAULT");
     setSelectedOutletIds(user?.selected_outlet_ids ?? []);
     setAssignedOutlet(user?.assigned_outlet ?? "");
+    capture({
+      bs: user?.brand_scope ?? "DEFAULT",
+      sb: [...(user?.selected_brand_ids ?? [])].sort(),
+      ab: user?.assigned_brand ?? "",
+      os: user?.outlet_scope ?? "DEFAULT",
+      so: [...(user?.selected_outlet_ids ?? [])].sort(),
+      ao: user?.assigned_outlet ?? "",
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
 
@@ -166,6 +183,7 @@ export function UserForm({
         });
         toast.success("User created");
       }
+      markSaved();
       onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
@@ -175,7 +193,8 @@ export function UserForm({
   const busy = createMut.isPending || updateMut.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : unsaved.guardClose(() => onOpenChange(false)))}>
       <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit User" : "Create User"}</DialogTitle>
@@ -321,7 +340,7 @@ export function UserForm({
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => unsaved.guardClose(() => onOpenChange(false))}>
               Cancel
             </Button>
             <Button type="submit" variant="accent" disabled={busy}>
@@ -332,5 +351,13 @@ export function UserForm({
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      open={unsaved.promptOpen}
+      onContinueEditing={unsaved.continueEditing}
+      onDiscard={unsaved.discardChanges}
+      message="You have unsaved changes for this user. If you leave now, all entered information will be lost."
+    />
+    </>
   );
 }

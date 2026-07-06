@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams, useLocation, useBlocker } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useUnsavedChanges } from "@/lib/hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Trash2, AlertTriangle, ArrowLeft } from "lucide-react";
@@ -202,23 +204,7 @@ export function RecipeEditorPage() {
 
   // §12: warn before leaving with unsaved changes (in-app nav + browser unload).
   const isDirty = (formState.isDirty || touched) && !savedRef.current;
-  const blocker = useBlocker(useCallback(() => isDirty, [isDirty]));
-  useEffect(() => {
-    if (blocker.state === "blocked") {
-      if (window.confirm("You have unsaved changes. Are you sure you want to leave without saving?")) blocker.proceed();
-      else blocker.reset();
-    }
-  }, [blocker]);
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [isDirty]);
+  const unsaved = useUnsavedChanges(isDirty);
 
   const selectComponent = (key: string, pick: ComponentPick) => {
     if (pick.type === "recipe") {
@@ -702,6 +688,13 @@ export function RecipeEditorPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UnsavedChangesDialog
+        open={unsaved.promptOpen}
+        onContinueEditing={unsaved.continueEditing}
+        onDiscard={unsaved.discardChanges}
+        message="You have unsaved changes in this recipe. If you leave now, all unsaved information will be permanently lost."
+      />
     </>
   );
 }

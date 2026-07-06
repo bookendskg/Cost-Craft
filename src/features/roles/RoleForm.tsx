@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Lock } from "lucide-react";
+import { useUnsavedChanges, useFormDirty } from "@/lib/hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import {
   Dialog,
   DialogContent,
@@ -40,22 +42,25 @@ export function RoleForm({
   const createMut = useCreateRole();
   const updateMut = useUpdateRole();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<RoleValues>({
+  const form = useForm<RoleValues>({
     resolver: zodResolver(roleSchema),
     defaultValues: { label: "", description: "", capabilities: [] },
   });
+  const { register, handleSubmit, reset, formState } = form;
+  const { errors } = formState;
 
   const [caps, setCaps] = useState<Set<Capability>>(new Set());
 
+  // Dirty tracking spans the RHF fields AND the capability checkboxes (extra state).
+  const { dirty, capture, markSaved } = useFormDirty(form, open, [...caps].sort());
+  const unsaved = useUnsavedChanges(dirty);
+
   useEffect(() => {
     if (!open) return;
+    const initialCaps = (role?.capabilities ?? []) as Capability[];
     reset({ label: role?.label ?? "", description: role?.description ?? "", capabilities: [] });
-    setCaps(new Set((role?.capabilities ?? []) as Capability[]));
+    setCaps(new Set(initialCaps));
+    capture([...initialCaps].sort());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, role]);
 
@@ -79,6 +84,7 @@ export function RoleForm({
         await createMut.mutateAsync({ label: values.label, description: values.description, capabilities });
         toast.success("Role created");
       }
+      markSaved();
       onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
@@ -88,7 +94,8 @@ export function RoleForm({
   const busy = createMut.isPending || updateMut.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : unsaved.guardClose(() => onOpenChange(false)))}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Role" : "New Role"}</DialogTitle>
@@ -154,7 +161,7 @@ export function RoleForm({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => unsaved.guardClose(() => onOpenChange(false))}>
               Cancel
             </Button>
             <Button type="submit" variant="accent" disabled={busy}>
@@ -165,5 +172,13 @@ export function RoleForm({
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      open={unsaved.promptOpen}
+      onContinueEditing={unsaved.continueEditing}
+      onDiscard={unsaved.discardChanges}
+      message="You have unsaved changes in this role. If you leave now, all entered information will be lost."
+    />
+    </>
   );
 }

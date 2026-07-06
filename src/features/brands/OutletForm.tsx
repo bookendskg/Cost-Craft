@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { useUnsavedChanges, useFormDirty } from "@/lib/hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import {
   Dialog,
   DialogContent,
@@ -57,17 +59,15 @@ export function OutletForm({
   const createMut = useCreateOutlet();
   const updateMut = useUpdateOutlet();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<OutletValues>({
+  const form = useForm<OutletValues>({
     resolver: zodResolver(outletSchema),
     defaultValues: emptyValues(defaultBrandId ?? ""),
   });
+  const { register, handleSubmit, reset, watch, setValue, formState } = form;
+  const { errors } = formState;
+
+  const { dirty, capture, markSaved } = useFormDirty(form, open);
+  const unsaved = useUnsavedChanges(dirty);
 
   useEffect(() => {
     if (open) {
@@ -89,6 +89,7 @@ export function OutletForm({
             }
           : emptyValues(defaultBrandId ?? (brands.find((b) => b.status === "active")?.id ?? "")),
       );
+      capture();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, outlet, defaultBrandId]);
@@ -98,6 +99,7 @@ export function OutletForm({
   useEffect(() => {
     if (open && !outlet && !defaultBrandId && !watch("brand_id") && brands.length) {
       setValue("brand_id", brands.find((b) => b.status === "active")?.id ?? "");
+      capture(); // programmatic prefill, not a user edit — keep the form pristine
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, brands]);
@@ -132,6 +134,7 @@ export function OutletForm({
         await createMut.mutateAsync(input);
         toast.success("Outlet created");
       }
+      markSaved();
       onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
@@ -141,7 +144,8 @@ export function OutletForm({
   const busy = createMut.isPending || updateMut.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : unsaved.guardClose(() => onOpenChange(false)))}>
       <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Outlet" : "New Outlet"}</DialogTitle>
@@ -251,7 +255,7 @@ export function OutletForm({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => unsaved.guardClose(() => onOpenChange(false))}>
               Cancel
             </Button>
             <Button type="submit" variant="accent" disabled={busy}>
@@ -262,5 +266,13 @@ export function OutletForm({
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      open={unsaved.promptOpen}
+      onContinueEditing={unsaved.continueEditing}
+      onDiscard={unsaved.discardChanges}
+      message="You have unsaved changes in this outlet. If you leave now, all entered information will be lost."
+    />
+    </>
   );
 }

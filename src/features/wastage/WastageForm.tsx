@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronsUpDown, Loader2, Plus, Trash2 } from "lucide-react";
+import { useUnsavedChanges, useFormDirty } from "@/lib/hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import {
   Dialog,
   DialogContent,
@@ -107,6 +109,12 @@ export function WastageForm({
   });
   const { register, handleSubmit, reset, watch, setValue, formState } = form;
 
+  // Dirty tracking spans RHF fields AND the itemised wastage lines (extra state).
+  const serializeLines = (rows: WasteRow[]) =>
+    rows.map((l) => ({ t: l.item_type, i: l.item_id, q: l.quantity, u: l.unit, c: l.unit_cost }));
+  const { dirty, capture, markSaved } = useFormDirty(form, open, serializeLines(lines));
+  const unsaved = useUnsavedChanges(dirty);
+
   useEffect(() => {
     if (!open) return;
     reset(
@@ -144,25 +152,33 @@ export function WastageForm({
             notes: "",
           },
     );
-    if (!record) setLines([newRow()]);
+    if (!record) {
+      const init = [newRow()];
+      setLines(init);
+      capture(serializeLines(init));
+    } else {
+      // Provisional baseline; re-captured once the record's lines hydrate below.
+      capture(serializeLines(lines));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, record]);
 
   // Hydrate lines once the record's lines load (edit).
   useEffect(() => {
     if (!open || !isEdit || !withLines) return;
-    setLines(
-      withLines.lines.length
-        ? withLines.lines.map((l) => ({
-            key: `wr-${rowSeq++}`,
-            item_type: l.item_type,
-            item_id: (l.item_type === "recipe" ? l.recipe_id : l.ingredient_id) ?? "",
-            quantity: l.quantity,
-            unit: l.unit,
-            unit_cost: l.unit_cost,
-          }))
-        : [newRow()],
-    );
+    const hydrated = withLines.lines.length
+      ? withLines.lines.map((l) => ({
+          key: `wr-${rowSeq++}`,
+          item_type: l.item_type,
+          item_id: (l.item_type === "recipe" ? l.recipe_id : l.ingredient_id) ?? "",
+          quantity: l.quantity,
+          unit: l.unit,
+          unit_cost: l.unit_cost,
+        }))
+      : [newRow()];
+    setLines(hydrated);
+    capture(serializeLines(hydrated));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isEdit, withLines]);
 
   const brand = watch("brand");
@@ -223,6 +239,7 @@ export function WastageForm({
         await createMut.mutateAsync(input);
         toast.success("Wastage recorded");
       }
+      markSaved();
       onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
@@ -232,7 +249,8 @@ export function WastageForm({
   const busy = createMut.isPending || updateMut.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : unsaved.guardClose(() => onOpenChange(false)))}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Wastage" : "Record Wastage"}</DialogTitle>
@@ -357,7 +375,7 @@ export function WastageForm({
           </Field>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => unsaved.guardClose(() => onOpenChange(false))}>Cancel</Button>
             <Button type="submit" variant="accent" disabled={busy}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {isEdit ? "Save Changes" : "Record Wastage"}
@@ -366,6 +384,14 @@ export function WastageForm({
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      open={unsaved.promptOpen}
+      onContinueEditing={unsaved.continueEditing}
+      onDiscard={unsaved.discardChanges}
+      message="You have unsaved changes in this wastage entry. If you leave now, all entered information will be lost."
+    />
+    </>
   );
 }
 

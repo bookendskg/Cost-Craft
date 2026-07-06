@@ -2,18 +2,22 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
 import { resetDb } from "@/lib/data/mock/db";
 import { renderWithProviders } from "@/test/renderWithProviders";
-import { MaterialForm } from "./MaterialForm";
+import { MaterialEditorPage } from "./MaterialEditorPage";
 
-// Proves the simplified raw-material form: no Supplier, a Material Type selector,
-// and a read-only fixed purchase unit (1 kg by default).
+// Proves Add Raw Material is a full PAGE (like the Recipe editor), not a modal:
+// same simplified purchase model — no Supplier, a Material Type selector, and a
+// read-only fixed purchase unit (1 kg by default).
 
-describe("MaterialForm — simplified purchase model", () => {
+describe("MaterialEditorPage — full-page Add Raw Material", () => {
   beforeEach(() => resetDb());
 
-  it("renders Material Type + a read-only 1 kg unit, and no Supplier field", async () => {
-    renderWithProviders(<MaterialForm open onOpenChange={() => {}} material={null} />);
+  it("renders as a page with Material Type + a read-only 1 kg unit, and no Supplier field", async () => {
+    // No :id param → create ("Add Ingredient") mode.
+    renderWithProviders(<MaterialEditorPage />);
 
     expect(await screen.findByText("Add Ingredient")).toBeInTheDocument();
+    // Page chrome: a Back button (the modal had none).
+    expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
     expect(screen.getByText("Material Type *")).toBeInTheDocument();
     // Read-only purchase-unit chip shows the fixed 1 kg basis for Weight.
     expect(screen.getAllByText("1 kg").length).toBeGreaterThanOrEqual(1);

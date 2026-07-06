@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import { useUnsavedChanges, useFormDirty } from "@/lib/hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +60,9 @@ export function YieldForm({
   });
   const { register, handleSubmit, reset, watch, setValue, formState } = form;
 
+  const { dirty, capture, markSaved } = useFormDirty(form, open);
+  const unsaved = useUnsavedChanges(dirty);
+
   useEffect(() => {
     if (!open) return;
     reset(
@@ -85,6 +90,7 @@ export function YieldForm({
             notes: "",
           },
     );
+    capture();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, record]);
 
@@ -147,6 +153,7 @@ export function YieldForm({
         await createMut.mutateAsync(input);
         toast.success("Yield information added successfully.");
       }
+      markSaved();
       onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
@@ -156,7 +163,8 @@ export function YieldForm({
   const busy = createMut.isPending || updateMut.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : unsaved.guardClose(() => onOpenChange(false)))}>
       <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Yield" : "Add Yield"}</DialogTitle>
@@ -264,7 +272,7 @@ export function YieldForm({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => unsaved.guardClose(() => onOpenChange(false))}>
               Cancel
             </Button>
             <Button type="submit" variant="accent" disabled={busy}>
@@ -275,6 +283,14 @@ export function YieldForm({
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      open={unsaved.promptOpen}
+      onContinueEditing={unsaved.continueEditing}
+      onDiscard={unsaved.discardChanges}
+      message="You have unsaved changes in this yield. If you leave now, all entered information will be lost."
+    />
+    </>
   );
 }
 

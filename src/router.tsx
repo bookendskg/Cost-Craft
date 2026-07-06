@@ -12,6 +12,7 @@ import { SignUpPage } from "@/features/auth/SignUpPage";
 // Code-split app pages — each becomes its own chunk, kept out of the initial bundle.
 const DashboardPage = lazy(() => import("@/features/dashboard/DashboardPage").then((m) => ({ default: m.DashboardPage })));
 const MaterialsPage = lazy(() => import("@/features/raw-materials/MaterialsPage").then((m) => ({ default: m.MaterialsPage })));
+const MaterialEditorPage = lazy(() => import("@/features/raw-materials/MaterialEditorPage").then((m) => ({ default: m.MaterialEditorPage })));
 const RecipesPage = lazy(() => import("@/features/recipes/RecipesPage").then((m) => ({ default: m.RecipesPage })));
 const YieldPage = lazy(() => import("@/features/yield/YieldPage").then((m) => ({ default: m.YieldPage })));
 const WastagePage = lazy(() => import("@/features/wastage/WastagePage").then((m) => ({ default: m.WastagePage })));
@@ -68,6 +69,22 @@ export const router = createBrowserRouter([
         element: (
           <RequireRole roles={["admin", "editor", "head_chef"]} cap="material.view">
             <MaterialsPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "materials/new",
+        element: (
+          <RequireRole roles={["admin", "editor", "head_chef"]} cap="material.edit">
+            <MaterialEditorPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "materials/:id/edit",
+        element: (
+          <RequireRole roles={["admin", "editor", "head_chef"]} cap="material.edit">
+            <MaterialEditorPage />
           </RequireRole>
         ),
       },
