@@ -44,6 +44,7 @@ export function YieldForm({
   const form = useForm<YieldValues>({
     resolver: zodResolver(yieldSchema),
     defaultValues: {
+      name: "",
       ingredient_id: "",
       purchase_cost: undefined as unknown as number,
       // Purchase is always per ONE canonical unit (1 kg / 1 litre / 1 piece) —
@@ -62,6 +63,7 @@ export function YieldForm({
     reset(
       record
         ? {
+            name: record.name ?? "",
             ingredient_id: record.ingredient_id,
             purchase_cost: record.purchase_cost,
             // Normalise onto the fixed per-1-unit model regardless of any legacy qty.
@@ -73,6 +75,7 @@ export function YieldForm({
             notes: record.notes ?? "",
           }
         : {
+            name: "",
             ingredient_id: "",
             purchase_cost: undefined as unknown as number,
             purchase_quantity: 1,
@@ -126,6 +129,7 @@ export function YieldForm({
   const onSubmit = async (values: YieldValues) => {
     const c = canonicalPurchase(measurementTypeFromBaseUnit(values.purchase_unit));
     const input = {
+      name: values.name?.trim() || null,
       ingredient_id: values.ingredient_id,
       purchase_cost: values.purchase_cost,
       purchase_quantity: 1,
@@ -162,6 +166,13 @@ export function YieldForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>Yield Name</Label>
+            <Input
+              {...register("name")}
+              placeholder={selectedMaterial ? `${selectedMaterial.ingredient_name} Yield` : "e.g. Onion Yield (optional)"}
+            />
+          </div>
           <div className="space-y-1.5">
             <Label>Ingredient *</Label>
             {isEdit ? (

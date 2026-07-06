@@ -58,6 +58,7 @@ import { useMaterials } from "@/features/raw-materials/hooks";
 import { useRecipes } from "@/features/recipes/hooks";
 import { useAllRecipeIngredients } from "@/features/reports/hooks";
 import { useYields, useDeleteYield } from "./hooks";
+import { useUsersMap } from "@/features/users/hooks";
 import { YieldForm } from "./YieldForm";
 import { YieldBreakdownDialog } from "./YieldBreakdownDialog";
 import { toast } from "@/components/ui/use-toast";
@@ -158,6 +159,7 @@ export function YieldPage() {
     return map;
   }, [recipeIngredients, recipes]);
 
+  const { map: usersMap } = useUsersMap();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [wastageBand, setWastageBand] = useState("all");
@@ -180,8 +182,13 @@ export function YieldPage() {
 
   const filtered = useMemo(() => {
     const out = rows.filter((r) => {
-      const name = r.material?.ingredient_name ?? "";
-      if (search && !name.toLowerCase().includes(search.toLowerCase())) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        const yn = (r.name || `${r.material?.ingredient_name ?? ""} Yield`).toLowerCase();
+        const ing = (r.material?.ingredient_name ?? "").toLowerCase();
+        const by = (r.created_by ? usersMap.get(r.created_by)?.name ?? "" : "").toLowerCase();
+        if (!yn.includes(q) && !ing.includes(q) && !by.includes(q)) return false;
+      }
       if (category !== "all" && r.material?.category !== category) return false;
       if (wastageBand === "low" && r.wastage_percentage >= 10) return false;
       if (wastageBand === "med" && (r.wastage_percentage < 10 || r.wastage_percentage > 25)) return false;
@@ -201,7 +208,7 @@ export function YieldPage() {
       return sort.dir === "asc" ? cmp : -cmp;
     });
     return out;
-  }, [rows, search, category, wastageBand, yieldBand, sort]);
+  }, [rows, search, category, wastageBand, yieldBand, sort, usersMap]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, pageCount);
@@ -287,7 +294,7 @@ export function YieldPage() {
       {/* Filters */}
       <Card className="mb-4 p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <Input placeholder="Search ingredients…" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+          <Input placeholder="Search name, ingredient, created by…" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
           <Select value={category} onValueChange={(v) => { setCategory(v); setPage(1); }}>
             <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
             <SelectContent>
@@ -348,12 +355,13 @@ export function YieldPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <SortHead label="Ingredient" k="name" />
+                    <SortHead label="Yield Name" k="name" />
                     <TableHead>Category</TableHead>
                     <SortHead label="Wastage %" k="wastage" className="text-right" />
                     <SortHead label="Yield %" k="yield" className="text-right" />
                     <TableHead className="text-right">Original Cost</TableHead>
                     <SortHead label="Yield-Adjusted" k="cost" className="text-right" />
+                    <TableHead>Created By</TableHead>
                     <TableHead>Updated</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
@@ -361,12 +369,18 @@ export function YieldPage() {
                 <TableBody>
                   {pageItems.map((r) => (
                     <TableRow key={r.id} className="cursor-pointer" onClick={() => setBreakdownFor(r)}>
-                      <TableCell className="font-medium">{r.material?.ingredient_name ?? "—"}</TableCell>
+                      <TableCell className="font-medium">
+                        {r.name || `${r.material?.ingredient_name ?? "—"} Yield`}
+                        {r.name && r.material?.ingredient_name && (
+                          <span className="block text-xs font-normal text-muted-foreground">{r.material.ingredient_name}</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{r.material?.category ?? "—"}</TableCell>
                       <TableCell className="text-right font-mono">{r.wastage_percentage}%</TableCell>
                       <TableCell className="text-right font-mono">{r.yield_percentage}%</TableCell>
                       <TableCell className="text-right font-mono text-muted-foreground">{formatINR(r.original_unit_cost * 1000)}/kg</TableCell>
                       <TableCell className="text-right font-mono font-semibold">{formatINR(r.yield_adjusted_unit_cost * 1000)}/kg</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{r.created_by ? usersMap.get(r.created_by)?.name ?? "—" : "—"}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{formatDate(r.updated_at)}</TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <RowActions
@@ -389,8 +403,8 @@ export function YieldPage() {
               {pageItems.map((r) => (
                 <li key={r.id} className="flex items-start gap-3 p-4">
                   <button className="min-w-0 flex-1 text-left" onClick={() => setBreakdownFor(r)}>
-                    <p className="truncate font-medium">{r.material?.ingredient_name ?? "—"}</p>
-                    <p className="text-xs text-muted-foreground">{r.material?.category}</p>
+                    <p className="truncate font-medium">{r.name || `${r.material?.ingredient_name ?? "—"} Yield`}</p>
+                    <p className="text-xs text-muted-foreground">{r.material?.ingredient_name ?? r.material?.category}</p>
                     <p className="mt-1 text-sm">
                       Yield <span className="font-semibold">{r.yield_percentage}%</span> · {formatINR(r.yield_adjusted_unit_cost * 1000)}/kg
                     </p>

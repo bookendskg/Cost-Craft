@@ -128,6 +128,7 @@ export type RecipeHeaderValues = z.infer<typeof recipeHeaderSchema>;
 
 export const yieldSchema = z
   .object({
+    name: z.string().optional().or(z.literal("")),
     ingredient_id: z.string().min(1, "Select an ingredient"),
     purchase_cost: z
       .number({ invalid_type_error: "Enter a valid cost" })

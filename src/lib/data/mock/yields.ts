@@ -6,6 +6,7 @@ import { delay, getDb, mutate, nowISO, todayISO, uid } from "./db";
 import { cascadeFromMaterial, recordAudit } from "./recompute";
 
 export interface YieldInput {
+  name?: string | null;
   ingredient_id: string;
   purchase_cost: number;
   purchase_quantity: number;
@@ -43,6 +44,7 @@ function derive(input: YieldInput): Omit<IngredientYield, "id" | "created_at" | 
     wastageQty: input.wastage_quantity,
   });
   return {
+    name: input.name?.trim() || null,
     ingredient_id: input.ingredient_id,
     purchase_cost: input.purchase_cost,
     purchase_quantity: input.purchase_quantity,

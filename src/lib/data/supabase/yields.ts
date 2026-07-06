@@ -35,6 +35,7 @@ function derive(input: YieldInput): Omit<IngredientYield, "id" | "created_at" | 
     wastageQty: input.wastage_quantity,
   });
   return {
+    name: input.name?.trim() || null,
     ingredient_id: input.ingredient_id,
     purchase_cost: input.purchase_cost,
     purchase_quantity: input.purchase_quantity,

@@ -336,6 +336,8 @@ export interface RecipeCostHistory {
  */
 export interface IngredientYield {
   id: string;
+  /** Optional label for the yield record; falls back to the ingredient name. */
+  name?: string | null;
   ingredient_id: string;
   purchase_cost: number;
   purchase_quantity: number;
