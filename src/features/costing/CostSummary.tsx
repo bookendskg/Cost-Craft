@@ -93,6 +93,7 @@ export function CostSummary({
   const fullCost = round2(recipeCost + packagingCost);
   const profit = round2(sellingPrice - fullCost);
   const fcPct = priced ? round2((fullCost / sellingPrice) * 100) : 0;
+  const fcNoPkg = priced ? round2((recipeCost / sellingPrice) * 100) : 0;
   const marginPct = priced ? round2((profit / sellingPrice) * 100) : 0;
   const tone = fcTone(fcPct, criticalPct);
 
@@ -111,11 +112,16 @@ export function CostSummary({
         />
         <Stat
           icon={<Percent className="h-3.5 w-3.5" />}
-          label="Food Cost %"
+          label="FC% (with pkg)"
           value={priced ? `${fcPct}%` : "—"}
           valueClass={priced ? TONE_TEXT[tone] : undefined}
         />
-        <Stat icon={<TrendingUp className="h-3.5 w-3.5" />} label="Gross Margin" value={priced ? `${marginPct}%` : "—"} />
+        <Stat
+          icon={<Percent className="h-3.5 w-3.5" />}
+          label="FC% (no pkg)"
+          value={priced ? `${fcNoPkg}%` : "—"}
+        />
+        <Stat icon={<TrendingUp className="h-3.5 w-3.5" />} label="Gross Margin" value={priced ? `${marginPct}%` : "—"} className="col-span-2" />
         <Stat
           icon={<Wallet className="h-3.5 w-3.5" />}
           label="Profit / Portion"

@@ -204,6 +204,7 @@ export function RecipeDetailPage() {
   const priced = menuPrice > 0;
   const marginPct = priced ? round2(((menuPrice - fullCpp) / menuPrice) * 100) : 0;
   const actualFc = priced ? round2((fullCpp / menuPrice) * 100) : 0;
+  const actualFcNoPkg = priced ? round2((portionCost / menuPrice) * 100) : 0;
   const brandLabel = brandRecords.find((b) => b.id === recipe.brand)?.name ?? recipe.brand;
 
   return (
@@ -544,7 +545,8 @@ export function RecipeDetailPage() {
                       priced ? (
                         <>
                           <FinRow label="Menu Price" value={formatINR(menuPrice)} strong />
-                          <FinRow label="Food Cost %" value={`${actualFc}%`} />
+                          <FinRow label="Food Cost % (with packaging)" value={`${actualFc}%`} />
+                          <FinRow label="Food Cost % (without packaging)" value={`${actualFcNoPkg}%`} />
                           <FinRow label="Gross Margin" value={`${marginPct}%`} />
                         </>
                       ) : (

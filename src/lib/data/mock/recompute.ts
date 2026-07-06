@@ -86,6 +86,20 @@ export function recomputeRecipe(
   }
   recipe.total_weight_g = round2(weightGrams);
 
+  // Packaging cost from the recipe's packaging lines (when it has any), using the
+  // CURRENT master unit price — so a packaging price change flows into recipes.
+  const pkgLines = db.recipe_packaging.filter((rp) => rp.recipe_id === recipeId);
+  if (pkgLines.length > 0) {
+    let pkgTotal = 0;
+    for (const pl of pkgLines) {
+      const item = db.packaging_items.find((p) => p.id === pl.packaging_item_id);
+      const price = item?.unit_price ?? pl.unit_price;
+      pl.unit_price = price;
+      pkgTotal += pl.quantity_used * price;
+    }
+    recipe.packaging_cost = round2(pkgTotal);
+  }
+
   // Add wastage on top of the raw ingredient cost (compounds through preps).
   const newTotal = round2(rawTotal * (1 + (recipe.wastage_pct ?? 0) / 100));
   const newPerPortion = recipe.serving_size > 0 ? round2(newTotal / recipe.serving_size) : 0;

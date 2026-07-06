@@ -287,6 +287,11 @@ export interface RecipePackaging {
   created_at: string;
 }
 
+/** A recipe packaging line joined to its master item (for display). */
+export interface RecipePackagingWithItem extends RecipePackaging {
+  item: PackagingItem | null;
+}
+
 export interface Recipe {
   id: string;
   recipe_name: string;

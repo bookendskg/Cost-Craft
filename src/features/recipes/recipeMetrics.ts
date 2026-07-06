@@ -24,11 +24,25 @@ export function menuPriceOf(recipe: Recipe): number {
   return hasMenuPrice(recipe) ? (recipe.selling_price as number) : 0;
 }
 
-/** Actual food cost % = full per-portion cost ÷ menu price. 0 when no price set. */
+/** Actual food cost % = full per-portion cost (incl. packaging) ÷ menu price.
+ *  0 when no price set. This is the "with packaging" figure. */
 export function foodCostPctOf(recipe: Recipe): number {
   const menu = menuPriceOf(recipe);
   const cpp = fullCostPerPortion(recipe);
   return menu > 0 ? round2((cpp / menu) * 100) : 0;
+}
+
+/** Food cost % WITH packaging = (food cost + packaging) ÷ menu price × 100.
+ *  Null when no menu price is set (so callers can show "–"). */
+export function foodCostWithPackagingPct(recipe: Recipe): number | null {
+  const menu = menuPriceOf(recipe);
+  return menu > 0 ? round2((fullCostPerPortion(recipe) / menu) * 100) : null;
+}
+
+/** Food cost % WITHOUT packaging = food cost ÷ menu price × 100. Null when unpriced. */
+export function foodCostNoPackagingPct(recipe: Recipe): number | null {
+  const menu = menuPriceOf(recipe);
+  return menu > 0 ? round2(((recipe.cost_per_portion ?? 0) / menu) * 100) : null;
 }
 
 /** Profit per portion = menu price − full per-portion cost. 0 when no price set. */

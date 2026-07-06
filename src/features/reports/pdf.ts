@@ -100,6 +100,7 @@ export async function generateRecipePdf(
   const grossProfit = priced ? round2(menuPrice - fullPerPortion) : 0;
   const grossMargin = priced ? round2((grossProfit / menuPrice) * 100) : 0;
   const actualFc = priced ? round2((fullPerPortion / menuPrice) * 100) : 0;
+  const actualFcNoPkg = priced ? round2((perPortion / menuPrice) * 100) : 0;
 
   const summary: [string, string][] = [];
   // Total dish weight is not financial — always shown when known.
@@ -117,7 +118,8 @@ export async function generateRecipePdf(
   if (showPrice && !recipe.is_prep) {
     if (priced) {
       summary.push(["Menu Price", formatINR(menuPrice)]);
-      summary.push(["Food Cost %", `${actualFc}%`]);
+      summary.push(["Food Cost % (with packaging)", `${actualFc}%`]);
+      summary.push(["Food Cost % (without packaging)", `${actualFcNoPkg}%`]);
       summary.push(["Gross Profit", formatINR(grossProfit)]);
       summary.push(["Gross Margin", `${grossMargin}%`]);
     } else {

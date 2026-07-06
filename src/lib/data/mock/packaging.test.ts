@@ -7,34 +7,39 @@ const ACTOR = "u-admin";
 describe("packaging master repo", () => {
   beforeEach(() => resetDb());
 
-  it("seeds the standard packaging items with prices", async () => {
+  it("seeds the real packaging master items with prices", async () => {
     const items = await packagingRepo.list();
-    const box = items.find((p) => p.name === "Pizza Box");
-    expect(box).toBeTruthy();
-    expect(box!.unit_price).toBe(4.5);
-    expect(box!.packaging_type).toBe("primary");
+    expect(items.length).toBeGreaterThanOrEqual(20);
+    const bag = items.find((p) => /takeaway bag/i.test(p.name));
+    expect(bag).toBeTruthy();
+    expect(bag!.unit_price).toBeGreaterThan(0);
   });
 
   it("creates a packaging item and computes normalized name", async () => {
     const item = await packagingRepo.create(
-      { name: "Noodle Box", packaging_type: "primary", unit: "Piece", unit_price: 6 },
+      { name: "Custom Noodle Box", packaging_type: "primary", unit: "Piece", unit_price: 6 },
       ACTOR,
     );
-    expect(item.normalized_name).toBe("noodle box");
+    expect(item.normalized_name).toBe("custom noodle box");
     expect(item.unit_price).toBe(6);
   });
 
   it("rejects a duplicate name", async () => {
+    const existing = (await packagingRepo.list())[0];
     await expect(
-      packagingRepo.create({ name: "Pizza Box", packaging_type: "primary", unit: "Piece", unit_price: 4 }, ACTOR),
+      packagingRepo.create({ name: existing.name, packaging_type: "primary", unit: "Piece", unit_price: 4 }, ACTOR),
     ).rejects.toThrow(/already exists/i);
   });
 
   it("deactivate + update work", async () => {
-    const box = (await packagingRepo.list()).find((p) => p.name === "Sauce Cup")!;
-    const off = await packagingRepo.setStatus(box.id, "inactive", ACTOR);
+    const item = (await packagingRepo.list())[0];
+    const off = await packagingRepo.setStatus(item.id, "inactive", ACTOR);
     expect(off.status).toBe("inactive");
-    const up = await packagingRepo.update(box.id, { name: "Sauce Cup", packaging_type: "primary", unit: "Piece", unit_price: 2 }, ACTOR);
+    const up = await packagingRepo.update(
+      item.id,
+      { name: item.name, packaging_type: item.packaging_type, unit: item.unit, unit_price: 2 },
+      ACTOR,
+    );
     expect(up.unit_price).toBe(2);
   });
 });

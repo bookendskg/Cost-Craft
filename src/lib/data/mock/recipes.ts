@@ -4,6 +4,7 @@ import type {
   RecipeCostHistory,
   RecipeIngredient,
   RecipeIngredientWithMaterial,
+  RecipePackagingWithItem,
   RecipeVersion,
 } from "../types";
 import type { ImportSummary } from "../../import/importTypes";
@@ -36,6 +37,14 @@ export interface RecipeHeaderInput {
   is_prep?: boolean;
   yield_quantity?: number;
   yield_unit?: string;
+  /** Packaging lines (Pizza Box × qty…). When provided, packaging_cost is derived
+   *  from these (sum of qty × master unit price) and the manual field is ignored. */
+  packaging?: RecipePackagingInput[];
+}
+
+export interface RecipePackagingInput {
+  packaging_item_id: string;
+  quantity_used: number;
 }
 
 export interface RecipeLineInput {
@@ -97,6 +106,29 @@ function recipeReaches(db: MockDb, startId: string, targetId: string, seen = new
   );
 }
 
+/** Replace a recipe's packaging lines, snapshotting the master unit price, and
+ *  return the total packaging cost (sum of qty × unit price). */
+function writePackaging(db: MockDb, recipeId: string, lines: RecipePackagingInput[]): number {
+  db.recipe_packaging = db.recipe_packaging.filter((rp) => rp.recipe_id !== recipeId);
+  let total = 0;
+  for (const l of lines) {
+    if (!l.packaging_item_id || !(l.quantity_used > 0)) continue;
+    const item = db.packaging_items.find((p) => p.id === l.packaging_item_id);
+    const price = item?.unit_price ?? 0;
+    total += l.quantity_used * price;
+    db.recipe_packaging.push({
+      id: uid(),
+      recipe_id: recipeId,
+      packaging_item_id: l.packaging_item_id,
+      quantity_used: l.quantity_used,
+      unit: item?.unit ?? "Piece",
+      unit_price: price,
+      created_at: nowISO(),
+    });
+  }
+  return Math.round(total * 100) / 100;
+}
+
 function writeLines(db: MockDb, recipeId: string, lines: RecipeLineInput[]): void {
   // §19 circular-reference guard: reject self-links and any sub-recipe that
   // (directly or transitively) already depends on this recipe.
@@ -141,7 +173,7 @@ export const recipesRepo = {
 
   async getWithIngredients(
     id: string,
-  ): Promise<{ recipe: Recipe; ingredients: RecipeIngredientWithMaterial[] } | null> {
+  ): Promise<{ recipe: Recipe; ingredients: RecipeIngredientWithMaterial[]; packaging: RecipePackagingWithItem[] } | null> {
     const db = getDb();
     const recipe = db.recipes.find((r) => r.id === id);
     if (!recipe) return delay(null);
@@ -149,7 +181,10 @@ export const recipesRepo = {
       db,
       db.recipe_ingredients.filter((ri) => ri.recipe_id === id),
     );
-    return delay({ recipe: { ...recipe }, ingredients });
+    const packaging: RecipePackagingWithItem[] = db.recipe_packaging
+      .filter((rp) => rp.recipe_id === id)
+      .map((rp) => ({ ...rp, item: db.packaging_items.find((p) => p.id === rp.packaging_item_id) ?? null }));
+    return delay({ recipe: { ...recipe }, ingredients, packaging });
   },
 
   async create(
@@ -196,6 +231,7 @@ export const recipesRepo = {
         };
         db.recipes.push(recipe);
         writeLines(db, recipe.id, lines);
+        if (header.packaging) recipe.packaging_cost = writePackaging(db, recipe.id, header.packaging);
         recomputeAndPropagate(db, [recipe.id], actorId, "Recipe created");
         snapshotVersion(db, recipe, actorId, "Initial version");
         recordAudit(db, {
@@ -256,6 +292,7 @@ export const recipesRepo = {
         }
 
         writeLines(db, recipe.id, lines);
+        if (header.packaging) recipe.packaging_cost = writePackaging(db, recipe.id, header.packaging);
         recomputeAndPropagate(db, [recipe.id], actorId, "Recipe edited");
         snapshotVersion(db, recipe, actorId, `Version ${recipe.version_no}`);
         recordAudit(db, {

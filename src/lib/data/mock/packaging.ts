@@ -4,7 +4,7 @@
 
 import type { MaterialStatus, PackagingItem } from "../types";
 import { delay, getDb, mutate, nowISO, uid } from "./db";
-import { recordAudit } from "./recompute";
+import { recomputeAndPropagate, recordAudit } from "./recompute";
 
 export interface PackagingInput {
   name: string;
@@ -73,6 +73,7 @@ export const packagingRepo = {
           throw new Error("A packaging item with this name already exists");
         }
         const before = { name: item.name, unit_price: item.unit_price, type: item.packaging_type };
+        const priceChanged = (input.unit_price ?? null) !== item.unit_price;
         item.name = input.name.trim();
         item.normalized_name = nn;
         item.packaging_type = input.packaging_type || item.packaging_type;
@@ -91,6 +92,11 @@ export const packagingRepo = {
           performed_by: actorId,
           notes: `Updated packaging "${item.name}"`,
         });
+        // Cascade: a price change recomputes every recipe that uses this packaging.
+        if (priceChanged) {
+          const affected = [...new Set(db.recipe_packaging.filter((rp) => rp.packaging_item_id === id).map((rp) => rp.recipe_id))];
+          if (affected.length) recomputeAndPropagate(db, affected, actorId, `Packaging "${item.name}" price changed`);
+        }
         return item;
       }),
     );

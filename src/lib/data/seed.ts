@@ -10,6 +10,7 @@ import { COOKBOOK_RECIPES } from "./cookbook";
 import { PIZZA_RECIPES, PIZZA_SIZE_LABEL, type PizzaSize } from "./pizzas";
 import { resolveParentAndCut, cutYieldPct } from "./ingredientCuts";
 import { MASTER_PRICES } from "./masterPrices";
+import { PACKAGING_MASTER_SEED, RECIPE_PACKAGING_BY_NAME, normDishName } from "./packagingData";
 import { MASTER_DISH_COSTS } from "./masterDishCosts";
 import { MASTER_YIELDS } from "./masterYields";
 import { VEG_FRUIT_PRICES, VEG_FRUIT_ITEMS } from "./vegFruitPrices";
@@ -959,33 +960,27 @@ const roles: RoleRecord[] = SYSTEM_ROLE_DEFS.map((d) => ({
   updated_at: SEED_TS,
 }));
 
-// Finished dish weight for every seeded recipe — sum of ingredient input
-// quantities in grams-equivalent (weight + volume; count excluded). Mirrors what
-// recomputeRecipe() maintains on create/edit, so seeded rows show weight too.
+// Finished dish weight + packaging cost for every seeded recipe. Prefer the
+// authoritative figures from the Bookends costing sheet (matched by dish name);
+// fall back to the computed grams-sum for weight when the sheet has no match.
 for (const r of recipes) {
   const g = recipe_ingredients
     .filter((ri) => ri.recipe_id === r.id)
     .reduce((s, ri) => s + toWeightGrams(ri.quantity_used, ri.unit_used), 0);
-  r.total_weight_g = Math.round(g * 100) / 100;
+  const sheet = RECIPE_PACKAGING_BY_NAME[normDishName(r.recipe_name)];
+  r.total_weight_g = sheet?.weightG ?? Math.round(g * 100) / 100;
+  // Real per-dish packaging cost from the sheet (menu recipes only; preps have none).
+  if (sheet && !r.is_prep) r.packaging_cost = sheet.pkg;
 }
 
-// Packaging master — Primary/Secondary/Tertiary cost items with unit prices.
-const SEED_PACKAGING: PackagingItem[] = (
-  [
-    { id: "pkg-pizza-box", name: "Pizza Box", packaging_type: "primary", unit: "Piece", unit_price: 4.5 },
-    { id: "pkg-burger-box", name: "Burger Box", packaging_type: "primary", unit: "Piece", unit_price: 3.5 },
-    { id: "pkg-paper-bag", name: "Paper Bag", packaging_type: "secondary", unit: "Piece", unit_price: 2 },
-    { id: "pkg-sauce-cup", name: "Sauce Cup", packaging_type: "primary", unit: "Piece", unit_price: 1.5 },
-    { id: "pkg-dessert-box", name: "Dessert Box", packaging_type: "primary", unit: "Piece", unit_price: 5 },
-    { id: "pkg-cup", name: "Cup", packaging_type: "primary", unit: "Piece", unit_price: 2.5 },
-    { id: "pkg-lid", name: "Lid", packaging_type: "primary", unit: "Piece", unit_price: 1 },
-    { id: "pkg-sticker", name: "Sticker", packaging_type: "tertiary", unit: "Piece", unit_price: 0.5 },
-    { id: "pkg-fork", name: "Fork", packaging_type: "secondary", unit: "Piece", unit_price: 0.8 },
-    { id: "pkg-spoon", name: "Spoon", packaging_type: "secondary", unit: "Piece", unit_price: 0.8 },
-  ] as const
-).map((p) => ({
-  ...p,
+// Packaging master — real items + prices extracted from the Bookends costing sheet.
+const SEED_PACKAGING: PackagingItem[] = PACKAGING_MASTER_SEED.map((p, i) => ({
+  id: `pkg-${i}`,
+  name: p.name,
   normalized_name: p.name.toLowerCase(),
+  packaging_type: p.type,
+  unit: p.unit,
+  unit_price: p.price,
   status: "active" as const,
   notes: null,
   created_by: U_ADMIN,
