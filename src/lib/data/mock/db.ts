@@ -51,7 +51,7 @@ export interface MockDb {
 
 // Bump this when the seed/DB shape changes so stale localStorage data is reseeded.
 // v44: owner transfer — seed owner is now mspatel05831@gmail.com (Super Admin).
-const STORAGE_KEY = "rcms.mockdb.v47";
+const STORAGE_KEY = "rcms.mockdb.v48";
 
 let cache: MockDb | null = null;
 

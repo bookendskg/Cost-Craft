@@ -10,7 +10,7 @@ import { COOKBOOK_RECIPES } from "./cookbook";
 import { PIZZA_RECIPES, PIZZA_SIZE_LABEL, type PizzaSize } from "./pizzas";
 import { resolveParentAndCut, cutYieldPct } from "./ingredientCuts";
 import { MASTER_PRICES } from "./masterPrices";
-import { PACKAGING_MASTER_SEED, RECIPE_PACKAGING_BY_NAME, normDishName } from "./packagingData";
+import { PACKAGING_MASTER_SEED, sheetFigures } from "./packagingData";
 import { MASTER_DISH_COSTS } from "./masterDishCosts";
 import { MASTER_YIELDS } from "./masterYields";
 import { VEG_FRUIT_PRICES, VEG_FRUIT_ITEMS } from "./vegFruitPrices";
@@ -690,7 +690,10 @@ for (const d of allDefs) {
       if (ing.unit === "Gram") totalGrams += ing.qty;
     });
     const ingredientTotal = anyPriced ? round2(rawCost * (1 + WASTAGE_PCT / 100)) : null;
-    const making = dc && dc.making != null ? dc.making : ingredientTotal;
+    // Each pizza size is costed INDEPENDENTLY from its own ingredient lines (raw
+    // materials + in-house preps + wastage) — never pinned from a summary. No
+    // hardcoded making cost.
+    const making = ingredientTotal;
     recipes.push({
       id,
       recipe_name: name,
@@ -967,10 +970,15 @@ for (const r of recipes) {
   const g = recipe_ingredients
     .filter((ri) => ri.recipe_id === r.id)
     .reduce((s, ri) => s + toWeightGrams(ri.quantity_used, ri.unit_used), 0);
-  const sheet = RECIPE_PACKAGING_BY_NAME[normDishName(r.recipe_name)];
+  // Size-aware sheet figures (11-inch vs 15-inch pizzas get their own values).
+  const sheet = sheetFigures(r.recipe_name, r.size_code);
   r.total_weight_g = sheet?.weightG ?? Math.round(g * 100) / 100;
-  // Real per-dish packaging cost from the sheet (menu recipes only; preps have none).
-  if (sheet && !r.is_prep) r.packaging_cost = sheet.pkg;
+  if (sheet && !r.is_prep) {
+    // Authoritative per-dish packaging + selling price from the sheet. Selling price
+    // never affects Total Cost — only Food Cost %.
+    r.packaging_cost = sheet.pkg;
+    if (sheet.selling != null) r.selling_price = sheet.selling;
+  }
 }
 
 // Packaging master — real items + prices extracted from the Bookends costing sheet.
