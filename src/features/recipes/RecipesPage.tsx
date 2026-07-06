@@ -166,6 +166,12 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
   const [fcRange, setFcRange] = useState("all");
+  const [creator, setCreator] = useState("all");
+  const [creatorSort, setCreatorSort] = useState<"none" | "az" | "za">("none");
+  const creators = useMemo(
+    () => [...new Set(allRecipes.map((r) => r.created_by_name).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b)),
+    [allRecipes],
+  );
   const [page, setPage] = useState(1);
 
   // §13: clear stale filters when the global brand changes, so a Capiche category
@@ -174,6 +180,8 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
     setCategory("all");
     setStatus("all");
     setFcRange("all");
+    setCreator("all");
+    setCreatorSort("none");
     setPage(1);
   }, [globalBrand]);
   const pageSize = PAGE_SIZE;
@@ -288,7 +296,7 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
   );
 
   const filtered = useMemo(() => {
-    return recipes.filter((r) => {
+    const out = recipes.filter((r) => {
       // Archived recipes are hidden everywhere except the dedicated "Archived" view.
       const isArchived = !!r.archived_at;
       if (status === "archived") {
@@ -297,8 +305,12 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
         if (isArchived) return false;
         if (status !== "all" && r.status !== status) return false;
       }
-      if (search && !r.recipe_name.toLowerCase().includes(search.toLowerCase())) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        if (!r.recipe_name.toLowerCase().includes(q) && !(r.created_by_name ?? "").toLowerCase().includes(q)) return false;
+      }
       if (category !== "all" && r.category !== category) return false;
+      if (creator !== "all" && (r.created_by_name || "—") !== creator) return false;
       if (fcRange !== "all") {
         // A food-cost % only exists once a menu price is saved — unpriced recipes
         // match no FC band.
@@ -310,7 +322,14 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
       }
       return true;
     });
-  }, [recipes, search, category, status, fcRange]);
+    if (creatorSort !== "none") {
+      out.sort((a, b) => {
+        const cmp = (a.created_by_name || "").localeCompare(b.created_by_name || "");
+        return creatorSort === "az" ? cmp : -cmp;
+      });
+    }
+    return out;
+  }, [recipes, search, category, status, fcRange, creator, creatorSort]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount);
@@ -339,6 +358,8 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
     setCategory("all");
     setStatus("all");
     setFcRange("all");
+    setCreator("all");
+    setCreatorSort("none");
     setPage(1);
   };
 
@@ -421,9 +442,28 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
               </SelectContent>
             </Select>
           </Filter>
+          <Filter label="Created By">
+            <Select value={creator} onValueChange={(v) => { setCreator(v); setPage(1); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Creators</SelectItem>
+                {creators.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Filter>
+          <Filter label="Sort by Creator">
+            <Select value={creatorSort} onValueChange={(v) => setCreatorSort(v as "none" | "az" | "za")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Default order</SelectItem>
+                <SelectItem value="az">Creator A–Z</SelectItem>
+                <SelectItem value="za">Creator Z–A</SelectItem>
+              </SelectContent>
+            </Select>
+          </Filter>
           <div className="flex items-center gap-3">
             <Input
-              placeholder="Search recipes…"
+              placeholder="Search recipes or creator…"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
@@ -684,6 +724,9 @@ function RecipeRow({
           </div>
           <div className="min-w-0">
             <p className="truncate font-semibold">{recipe.recipe_name}</p>
+            {recipe.created_by_name && (
+              <p className="truncate text-[11px] text-muted-foreground">by {recipe.created_by_name}</p>
+            )}
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               {recipe.category}
               {sizes && sizes.length > 0 && (

@@ -38,6 +38,7 @@ export async function generateExcelReport(data: ExcelExportData, label: string) 
     const menuPrice = r.selling_price != null && r.selling_price > 0 ? r.selling_price : null;
     return {
       "Recipe Name": r.recipe_name,
+      "Created By": r.created_by_name ?? "",
       Category: r.category,
       "Serving Size": r.serving_size,
       "Dish Weight (g)": r.total_weight_g ?? "",

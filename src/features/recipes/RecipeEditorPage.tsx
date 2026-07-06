@@ -101,6 +101,7 @@ export function RecipeEditorPage() {
     resolver: zodResolver(recipeHeaderSchema),
     defaultValues: {
       recipe_name: "",
+      created_by_name: "",
       category: "",
       brand: "capiche",
       description: "",
@@ -118,6 +119,7 @@ export function RecipeEditorPage() {
     if (isEdit && existing) {
       reset({
         recipe_name: existing.recipe.recipe_name,
+        created_by_name: existing.recipe.created_by_name ?? "",
         category: existing.recipe.category,
         brand: existing.recipe.brand,
         description: existing.recipe.description ?? "",
@@ -356,6 +358,13 @@ export function RecipeEditorPage() {
               <Input {...register("recipe_name")} />
               {formState.errors.recipe_name && (
                 <p className="text-xs text-destructive">{formState.errors.recipe_name.message}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Created By *</Label>
+              <Input {...register("created_by_name")} placeholder="e.g. Chef Rahul / Central Kitchen" />
+              {formState.errors.created_by_name && (
+                <p className="text-xs text-destructive">{formState.errors.created_by_name.message}</p>
               )}
             </div>
             <div className="space-y-1.5">

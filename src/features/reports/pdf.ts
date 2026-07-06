@@ -161,6 +161,7 @@ export async function generateRecipePdf(
         columns: [
           [
             `Generated: ${stamp.label}`,
+            recipe.created_by_name ? `Created by: ${recipe.created_by_name}` : "",
             exporter ? `Exported by: ${exporter.name} (${roleLabel})` : "",
           ],
           [

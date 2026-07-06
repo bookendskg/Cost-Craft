@@ -25,6 +25,7 @@ export interface ImportRecipeLine {
 
 export interface RecipeHeaderInput {
   recipe_name: string;
+  created_by_name?: string | null;
   category: string;
   brand: string;
   description?: string | null;
@@ -204,6 +205,7 @@ export const recipesRepo = {
         const recipe: Recipe = {
           id: uid(),
           recipe_name: header.recipe_name,
+          created_by_name: header.created_by_name?.trim() || null,
           category: header.category,
           brand: header.brand,
           description: header.description ?? null,
@@ -268,6 +270,7 @@ export const recipesRepo = {
         }
 
         recipe.recipe_name = header.recipe_name;
+        if (header.created_by_name !== undefined) recipe.created_by_name = header.created_by_name?.trim() || null;
         recipe.category = header.category;
         recipe.brand = header.brand;
         recipe.selling_price = header.selling_price ?? null;

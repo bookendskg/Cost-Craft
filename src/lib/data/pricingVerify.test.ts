@@ -39,9 +39,7 @@ describe("pricing verification vs the Bookends sheet", () => {
       }
     }
     rows.sort((a, b) => Math.abs(b.diffPct) - Math.abs(a.diffPct));
-    // eslint-disable-next-line no-console
     console.log(`\nMAKING-COST DISCREPANCIES > 12% (${rows.length}):`);
-    // eslint-disable-next-line no-console
     rows.slice(0, 40).forEach((x) => console.log(`  ${x.size.padEnd(9)} ${x.name.padEnd(28)} app=${x.app}  sheet=${x.sheet}  (${x.diffPct > 0 ? "+" : ""}${x.diffPct}%)`));
     // This test only reports; it never fails the suite.
     expect(true).toBe(true);

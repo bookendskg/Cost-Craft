@@ -230,6 +230,7 @@ export const supabaseRecipesRepo = {
     const recipe: Recipe = {
       id,
       recipe_name: header.recipe_name,
+      created_by_name: header.created_by_name?.trim() || null,
       category: header.category,
       brand: header.brand,
       description: header.description ?? null,
@@ -308,6 +309,7 @@ export const supabaseRecipesRepo = {
       recipe_name: header.recipe_name,
       category: header.category,
       brand: header.brand,
+      ...(header.created_by_name !== undefined ? { created_by_name: header.created_by_name?.trim() || null } : {}),
       selling_price: header.selling_price ?? null,
       packaging_cost: header.packaging_cost ?? 0,
       wastage_pct: header.wastage_pct ?? 0,

@@ -343,6 +343,9 @@ export interface Recipe {
   /** Finished dish weight in grams — sum of ingredient quantities (weight + volume,
    *  count excluded), converted to grams. App-maintained (recompute), never entered. */
   total_weight_g?: number | null;
+  /** Manually-typed creator label (e.g. "Chef Rahul", "Central Kitchen"). Distinct
+   *  from created_by (the system user id). Blank for legacy recipes until edited. */
+  created_by_name?: string | null;
   /** Actual menu price set by the chef. Null → no price; the app never suggests one. */
   selling_price: number | null;
   /** Per-portion packaging cost (box/container), added on top of food cost. */

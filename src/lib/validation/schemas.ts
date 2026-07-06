@@ -98,6 +98,7 @@ export type MaterialValues = z.infer<typeof materialSchema>;
 
 export const recipeHeaderSchema = z.object({
   recipe_name: z.string().min(1, "Recipe name is required"),
+  created_by_name: z.string().min(1, "Created By is required"),
   category: z.string().min(1, "Category is required"),
   brand: z.string().min(1, "Brand is required"),
   description: z.string().optional().or(z.literal("")),

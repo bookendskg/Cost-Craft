@@ -236,6 +236,10 @@ export function RecipeDetailPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{displayName}</h1>
           <p className="text-muted-foreground">{recipe.description ?? `${brandLabel} • ${recipe.category}`}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Created by <span className="font-medium text-foreground">{recipe.created_by_name || "—"}</span>
+            {" · "}{formatDate(recipe.created_at)}
+          </p>
           {/* Name-variant switcher (e.g. Baby / Mid / Prime Hulk) — like the size switcher. */}
           {variantFamily.length > 1 && (
             <div className="mt-2 mr-2 inline-flex gap-1 rounded-lg border bg-muted p-1 align-top">
