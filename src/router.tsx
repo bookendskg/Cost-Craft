@@ -23,6 +23,7 @@ const UsersPage = lazy(() => import("@/features/users/UsersPage").then((m) => ({
 const AuditPage = lazy(() => import("@/features/audit/AuditPage").then((m) => ({ default: m.AuditPage })));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const BrandsOutletsPage = lazy(() => import("@/features/brands/BrandsOutletsPage").then((m) => ({ default: m.BrandsOutletsPage })));
+const PackagingMasterPage = lazy(() => import("@/features/packaging/PackagingMasterPage").then((m) => ({ default: m.PackagingMasterPage })));
 const SharedRecipePage = lazy(() => import("@/features/share/SharedRecipePage").then((m) => ({ default: m.SharedRecipePage })));
 // Public marketing landing page (code-split; the app's public entry point at "/").
 const LandingPage = lazy(() => import("@/features/marketing/LandingPage").then((m) => ({ default: m.LandingPage })));
@@ -67,6 +68,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireRole roles={["admin", "editor", "head_chef"]} cap="material.view">
             <MaterialsPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "packaging",
+        element: (
+          <RequireRole roles={["admin", "editor", "head_chef"]} cap="packaging.view">
+            <PackagingMasterPage />
           </RequireRole>
         ),
       },

@@ -17,7 +17,7 @@ import { PANKIL_PRICES, PANKIL_ITEMS } from "./pankilPrices";
 import { INGREDIENT_ALIASES } from "./ingredientAliases";
 import { MATRIX, ALL_CAPABILITIES } from "../auth/permissions";
 import type { MockDb } from "./mock/db";
-import type { Brand, BrandRecord, IngredientYield, OutletRecord, RoleRecord, RawMaterial, Recipe, RecipeIngredient, SystemRole, User } from "./types";
+import type { Brand, BrandRecord, IngredientYield, OutletRecord, PackagingItem, RoleRecord, RawMaterial, Recipe, RecipeIngredient, SystemRole, User } from "./types";
 
 /** ₹ per gram for an ingredient from the master costing book (the only price
  *  source), matched by normalised name. Undefined when the book has no price. */
@@ -969,6 +969,31 @@ for (const r of recipes) {
   r.total_weight_g = Math.round(g * 100) / 100;
 }
 
+// Packaging master — Primary/Secondary/Tertiary cost items with unit prices.
+const SEED_PACKAGING: PackagingItem[] = (
+  [
+    { id: "pkg-pizza-box", name: "Pizza Box", packaging_type: "primary", unit: "Piece", unit_price: 4.5 },
+    { id: "pkg-burger-box", name: "Burger Box", packaging_type: "primary", unit: "Piece", unit_price: 3.5 },
+    { id: "pkg-paper-bag", name: "Paper Bag", packaging_type: "secondary", unit: "Piece", unit_price: 2 },
+    { id: "pkg-sauce-cup", name: "Sauce Cup", packaging_type: "primary", unit: "Piece", unit_price: 1.5 },
+    { id: "pkg-dessert-box", name: "Dessert Box", packaging_type: "primary", unit: "Piece", unit_price: 5 },
+    { id: "pkg-cup", name: "Cup", packaging_type: "primary", unit: "Piece", unit_price: 2.5 },
+    { id: "pkg-lid", name: "Lid", packaging_type: "primary", unit: "Piece", unit_price: 1 },
+    { id: "pkg-sticker", name: "Sticker", packaging_type: "tertiary", unit: "Piece", unit_price: 0.5 },
+    { id: "pkg-fork", name: "Fork", packaging_type: "secondary", unit: "Piece", unit_price: 0.8 },
+    { id: "pkg-spoon", name: "Spoon", packaging_type: "secondary", unit: "Piece", unit_price: 0.8 },
+  ] as const
+).map((p) => ({
+  ...p,
+  normalized_name: p.name.toLowerCase(),
+  status: "active" as const,
+  notes: null,
+  created_by: U_ADMIN,
+  created_at: SEED_TS,
+  updated_by: U_ADMIN,
+  updated_at: SEED_TS,
+}));
+
 export function buildSeed(): MockDb {
   return {
     // Standard prep yields: 3 demo (onion/ginger/carrot) + 84 imported from the
@@ -1013,6 +1038,8 @@ export function buildSeed(): MockDb {
     recipe_access_links: [],
     brands: structuredClone(brands),
     outlets: structuredClone(outlets),
+    packaging_items: structuredClone(SEED_PACKAGING),
+    recipe_packaging: [],
     roles: structuredClone(roles),
   };
 }

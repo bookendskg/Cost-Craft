@@ -19,6 +19,9 @@ export type Capability =
   // raw materials
   | "material.view"
   | "material.edit"
+  // packaging master
+  | "packaging.view"
+  | "packaging.manage"
   // yield management (R&D)
   | "yield.manage"
   // operational wastage
@@ -53,6 +56,8 @@ export const MATRIX: Record<SystemRole, Capability[]> = {
     "user.manage",
     "material.view",
     "material.edit",
+    "packaging.view",
+    "packaging.manage",
     "yield.manage",
     "wastage.create",
     "recipe.create",
@@ -72,6 +77,8 @@ export const MATRIX: Record<SystemRole, Capability[]> = {
     "user.manage",
     "material.view",
     "material.edit",
+    "packaging.view",
+    "packaging.manage",
     "yield.manage",
     "wastage.create",
     "recipe.create",
@@ -90,6 +97,8 @@ export const MATRIX: Record<SystemRole, Capability[]> = {
   editor: [
     "material.view",
     "material.edit",
+    "packaging.view",
+    "packaging.manage",
     "yield.manage",
     "wastage.create",
     "recipe.create",
@@ -104,6 +113,7 @@ export const MATRIX: Record<SystemRole, Capability[]> = {
   // recipe-view access — but does not change ingredient prices (admin/editor only).
   head_chef: [
     "material.view",
+    "packaging.view",
     "yield.manage",
     "wastage.create",
     "recipe.create",
@@ -174,6 +184,8 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
   "user.manage": "Manage users",
   "material.view": "View raw materials",
   "material.edit": "Edit raw materials / prices",
+  "packaging.view": "View packaging",
+  "packaging.manage": "Manage packaging",
   "yield.manage": "Manage yields",
   "wastage.create": "Record wastage",
   "recipe.create": "Create recipes",

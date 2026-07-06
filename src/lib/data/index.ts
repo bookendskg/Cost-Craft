@@ -26,6 +26,8 @@ import { outletsRepo as mockOutletsRepo } from "./mock/outlets";
 import { supabaseOutletsRepo } from "./supabase/outlets";
 import { rolesRepo as mockRolesRepo } from "./mock/roles";
 import { supabaseRolesRepo } from "./supabase/roles";
+import { packagingRepo as mockPackagingRepo } from "./mock/packaging";
+import { supabasePackagingRepo } from "./supabase/packaging";
 
 export { authenticate } from "./mock/users";
 export { applicableUnitCost } from "./mock/wastage";
@@ -37,6 +39,7 @@ export type { RecipeHeaderInput, RecipeLineInput, ImportRecipeLine } from "./moc
 export type { RoleInput } from "./mock/roles";
 export type { BrandInput } from "./mock/brands";
 export type { OutletInput } from "./mock/outlets";
+export type { PackagingInput } from "./mock/packaging";
 
 export const usersRepo = isSupabaseConfigured ? supabaseUsersRepo : mockUsersRepo;
 export const materialsRepo = isSupabaseDataBackend ? supabaseMaterialsRepo : mockMaterialsRepo;
@@ -50,6 +53,8 @@ export const accessLinksRepo = isSupabaseDataBackend ? supabaseAccessLinksRepo :
 // Brands & outlets: dynamically-managed master data (Super-Admin only).
 export const brandsRepo = isSupabaseDataBackend ? supabaseBrandsRepo : mockBrandsRepo;
 export const outletsRepo = isSupabaseDataBackend ? supabaseOutletsRepo : mockOutletsRepo;
+// Packaging master: dynamically-managed cost items (admin-managed).
+export const packagingRepo = isSupabaseDataBackend ? supabasePackagingRepo : mockPackagingRepo;
 // Roles & permissions: follow the USERS backend (roles couple to user_profiles.role),
 // so a custom role and the users it's assigned to always live in the same store.
 export const rolesRepo = isSupabaseConfigured ? supabaseRolesRepo : mockRolesRepo;

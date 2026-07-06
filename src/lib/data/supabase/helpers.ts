@@ -22,7 +22,7 @@ const EMPTY_DB: MockDb = {
   recipe_cost_history: [], ingredient_price_history: [], ingredient_yields: [],
   wastage_entries: [], recipe_versions: [], user_recipe_views: [], audit_logs: [],
   system_settings: [], export_history: [], recipe_access_links: [],
-  brands: [], outlets: [], roles: [],
+  brands: [], outlets: [], roles: [], packaging_items: [], recipe_packaging: [],
 };
 
 /** Load the costing slice (materials + recipes + lines + yields) as a MockDb. */

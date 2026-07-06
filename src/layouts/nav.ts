@@ -11,6 +11,7 @@ import {
   Sprout,
   Trash2,
   Store,
+  Package,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/lib/data/types";
@@ -37,6 +38,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, group: "Overview", roles: ["admin", "editor", "head_chef", "chef", "viewer"], always: true },
   { to: "/materials", label: "Raw Materials", icon: Beef, group: "Catalog", roles: ["admin", "editor", "head_chef"], cap: "material.view" },
+  { to: "/packaging", label: "Packaging", icon: Package, group: "Catalog", roles: ["admin", "editor", "head_chef"], cap: "packaging.view" },
   { to: "/recipes", label: "Recipes", icon: BookOpen, group: "Catalog", roles: ["admin", "editor", "head_chef", "chef", "viewer"], cap: "recipe.viewAll" },
   { to: "/prep", label: "In-House Prep", icon: ChefHat, group: "Catalog", roles: ["admin", "editor", "head_chef"], cap: "recipe.editAll" },
   { to: "/yield", label: "Yield Management", icon: Sprout, group: "Catalog", roles: ["admin", "editor", "head_chef"], cap: "yield.manage" },

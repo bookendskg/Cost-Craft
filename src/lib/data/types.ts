@@ -247,6 +247,46 @@ export interface RawMaterial {
   created_at: string;
 }
 
+// --- Packaging master (Primary/Secondary/Tertiary cost items) ---------------
+export type PackagingType = "primary" | "secondary" | "tertiary";
+export const PACKAGING_TYPES: PackagingType[] = ["primary", "secondary", "tertiary"];
+export const PACKAGING_TYPE_LABELS: Record<PackagingType, string> = {
+  primary: "Primary Packaging",
+  secondary: "Secondary Packaging",
+  tertiary: "Tertiary Packaging",
+};
+
+/** A packaging master item (Pizza Box, Sauce Cup…) with a unit price. Recipes
+ *  reference these via recipe_packaging lines. Stored as a string so a Super Admin
+ *  can add future packaging types without a code change. */
+export interface PackagingItem {
+  id: string;
+  name: string;
+  /** Lower-cased, whitespace-collapsed name for duplicate detection. */
+  normalized_name: string;
+  packaging_type: string;
+  unit: string;
+  unit_price: number | null;
+  status: MaterialStatus;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_by: string | null;
+  updated_at: string;
+}
+
+/** One packaging line on a recipe: how many of a packaging item it uses. The
+ *  unit price is snapshotted so historic recipe costs stay stable. */
+export interface RecipePackaging {
+  id: string;
+  recipe_id: string;
+  packaging_item_id: string;
+  quantity_used: number;
+  unit: string;
+  unit_price: number;
+  created_at: string;
+}
+
 export interface Recipe {
   id: string;
   recipe_name: string;
@@ -391,7 +431,7 @@ export interface UserRecipeView {
   assigned_at: string;
 }
 
-export type AuditEntityType = "recipe" | "ingredient" | "user" | "brand" | "outlet" | "role";
+export type AuditEntityType = "recipe" | "ingredient" | "user" | "brand" | "outlet" | "role" | "packaging";
 export type AuditAction = "create" | "update" | "delete" | "approve" | "reject" | "submit";
 
 export interface AuditLog {

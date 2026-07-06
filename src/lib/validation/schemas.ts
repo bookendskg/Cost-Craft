@@ -192,6 +192,22 @@ export const recipeLineSchema = z.object({
 });
 export type RecipeLineValues = z.infer<typeof recipeLineSchema>;
 
+// --- Packaging master (admin-managed) --------------------------------------
+export const packagingItemSchema = z.object({
+  name: z.string().min(1, "Packaging name is required"),
+  packaging_type: z.string().min(1, "Select a packaging type"),
+  unit: z.string().min(1, "Select a unit"),
+  unit_price: z
+    .number({ invalid_type_error: "Enter a valid price" })
+    .finite("Enter a valid price")
+    .gt(0, "Unit price must be greater than 0")
+    .refine((v) => Number(v.toFixed(2)) === v, "Use at most two decimal places")
+    .nullish(),
+  status: z.enum(["active", "inactive"]).optional(),
+  notes: z.string().optional().or(z.literal("")),
+});
+export type PackagingItemValues = z.infer<typeof packagingItemSchema>;
+
 // --- Brand & outlet management (Super-Admin managed) -----------------------
 export const brandSchema = z.object({
   name: z.string().min(1, "Brand name is required"),

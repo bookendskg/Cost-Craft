@@ -10,6 +10,8 @@ import type {
   IngredientPriceHistory,
   IngredientYield,
   OutletRecord,
+  PackagingItem,
+  RecipePackaging,
   RoleRecord,
   RawMaterial,
   Recipe,
@@ -41,11 +43,13 @@ export interface MockDb {
   brands: BrandRecord[];
   outlets: OutletRecord[];
   roles: RoleRecord[];
+  packaging_items: PackagingItem[];
+  recipe_packaging: RecipePackaging[];
 }
 
 // Bump this when the seed/DB shape changes so stale localStorage data is reseeded.
 // v44: owner transfer — seed owner is now mspatel05831@gmail.com (Super Admin).
-const STORAGE_KEY = "rcms.mockdb.v45";
+const STORAGE_KEY = "rcms.mockdb.v46";
 
 let cache: MockDb | null = null;
 
