@@ -1035,6 +1035,7 @@ export function buildSeed(): MockDb {
     outlets: structuredClone(outlets),
     packaging_items: structuredClone(SEED_PACKAGING),
     recipe_packaging: [],
+    wastage_lines: [],
     roles: structuredClone(roles),
   };
 }

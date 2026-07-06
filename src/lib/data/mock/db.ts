@@ -12,6 +12,7 @@ import type {
   OutletRecord,
   PackagingItem,
   RecipePackaging,
+  WastageLine,
   RoleRecord,
   RawMaterial,
   Recipe,
@@ -45,11 +46,12 @@ export interface MockDb {
   roles: RoleRecord[];
   packaging_items: PackagingItem[];
   recipe_packaging: RecipePackaging[];
+  wastage_lines: WastageLine[];
 }
 
 // Bump this when the seed/DB shape changes so stale localStorage data is reseeded.
 // v44: owner transfer — seed owner is now mspatel05831@gmail.com (Super Admin).
-const STORAGE_KEY = "rcms.mockdb.v46";
+const STORAGE_KEY = "rcms.mockdb.v47";
 
 let cache: MockDb | null = null;
 

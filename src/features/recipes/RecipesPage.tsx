@@ -57,6 +57,7 @@ import {
   FC_TONE_STYLES,
   fcTone,
   foodCostPctOf,
+  foodCostNoPackagingPct,
   hasMenuPrice,
   menuPriceOf,
   profitMarginOf,
@@ -793,6 +794,7 @@ function ExpandedBreakdown({
   const menuPrice = menuPriceOf(recipe);
   const margin = profitMarginOf(recipe);
   const actualFc = foodCostPctOf(recipe);
+  const fcNoPkg = foodCostNoPackagingPct(recipe);
 
   // Use the persisted (yield-adjusted) line cost — single source of truth (§9).
   const lines = (data?.ingredients ?? []).map((ing) => ({
@@ -882,8 +884,16 @@ function ExpandedBreakdown({
                 <p className="font-mono font-semibold">{formatINR(menuPrice)}</p>
               </div>
               <div>
-                <p className="text-[11px] uppercase text-muted-foreground">Food Cost %</p>
+                <p className="text-[11px] uppercase text-muted-foreground">FC% with pkg</p>
                 <p className="font-mono font-semibold">{actualFc.toFixed(1)}%</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase text-muted-foreground">FC% without pkg</p>
+                <p className="font-mono font-semibold">{(fcNoPkg ?? 0).toFixed(1)}%</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase text-muted-foreground">Packaging</p>
+                <p className="font-mono font-semibold">{formatINR(recipe.packaging_cost ?? 0)}</p>
               </div>
             </div>
           </>

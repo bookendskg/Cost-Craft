@@ -1,6 +1,6 @@
 // AUTO-EXTRACTED from "BOOKENDS COSTING 16-05-2026 (1).xlsx" (gitignored source).
-// Do not edit by hand — regenerate from the sheet. Packaging master items + each
-// dish's authoritative packaging cost (₹) and finished weight (g).
+// Do not edit by hand — regenerate from the sheet. Packaging master items (Aiko +
+// Capiche price tables) + each dish's authoritative packaging cost (₹) and weight (g).
 
 export interface PackagingSeed { name: string; type: string; unit: string; price: number; }
 export const PACKAGING_MASTER_SEED: PackagingSeed[] = [
@@ -23,10 +23,34 @@ export const PACKAGING_MASTER_SEED: PackagingSeed[] = [
     "price": 19.7
   },
   {
+    "name": "12 inch box",
+    "type": "primary",
+    "unit": "Piece",
+    "price": 17.92
+  },
+  {
+    "name": "15 inch box",
+    "type": "primary",
+    "unit": "Piece",
+    "price": 23
+  },
+  {
+    "name": "250 ml container white",
+    "type": "primary",
+    "unit": "Piece",
+    "price": 4.13
+  },
+  {
     "name": "300 ML Round Container Transparent (RP)",
     "type": "primary",
     "unit": "Piece",
     "price": 5.1
+  },
+  {
+    "name": "500 ml container white",
+    "type": "primary",
+    "unit": "Piece",
+    "price": 8.04
   },
   {
     "name": "500 ML Round Container Transparent (RP)",
@@ -41,6 +65,18 @@ export const PACKAGING_MASTER_SEED: PackagingSeed[] = [
     "price": 6.78
   },
   {
+    "name": "500ml container white",
+    "type": "primary",
+    "unit": "Piece",
+    "price": 7.35
+  },
+  {
+    "name": "750 ml container white",
+    "type": "primary",
+    "unit": "Piece",
+    "price": 12.39
+  },
+  {
     "name": "750 ML Round Container Transparent (RP)",
     "type": "primary",
     "unit": "Piece",
@@ -51,6 +87,12 @@ export const PACKAGING_MASTER_SEED: PackagingSeed[] = [
     "type": "primary",
     "unit": "Piece",
     "price": 6.65
+  },
+  {
+    "name": "Aiko stickers",
+    "type": "tertiary",
+    "unit": "Piece",
+    "price": 4
   },
   {
     "name": "AIKO Takeaway bag",
@@ -71,6 +113,30 @@ export const PACKAGING_MASTER_SEED: PackagingSeed[] = [
     "price": 0.55
   },
   {
+    "name": "Capiche stickers",
+    "type": "tertiary",
+    "unit": "Piece",
+    "price": 4
+  },
+  {
+    "name": "Capiche Takeaway Bag",
+    "type": "secondary",
+    "unit": "Piece",
+    "price": 15
+  },
+  {
+    "name": "Capiche Takeaway Glass",
+    "type": "secondary",
+    "unit": "Piece",
+    "price": 14
+  },
+  {
+    "name": "Chilli flakes",
+    "type": "tertiary",
+    "unit": "Piece",
+    "price": 0.72
+  },
+  {
     "name": "Chopstick",
     "type": "tertiary",
     "unit": "Piece",
@@ -81,6 +147,12 @@ export const PACKAGING_MASTER_SEED: PackagingSeed[] = [
     "type": "secondary",
     "unit": "Piece",
     "price": 2.54
+  },
+  {
+    "name": "Dip bowl",
+    "type": "primary",
+    "unit": "Piece",
+    "price": 1.77
   },
   {
     "name": "Dp 2oz (50ml) Round Cont",
@@ -105,6 +177,24 @@ export const PACKAGING_MASTER_SEED: PackagingSeed[] = [
     "type": "tertiary",
     "unit": "Piece",
     "price": 0.66
+  },
+  {
+    "name": "Oregano",
+    "type": "tertiary",
+    "unit": "Piece",
+    "price": 0.72
+  },
+  {
+    "name": "Pizza Liner 12 Inch",
+    "type": "secondary",
+    "unit": "Piece",
+    "price": 5.1
+  },
+  {
+    "name": "Pizza Liner 15 Inch",
+    "type": "secondary",
+    "unit": "Piece",
+    "price": 5.5
   },
   {
     "name": "Soup spoon",
@@ -137,6 +227,18 @@ export const PACKAGING_MASTER_SEED: PackagingSeed[] = [
     "price": 0.63
   },
   {
+    "name": "stickers tag",
+    "type": "tertiary",
+    "unit": "Piece",
+    "price": 1
+  },
+  {
+    "name": "tissue paper",
+    "type": "tertiary",
+    "unit": "Piece",
+    "price": 0.66
+  },
+  {
     "name": "transparent stand-up zipper pouch",
     "type": "secondary",
     "unit": "Piece",
@@ -153,6 +255,12 @@ export const PACKAGING_MASTER_SEED: PackagingSeed[] = [
     "type": "tertiary",
     "unit": "Piece",
     "price": 0.48
+  },
+  {
+    "name": "Wooden Spork",
+    "type": "tertiary",
+    "unit": "Piece",
+    "price": 0.63
   }
 ];
 
@@ -656,7 +764,6 @@ export const RECIPE_PACKAGING_BY_NAME: Record<string, { pkg: number; weightG: nu
   }
 };
 
-/** Normalize a recipe/dish name for matching (lowercase, alnum-collapsed). */
 export function normDishName(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }

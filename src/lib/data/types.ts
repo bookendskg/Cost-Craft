@@ -148,19 +148,27 @@ export type Department = (typeof DEPARTMENTS)[number];
  *  the Yield Management master data. */
 export interface WastageEntry {
   id: string;
+  /** Optional label for the wastage record (recipe-style). */
+  name?: string | null;
   wastage_date: string;
   /** Brand id (dynamic — see the brands table). */
   brand: string;
   outlet_id: string;
+  /** Free-text category (e.g. "Kitchen", "Expiry"). */
+  category?: string | null;
   wastage_type: WastageType;
-  /** Whether a raw ingredient or a finished recipe was wasted. */
+  /** Header single-item fields mirror the FIRST wastage line (backward compatible);
+   *  the full itemised breakdown lives in wastage_lines. */
   item_type: "ingredient" | "recipe";
   ingredient_id: string | null;
   recipe_id: string | null;
   quantity: number;
   unit: string;
   unit_cost: number;
+  /** Ingredient cost + packaging_cost = total wastage cost. */
+  packaging_cost?: number;
   total_cost: number;
+  description?: string | null;
   reason: string | null;
   department: Department;
   shift: string | null;
@@ -168,9 +176,28 @@ export interface WastageEntry {
   done_by: string | null;
   entered_by: string | null;
   approved_by: string | null;
+  status?: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** One itemised wastage line (recipe-style). */
+export interface WastageLine {
+  id: string;
+  wastage_id: string;
+  item_type: "ingredient" | "recipe";
+  ingredient_id: string | null;
+  recipe_id: string | null;
+  quantity: number;
+  unit: string;
+  unit_cost: number;
+  total_cost: number;
+}
+
+/** A wastage line joined to the wasted item's name (for display). */
+export interface WastageLineWithItem extends WastageLine {
+  name: string;
 }
 
 /** §20 Controlled brand-access scope for a user/role. */
