@@ -4,7 +4,7 @@
 // prep's per-unit cost = total_cost ÷ yield (sum of its ingredient grams).
 
 import { calculateCostPerBaseUnit, calculateIngredientCost, prepUnitCostFrom } from "../costing";
-import { canConvert } from "../units";
+import { canConvert, toWeightGrams } from "../units";
 import { costForCutYield, computeYield } from "../yield";
 import { COOKBOOK_RECIPES } from "./cookbook";
 import { PIZZA_RECIPES, PIZZA_SIZE_LABEL, type PizzaSize } from "./pizzas";
@@ -958,6 +958,16 @@ const roles: RoleRecord[] = SYSTEM_ROLE_DEFS.map((d) => ({
   updated_by: U_ADMIN,
   updated_at: SEED_TS,
 }));
+
+// Finished dish weight for every seeded recipe — sum of ingredient input
+// quantities in grams-equivalent (weight + volume; count excluded). Mirrors what
+// recomputeRecipe() maintains on create/edit, so seeded rows show weight too.
+for (const r of recipes) {
+  const g = recipe_ingredients
+    .filter((ri) => ri.recipe_id === r.id)
+    .reduce((s, ri) => s + toWeightGrams(ri.quantity_used, ri.unit_used), 0);
+  r.total_weight_g = Math.round(g * 100) / 100;
+}
 
 export function buildSeed(): MockDb {
   return {

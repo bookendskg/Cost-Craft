@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { calculateIngredientCost, prepUnitCostFrom, round2, type RecipeCostingResult } from "@/lib/costing";
-import { canConvert, getConversionFactor } from "@/lib/units";
+import { canConvert, getConversionFactor, toWeightGrams } from "@/lib/units";
 import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "@/lib/yield";
 import { resolveParentAndCut, cutYieldPct } from "@/lib/data/ingredientCuts";
 import type { IngredientYield, RawMaterial, Recipe } from "@/lib/data/types";
@@ -33,6 +33,8 @@ export interface RecipeCostingView extends RecipeCostingResult {
   packagingCost: number;
   /** cost_per_portion + packaging — what the menu price must cover. */
   fullCostPerPortion: number;
+  /** Finished dish weight in grams (sum of ingredient input quantities). */
+  totalWeightGrams: number;
 }
 
 /** A prep recipe's cost per unit of its yield (pre-wastage; ₹/gram). */
@@ -90,6 +92,9 @@ export function useRecipeCosting(
     });
 
     const rawCost = costed.reduce((s, l) => s + (l.cost ?? 0), 0);
+    const totalWeightGrams = round2(
+      costed.reduce((s, l) => s + toWeightGrams(l.quantity_used, l.unit_used), 0),
+    );
     const totalCost = round2(rawCost * (1 + wastagePct / 100));
     const serving = servingSize > 0 ? servingSize : 1;
     const rawCpp = totalCost / serving;
@@ -110,6 +115,7 @@ export function useRecipeCosting(
       hasMissingPrice: costed.some((l) => l.missingPrice),
       packagingCost,
       fullCostPerPortion: round2(rawFullCpp),
+      totalWeightGrams,
     };
   }, [lines, materialsById, prepsById, servingSize, foodCostPct, wastagePct, packagingCost, yields]);
 }

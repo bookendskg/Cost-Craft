@@ -14,6 +14,17 @@ export function formatINR(value: number | null | undefined): string {
   })}`;
 }
 
+/** Finished dish weight in grams → a human label ("500 g" / "1.25 kg"). Values
+ *  under 1 kg show grams; 1 kg and over switch to kilograms. Zero/nullish → "—". */
+export function formatWeight(grams: number | null | undefined): string {
+  if (grams === null || grams === undefined || Number.isNaN(grams) || grams <= 0) return "—";
+  if (grams >= 1000) {
+    const kg = Math.round((grams / 1000) * 100) / 100;
+    return `${kg.toLocaleString("en-IN", { maximumFractionDigits: 2 })} kg`;
+  }
+  return `${Math.round(grams * 100) / 100} g`;
+}
+
 /** Short, human-friendly label for a unit code (e.g. "KG" → "kg"). */
 const UNIT_LABELS: Record<string, string> = {
   KG: "kg",

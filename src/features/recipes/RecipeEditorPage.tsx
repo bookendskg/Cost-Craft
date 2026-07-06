@@ -614,6 +614,7 @@ export function RecipeEditorPage() {
             recipeCost={costing.totalCost}
             packagingCost={costing.packagingCost}
             sellingPrice={(watch("selling_price") as number) || 0}
+            totalWeightGrams={costing.totalWeightGrams}
             prepOnly={effectiveIsPrep}
           />
           {costing.hasMissingPrice && (

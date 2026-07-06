@@ -1,6 +1,6 @@
-import { Package, Receipt, Tag, Percent, TrendingUp, Wallet } from "lucide-react";
+import { Package, Receipt, Tag, Percent, TrendingUp, Wallet, Scale } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { cn, formatINR } from "@/lib/utils";
+import { cn, formatINR, formatWeight } from "@/lib/utils";
 import { round2 } from "@/lib/costing";
 import { fcTone, type FcTone } from "@/features/recipes/recipeMetrics";
 
@@ -18,6 +18,8 @@ interface CostSummaryProps {
    *  suggests a price, so the price-dependent metrics show "–" until one is set. */
   sellingPrice: number;
   criticalPct?: number;
+  /** Finished dish weight in grams (sum of ingredient quantities). */
+  totalWeightGrams?: number;
   /** In-House Prep: show ONLY the calculated Total Cost — no packaging / selling
    *  price / food-cost / margin / profit. */
   prepOnly?: boolean;
@@ -56,8 +58,20 @@ export function CostSummary({
   packagingCost,
   sellingPrice,
   criticalPct = 35,
+  totalWeightGrams,
   prepOnly = false,
 }: CostSummaryProps) {
+  const weightStat =
+    totalWeightGrams !== undefined ? (
+      <Stat
+        icon={<Scale className="h-3.5 w-3.5" />}
+        label="Total Dish Weight"
+        value={formatWeight(totalWeightGrams)}
+        hint="Finished product weight"
+        className="col-span-2"
+      />
+    ) : null;
+
   if (prepOnly) {
     return (
       <div className="space-y-3">
@@ -68,6 +82,7 @@ export function CostSummary({
           value={formatINR(recipeCost)}
           hint="Sum of all ingredient costs"
         />
+        {weightStat}
       </div>
     );
   }
@@ -107,6 +122,7 @@ export function CostSummary({
           value={priced ? formatINR(profit) : "—"}
           className="col-span-2"
         />
+        {weightStat}
       </div>
     </div>
   );

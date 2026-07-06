@@ -268,6 +268,9 @@ export interface Recipe {
   status: RecipeStatus;
   total_cost: number | null;
   cost_per_portion: number | null;
+  /** Finished dish weight in grams — sum of ingredient quantities (weight + volume,
+   *  count excluded), converted to grams. App-maintained (recompute), never entered. */
+  total_weight_g?: number | null;
   /** Actual menu price set by the chef. Null → no price; the app never suggests one. */
   selling_price: number | null;
   /** Per-portion packaging cost (box/container), added on top of food cost. */

@@ -42,7 +42,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { cn, formatDateTime, formatINR, formatQuantityWithUnit } from "@/lib/utils";
+import { cn, formatDateTime, formatINR, formatQuantityWithUnit, formatWeight } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
 import { can, canEditRecipe, viewerBrands, viewerShowCost } from "@/lib/auth/permissions";
 import type { Recipe } from "@/lib/data/types";
@@ -848,6 +848,10 @@ function ExpandedBreakdown({
             )}
           </div>
         </div>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Total Dish Weight:{" "}
+          <span className="font-mono font-semibold text-foreground">{formatWeight(recipe.total_weight_g)}</span>
+        </p>
         {isLoading ? (
           <p className="py-4 text-sm text-muted-foreground">Loading breakdown…</p>
         ) : (

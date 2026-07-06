@@ -4,7 +4,7 @@
 import type { TDocumentDefinitions } from "pdfmake/interfaces";
 import { calculateIngredientCost, round2 } from "@/lib/costing";
 import { canConvert } from "@/lib/units";
-import { formatINR, formatUnit } from "@/lib/utils";
+import { formatINR, formatUnit, formatWeight } from "@/lib/utils";
 import { type Recipe, type RecipeIngredientWithMaterial } from "@/lib/data/types";
 import { brandLabel as resolveBrandLabel } from "@/lib/data/brandCache";
 import { roleLabel as resolveRoleLabel } from "@/lib/auth/roleCache";
@@ -102,6 +102,10 @@ export async function generateRecipePdf(
   const actualFc = priced ? round2((fullPerPortion / menuPrice) * 100) : 0;
 
   const summary: [string, string][] = [];
+  // Total dish weight is not financial — always shown when known.
+  if (recipe.total_weight_g != null && recipe.total_weight_g > 0) {
+    summary.push(["Total Dish Weight", formatWeight(recipe.total_weight_g)]);
+  }
   if (showCost) {
     summary.push(["Total Recipe Cost", formatINR(total)]);
     summary.push(["Cost Per Portion", formatINR(perPortion)]);

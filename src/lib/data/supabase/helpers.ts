@@ -46,7 +46,7 @@ export async function loadCostingDb(): Promise<MockDb> {
 
 function snapshotBefore(db: MockDb) {
   return {
-    recipes: new Map(db.recipes.map((r) => [r.id, { tc: r.total_cost, cpp: r.cost_per_portion }])),
+    recipes: new Map(db.recipes.map((r) => [r.id, { tc: r.total_cost, cpp: r.cost_per_portion, tw: r.total_weight_g ?? null }])),
     lines: new Map(db.recipe_ingredients.map((ri) => [ri.id, ri.calculated_cost])),
   };
 }
@@ -58,12 +58,12 @@ async function persistCostChanges(
   const c = sb();
   const changedRecipes = db.recipes.filter((r) => {
     const b = before.recipes.get(r.id);
-    return b && (b.tc !== r.total_cost || b.cpp !== r.cost_per_portion);
+    return b && (b.tc !== r.total_cost || b.cpp !== r.cost_per_portion || b.tw !== (r.total_weight_g ?? null));
   });
   for (const r of changedRecipes) {
     const { error } = await c
       .from("recipes")
-      .update({ total_cost: r.total_cost, cost_per_portion: r.cost_per_portion, updated_at: r.updated_at })
+      .update({ total_cost: r.total_cost, cost_per_portion: r.cost_per_portion, total_weight_g: r.total_weight_g ?? null, updated_at: r.updated_at })
       .eq("id", r.id);
     if (error) fail("Update recipe cost", error.message);
   }

@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ShareLinkDialog } from "@/features/share/ShareLinkDialog";
-import { cn, formatDate, formatINR, formatUnit } from "@/lib/utils";
+import { cn, formatDate, formatINR, formatUnit, formatWeight } from "@/lib/utils";
 import { prepUnitCostFrom, round2 } from "@/lib/costing";
 
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
@@ -528,6 +528,7 @@ export function RecipeDetailPage() {
               {showFinancials && (
                 <TabsContent value="financials">
                   <div className="space-y-1 py-2 text-sm">
+                    <FinRow label="Total Dish Weight" value={formatWeight(recipe.total_weight_g)} />
                     <FinRow label="Total Recipe Cost" value={formatINR(recipe.total_cost)} />
                     {recipe.serving_size > 1 && (
                       <FinRow label={`Cost Per Portion (÷${recipe.serving_size})`} value={formatINR(portionCost)} />

@@ -121,3 +121,17 @@ export function measurementTypeFromBaseUnit(baseUnit: string): MeasurementType {
   if (fam === "weight") return "weight";
   return "count";
 }
+
+/**
+ * Grams-equivalent of a quantity, for totalling a dish's finished weight.
+ * Weight units → grams; volume units → millilitres (treated 1:1 with grams, the
+ * standard kitchen approximation); count/piece units → 0 (a "piece" has no
+ * intrinsic weight and can't be summed into a gram total). Never throws.
+ */
+export function toWeightGrams(qty: number, unit: string): number {
+  if (!(qty > 0)) return 0;
+  const fam = getUnitFamily(unit);
+  if (fam === "weight") return qty * getConversionFactor(unit, "Gram");
+  if (fam === "volume") return qty * getConversionFactor(unit, "ML");
+  return 0;
+}

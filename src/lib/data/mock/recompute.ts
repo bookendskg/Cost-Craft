@@ -3,7 +3,7 @@
 // components, so ingredient price changes and recipe edits stay consistent.
 
 import { calculateIngredientCost, prepUnitCostFrom, round2 } from "../../costing";
-import { canConvert, getConversionFactor } from "../../units";
+import { canConvert, getConversionFactor, toWeightGrams } from "../../units";
 import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "../../yield";
 import { resolveParentAndCut, cutYieldPct } from "../ingredientCuts";
 import type {
@@ -76,11 +76,15 @@ export function recomputeRecipe(
 
   const lines = db.recipe_ingredients.filter((ri) => ri.recipe_id === recipeId);
   let rawTotal = 0;
+  let weightGrams = 0;
   for (const line of lines) {
     const cost = lineCost(db, line);
     line.calculated_cost = cost;
     if (cost !== null) rawTotal += cost;
+    // Finished dish weight = sum of ingredient input quantities in grams-equivalent.
+    weightGrams += toWeightGrams(line.quantity_used, line.unit_used);
   }
+  recipe.total_weight_g = round2(weightGrams);
 
   // Add wastage on top of the raw ingredient cost (compounds through preps).
   const newTotal = round2(rawTotal * (1 + (recipe.wastage_pct ?? 0) / 100));

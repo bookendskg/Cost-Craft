@@ -40,6 +40,7 @@ export async function generateExcelReport(data: ExcelExportData, label: string) 
       "Recipe Name": r.recipe_name,
       Category: r.category,
       "Serving Size": r.serving_size,
+      "Dish Weight (g)": r.total_weight_g ?? "",
       "Total Cost": r.total_cost ?? 0,
       "Cost/Portion": perPortion,
       Packaging: packaging,
