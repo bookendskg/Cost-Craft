@@ -153,36 +153,27 @@ export const yieldSchema = z
   });
 export type YieldValues = z.infer<typeof yieldSchema>;
 
-export const wastageSchema = z
-  .object({
-    wastage_date: z.string().min(1, "Date is required"),
-    brand: z.string().min(1, "Select a brand"),
-    outlet_id: z.string().min(1, "Select an outlet"),
-    wastage_type: z.enum(WASTAGE_TYPES),
-    item_type: z.enum(["ingredient", "recipe"]),
-    ingredient_id: z.string().nullable().optional(),
-    recipe_id: z.string().nullable().optional(),
-    quantity: z
-      .number({ invalid_type_error: "Enter a valid quantity" })
-      .finite("Enter a valid quantity")
-      .gt(0, "Quantity must be greater than 0"),
-    unit: z.string().min(1, "Unit is required"),
-    unit_cost: z
-      .number({ invalid_type_error: "Enter a valid cost" })
-      .finite("Enter a valid cost")
-      .min(0, "Cost cannot be negative")
-      .refine((v) => Number(v.toFixed(2)) === v, "Use at most two decimal places"),
-    reason: z.string().min(1, "Reason is required"),
-    department: z.enum(DEPARTMENTS),
-    shift: z.string().optional().or(z.literal("")),
-    done_by: z.string().min(1, "Enter who did the wastage"),
-    approved_by: z.string().optional().or(z.literal("")),
-    notes: z.string().optional().or(z.literal("")),
-  })
-  .refine((v) => (v.item_type === "ingredient" ? !!v.ingredient_id : !!v.recipe_id), {
-    message: "Select the wasted item",
-    path: ["ingredient_id"],
-  });
+// Recipe-style wastage: the header is validated here; the itemised lines are
+// managed in the form's local state and validated on submit.
+export const wastageSchema = z.object({
+  name: z.string().optional().or(z.literal("")),
+  wastage_date: z.string().min(1, "Date is required"),
+  brand: z.string().min(1, "Select a brand"),
+  outlet_id: z.string().min(1, "Select an outlet"),
+  category: z.string().optional().or(z.literal("")),
+  wastage_type: z.enum(WASTAGE_TYPES),
+  reason: z.string().min(1, "Reason is required"),
+  department: z.enum(DEPARTMENTS),
+  shift: z.string().optional().or(z.literal("")),
+  done_by: z.string().min(1, "Enter who did the wastage"),
+  approved_by: z.string().optional().or(z.literal("")),
+  packaging_cost: z
+    .number({ invalid_type_error: "Enter a valid amount" })
+    .min(0, "Packaging cost cannot be negative")
+    .optional(),
+  description: z.string().optional().or(z.literal("")),
+  notes: z.string().optional().or(z.literal("")),
+});
 export type WastageValues = z.infer<typeof wastageSchema>;
 
 export const recipeLineSchema = z.object({

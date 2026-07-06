@@ -1,26 +1,58 @@
-import type { Department, RawMaterial, Recipe, WastageEntry, WastageType } from "../types";
+import type { Department, RawMaterial, Recipe, WastageEntry, WastageLineWithItem, WastageType } from "../types";
 import { round2 } from "../../costing";
 import { activeYield, effectiveCostPerBaseUnit } from "../../yield";
-import { delay, getDb, mutate, nowISO, uid } from "./db";
+import { delay, getDb, type MockDb, mutate, nowISO, uid } from "./db";
 import { recordAudit } from "./recompute";
 
-export interface WastageInput {
-  wastage_date: string;
-  brand: string;
-  outlet_id: string;
-  wastage_type: WastageType;
+export interface WastageLineInput {
   item_type: "ingredient" | "recipe";
   ingredient_id: string | null;
   recipe_id: string | null;
   quantity: number;
   unit: string;
   unit_cost: number;
+}
+
+export interface WastageInput {
+  name?: string | null;
+  wastage_date: string;
+  brand: string;
+  outlet_id: string;
+  category?: string | null;
+  wastage_type: WastageType;
   reason?: string | null;
   department: Department;
   shift?: string | null;
   done_by?: string | null;
   approved_by?: string | null;
+  description?: string | null;
   notes?: string | null;
+  status?: string | null;
+  packaging_cost?: number;
+  /** Recipe-style itemised wastage lines (at least one). */
+  lines: WastageLineInput[];
+}
+
+/** Replace a wastage record's lines; returns the summed ingredient cost. */
+function writeWastageLines(db: MockDb, wastageId: string, lines: WastageLineInput[]): number {
+  db.wastage_lines = db.wastage_lines.filter((l) => l.wastage_id !== wastageId);
+  let total = 0;
+  for (const l of lines) {
+    const lineTotal = round2((l.quantity || 0) * (l.unit_cost || 0));
+    total += lineTotal;
+    db.wastage_lines.push({
+      id: uid(),
+      wastage_id: wastageId,
+      item_type: l.item_type,
+      ingredient_id: l.item_type === "ingredient" ? l.ingredient_id : null,
+      recipe_id: l.item_type === "recipe" ? l.recipe_id : null,
+      quantity: l.quantity,
+      unit: l.unit,
+      unit_cost: l.unit_cost,
+      total_cost: lineTotal,
+    });
+  }
+  return round2(total);
 }
 
 /**
@@ -54,36 +86,64 @@ export const wastageRepo = {
     return delay(getDb().wastage_entries.find((w) => w.id === id) ?? null);
   },
 
+  /** A wastage record with its itemised lines (joined to item names). */
+  async getWithLines(id: string): Promise<{ entry: WastageEntry; lines: WastageLineWithItem[] } | null> {
+    const db = getDb();
+    const entry = db.wastage_entries.find((w) => w.id === id) ?? null;
+    if (!entry) return delay(null);
+    const lines: WastageLineWithItem[] = db.wastage_lines
+      .filter((l) => l.wastage_id === id)
+      .map((l) => ({
+        ...l,
+        name:
+          l.item_type === "recipe"
+            ? db.recipes.find((r) => r.id === l.recipe_id)?.recipe_name ?? "—"
+            : db.raw_materials.find((m) => m.id === l.ingredient_id)?.ingredient_name ?? "—",
+      }));
+    return delay({ entry: { ...entry }, lines });
+  },
+
   async create(input: WastageInput, actorId: string): Promise<WastageEntry> {
     return delay(
       mutate((db) => {
+        const lines = input.lines ?? [];
+        if (lines.length === 0) throw new Error("Add at least one wasted item");
+        const first = lines[0];
+        const id = uid();
         const entry: WastageEntry = {
-          id: uid(),
+          id,
+          name: input.name?.trim() || null,
           wastage_date: input.wastage_date,
           brand: input.brand,
           outlet_id: input.outlet_id,
+          category: input.category ?? null,
           wastage_type: input.wastage_type,
-          item_type: input.item_type,
-          ingredient_id: input.item_type === "ingredient" ? input.ingredient_id : null,
-          recipe_id: input.item_type === "recipe" ? input.recipe_id : null,
-          quantity: input.quantity,
-          unit: input.unit,
-          unit_cost: input.unit_cost,
-          total_cost: round2(input.quantity * input.unit_cost),
+          item_type: first.item_type,
+          ingredient_id: first.item_type === "ingredient" ? first.ingredient_id : null,
+          recipe_id: first.item_type === "recipe" ? first.recipe_id : null,
+          quantity: first.quantity,
+          unit: first.unit,
+          unit_cost: first.unit_cost,
+          packaging_cost: round2(input.packaging_cost ?? 0),
+          total_cost: 0,
+          description: input.description ?? null,
           reason: input.reason ?? null,
           department: input.department,
           shift: input.shift ?? null,
           done_by: input.done_by ?? null,
           entered_by: actorId,
           approved_by: input.approved_by || null,
+          status: input.status ?? "recorded",
           notes: input.notes ?? null,
           created_at: nowISO(),
           updated_at: nowISO(),
         };
         db.wastage_entries.push(entry);
+        const ingTotal = writeWastageLines(db, id, lines);
+        entry.total_cost = round2(ingTotal + (input.packaging_cost ?? 0));
         recordAudit(db, {
-          entity_type: input.item_type === "recipe" ? "recipe" : "ingredient",
-          entity_id: (input.recipe_id || input.ingredient_id) ?? entry.id,
+          entity_type: first.item_type === "recipe" ? "recipe" : "ingredient",
+          entity_id: (first.recipe_id || first.ingredient_id) ?? entry.id,
           action: "create",
           new_values: { total_cost: entry.total_cost, outlet: entry.outlet_id },
           performed_by: actorId,
@@ -99,30 +159,39 @@ export const wastageRepo = {
       mutate((db) => {
         const w = db.wastage_entries.find((x) => x.id === id);
         if (!w) throw new Error("Wastage entry not found");
+        const lines = input.lines ?? [];
+        if (lines.length === 0) throw new Error("Add at least one wasted item");
+        const first = lines[0];
         const before = { total_cost: w.total_cost };
+        const ingTotal = writeWastageLines(db, id, lines);
         Object.assign(w, {
+          name: input.name?.trim() || null,
           wastage_date: input.wastage_date,
           brand: input.brand,
           outlet_id: input.outlet_id,
+          category: input.category ?? null,
           wastage_type: input.wastage_type,
-          item_type: input.item_type,
-          ingredient_id: input.item_type === "ingredient" ? input.ingredient_id : null,
-          recipe_id: input.item_type === "recipe" ? input.recipe_id : null,
-          quantity: input.quantity,
-          unit: input.unit,
-          unit_cost: input.unit_cost,
-          total_cost: round2(input.quantity * input.unit_cost),
+          item_type: first.item_type,
+          ingredient_id: first.item_type === "ingredient" ? first.ingredient_id : null,
+          recipe_id: first.item_type === "recipe" ? first.recipe_id : null,
+          quantity: first.quantity,
+          unit: first.unit,
+          unit_cost: first.unit_cost,
+          packaging_cost: round2(input.packaging_cost ?? 0),
+          total_cost: round2(ingTotal + (input.packaging_cost ?? 0)),
+          description: input.description ?? null,
           reason: input.reason ?? null,
           department: input.department,
           shift: input.shift ?? null,
           done_by: input.done_by ?? null,
           approved_by: input.approved_by || null,
+          status: input.status ?? w.status ?? "recorded",
           notes: input.notes ?? null,
           updated_at: nowISO(),
         });
         recordAudit(db, {
-          entity_type: w.item_type === "recipe" ? "recipe" : "ingredient",
-          entity_id: (w.recipe_id || w.ingredient_id) ?? w.id,
+          entity_type: first.item_type === "recipe" ? "recipe" : "ingredient",
+          entity_id: (first.recipe_id || first.ingredient_id) ?? w.id,
           action: "update",
           old_values: before,
           new_values: { total_cost: w.total_cost },
@@ -140,6 +209,7 @@ export const wastageRepo = {
         const w = db.wastage_entries.find((x) => x.id === id);
         if (!w) return;
         db.wastage_entries = db.wastage_entries.filter((x) => x.id !== id);
+        db.wastage_lines = db.wastage_lines.filter((l) => l.wastage_id !== id);
         recordAudit(db, {
           entity_type: w.item_type === "recipe" ? "recipe" : "ingredient",
           entity_id: (w.recipe_id || w.ingredient_id) ?? w.id,

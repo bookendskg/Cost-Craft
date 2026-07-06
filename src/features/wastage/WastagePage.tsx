@@ -38,6 +38,7 @@ import { WASTAGE_TYPES, type WastageEntry } from "@/lib/data/types";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useRecipes } from "@/features/recipes/hooks";
 import { useBrands, useOutlets } from "@/features/brands/hooks";
+import { useUsersMap } from "@/features/users/hooks";
 import { useWastage, useDeleteWastage } from "./hooks";
 import { WastageForm } from "./WastageForm";
 import { toast } from "@/components/ui/use-toast";
@@ -57,9 +58,11 @@ export function WastagePage() {
   const { data: recipes = [] } = useRecipes();
   const deleteMut = useDeleteWastage();
 
+  const { map: usersMap } = useUsersMap();
   const matById = useMemo(() => new Map(materials.map((m) => [m.id, m.ingredient_name])), [materials]);
   const recById = useMemo(() => new Map(recipes.map((r) => [r.id, r.recipe_name])), [recipes]);
   const outletName = useMemo(() => new Map(outlets.map((o) => [o.id, o.name])), [outlets]);
+  const brandName = useMemo(() => new Map(brands.map((b) => [b.id, b.name])), [brands]);
   const itemName = (w: WastageEntry) =>
     w.item_type === "recipe" ? recById.get(w.recipe_id ?? "") ?? "—" : matById.get(w.ingredient_id ?? "") ?? "—";
 
@@ -87,7 +90,7 @@ export function WastagePage() {
       if (from && day < from) return false;
       if (to && day > to) return false;
       if (search) {
-        const hay = `${itemName(w)} ${w.reason ?? ""}`.toLowerCase();
+        const hay = `${w.name ?? ""} ${itemName(w)} ${w.category ?? ""} ${w.reason ?? ""}`.toLowerCase();
         if (!hay.includes(search.toLowerCase())) return false;
       }
       return true;
@@ -258,28 +261,29 @@ export function WastagePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Wastage</TableHead>
+                    <TableHead>Brand</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead className="text-right">Total Cost</TableHead>
+                    <TableHead>Created By</TableHead>
                     <TableHead>Date</TableHead>
-                    <TableHead>Outlet</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead>Dept</TableHead>
-                    <TableHead>Done By</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pageItems.map((w) => (
                     <TableRow key={w.id}>
-                      <TableCell className="whitespace-nowrap text-sm">{formatDate(w.wastage_date)}</TableCell>
-                      <TableCell className="text-sm">{outletName.get(w.outlet_id) ?? w.outlet_id}</TableCell>
-                      <TableCell><Badge variant="outline">{w.wastage_type.replace(" Wastage", "")}</Badge></TableCell>
-                      <TableCell className="font-medium">{itemName(w)}</TableCell>
-                      <TableCell className="text-right font-mono">{w.quantity} {w.unit}</TableCell>
+                      <TableCell className="font-medium">
+                        {w.name || itemName(w)}
+                        <span className="block text-xs font-normal text-muted-foreground">{outletName.get(w.outlet_id) ?? w.outlet_id} · {w.wastage_type.replace(" Wastage", "")}</span>
+                      </TableCell>
+                      <TableCell className="text-sm">{brandName.get(w.brand) ?? w.brand}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{w.category || "—"}</TableCell>
                       <TableCell className="text-right font-mono font-semibold">{formatINR(w.total_cost)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{w.department}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{w.done_by ?? "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{w.entered_by ? usersMap.get(w.entered_by)?.name ?? "—" : "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm">{formatDate(w.wastage_date)}</TableCell>
+                      <TableCell><Badge variant="outline">{w.status || "recorded"}</Badge></TableCell>
                       <TableCell>{canEdit && <RowActions onEdit={() => { setEditing(w); setFormOpen(true); }} onDelete={() => setDeleting(w)} />}</TableCell>
                     </TableRow>
                   ))}
@@ -291,9 +295,9 @@ export function WastagePage() {
               {pageItems.map((w) => (
                 <li key={w.id} className="flex items-start gap-3 p-4">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{itemName(w)}</p>
-                    <p className="text-xs text-muted-foreground">{outletName.get(w.outlet_id) ?? w.outlet_id} · {formatDate(w.wastage_date)}</p>
-                    <p className="mt-1 text-sm"><Badge variant="outline" className="mr-2">{w.wastage_type.replace(" Wastage", "")}</Badge>{w.quantity} {w.unit} · <span className="font-semibold">{formatINR(w.total_cost)}</span></p>
+                    <p className="truncate font-medium">{w.name || itemName(w)}</p>
+                    <p className="text-xs text-muted-foreground">{brandName.get(w.brand) ?? w.brand} · {w.category || outletName.get(w.outlet_id)} · {formatDate(w.wastage_date)}</p>
+                    <p className="mt-1 text-sm"><Badge variant="outline" className="mr-2">{w.status || "recorded"}</Badge><span className="font-semibold">{formatINR(w.total_cost)}</span></p>
                   </div>
                   {canEdit && <RowActions onEdit={() => { setEditing(w); setFormOpen(true); }} onDelete={() => setDeleting(w)} />}
                 </li>

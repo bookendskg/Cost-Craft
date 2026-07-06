@@ -6,6 +6,15 @@ export function useWastage() {
   return useQuery({ queryKey: ["wastage"], queryFn: () => wastageRepo.list() });
 }
 
+/** A wastage record with its itemised lines (for the edit form + detail). */
+export function useWastageWithLines(id: string | null) {
+  return useQuery({
+    queryKey: ["wastage", id, "lines"],
+    queryFn: () => (id ? wastageRepo.getWithLines(id) : Promise.resolve(null)),
+    enabled: !!id,
+  });
+}
+
 function invalidate(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ["wastage"] });
   qc.invalidateQueries({ queryKey: ["audit"] });
