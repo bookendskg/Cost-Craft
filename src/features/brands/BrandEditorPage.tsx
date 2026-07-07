@@ -1,32 +1,20 @@
 import { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
-import { useUnsavedChanges, useFormDirty } from "@/lib/hooks/useUnsavedChanges";
-import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { brandSchema, type BrandValues } from "@/lib/validation/schemas";
 import { toast } from "@/components/ui/use-toast";
-import type { BrandRecord } from "@/lib/data/types";
-import { useCreateBrand, useUpdateBrand } from "./hooks";
+import { useUnsavedChanges, useFormDirty } from "@/lib/hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
+import { useBrands, useCreateBrand, useUpdateBrand } from "./hooks";
 
 const EMPTY: BrandValues = {
   name: "",
@@ -37,16 +25,17 @@ const EMPTY: BrandValues = {
   notes: "",
 };
 
-export function BrandForm({
-  open,
-  onOpenChange,
-  brand,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  brand?: BrandRecord | null;
-}) {
-  const isEdit = !!brand;
+/**
+ * Full-page Add / Edit Brand — mirrors the Recipe / Raw Material editor pages
+ * (dedicated route, page chrome, unsaved-changes protection) rather than a modal.
+ * Routes: /brands/new and /brands/:id/edit (Super Admin only).
+ */
+export function BrandEditorPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEdit = !!id;
+  const { data: brands = [], isLoading } = useBrands();
+  const brand = id ? brands.find((b) => b.id === id) ?? null : null;
   const createMut = useCreateBrand();
   const updateMut = useUpdateBrand();
 
@@ -54,27 +43,26 @@ export function BrandForm({
   const { register, handleSubmit, reset, watch, setValue, formState } = form;
   const { errors } = formState;
 
-  const { dirty, capture, markSaved } = useFormDirty(form, open);
+  const { dirty, capture, markSaved } = useFormDirty(form, true);
   const unsaved = useUnsavedChanges(dirty);
 
   useEffect(() => {
-    if (open) {
-      reset(
-        brand
-          ? {
-              name: brand.name,
-              brand_code: brand.brand_code,
-              display_name: brand.display_name,
-              accent_color: brand.accent_color ?? "",
-              status: brand.status,
-              notes: brand.notes ?? "",
-            }
-          : EMPTY,
-      );
-      capture();
-    }
+    if (isEdit && !brand) return; // wait for the record to load
+    reset(
+      brand
+        ? {
+            name: brand.name,
+            brand_code: brand.brand_code,
+            display_name: brand.display_name,
+            accent_color: brand.accent_color ?? "",
+            status: brand.status,
+            notes: brand.notes ?? "",
+          }
+        : EMPTY,
+    );
+    capture();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, brand]);
+  }, [brand, isEdit]);
 
   const onSubmit = async (values: BrandValues) => {
     try {
@@ -94,7 +82,7 @@ export function BrandForm({
         toast.success("Brand created");
       }
       markSaved();
-      onOpenChange(false);
+      navigate("/brands");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
     }
@@ -102,17 +90,22 @@ export function BrandForm({
 
   const busy = createMut.isPending || updateMut.isPending;
 
+  if (isEdit && !brand && isLoading) {
+    return <p className="p-8 text-center text-sm text-muted-foreground">Loading brand…</p>;
+  }
+
   return (
     <>
-    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : unsaved.guardClose(() => onOpenChange(false)))}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Brand" : "New Brand"}</DialogTitle>
-          <DialogDescription>
-            {isEdit ? "Update this brand." : "Add a new restaurant brand, then add its outlets."}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="-ml-2 mb-1 gap-1.5 text-muted-foreground">
+        <ArrowLeft className="h-4 w-4" /> Back
+      </Button>
+      <PageHeader
+        title={isEdit ? "Edit Brand" : "New Brand"}
+        description={isEdit ? "Update this brand." : "Add a new restaurant brand, then add its outlets."}
+      />
+
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl">
+        <Card className="space-y-4 p-5">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Brand Name *</Label>
@@ -160,25 +153,25 @@ export function BrandForm({
             <Label>Notes</Label>
             <Textarea rows={2} {...register("notes")} />
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => unsaved.guardClose(() => onOpenChange(false))}>
+
+          <div className="flex justify-end gap-2 border-t pt-4">
+            <Button type="button" variant="outline" onClick={() => unsaved.guardClose(() => navigate("/brands"))}>
               Cancel
             </Button>
             <Button type="submit" variant="accent" disabled={busy}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {isEdit ? "Save Changes" : "Create Brand"}
             </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </div>
+        </Card>
+      </form>
 
-    <UnsavedChangesDialog
-      open={unsaved.promptOpen}
-      onContinueEditing={unsaved.continueEditing}
-      onDiscard={unsaved.discardChanges}
-      message="You have unsaved changes in this brand. If you leave now, all entered information will be lost."
-    />
+      <UnsavedChangesDialog
+        open={unsaved.promptOpen}
+        onContinueEditing={unsaved.continueEditing}
+        onDiscard={unsaved.discardChanges}
+        message="You have unsaved changes in this brand. If you leave now, all entered information will be lost."
+      />
     </>
   );
 }

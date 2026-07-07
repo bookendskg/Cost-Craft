@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Archive, ChevronRight, MoreVertical, Plus, ShieldCheck, Store } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -40,7 +41,6 @@ import {
   useSetBrandStatus,
   useSetOutletStatus,
 } from "./hooks";
-import { BrandForm } from "./BrandForm";
 import { OutletForm } from "./OutletForm";
 
 function StatusBadge({ status }: { status: BrandOutletStatus }) {
@@ -56,8 +56,7 @@ export function BrandsOutletsPage() {
   const setOutletStatus = useSetOutletStatus();
   const deleteOutlet = useDeleteOutlet();
 
-  const [brandFormOpen, setBrandFormOpen] = useState(false);
-  const [editingBrand, setEditingBrand] = useState<BrandRecord | null>(null);
+  const navigate = useNavigate();
   const [outletFormOpen, setOutletFormOpen] = useState(false);
   const [editingOutlet, setEditingOutlet] = useState<OutletRecord | null>(null);
   const [outletDefaultBrand, setOutletDefaultBrand] = useState<string | undefined>();
@@ -84,14 +83,8 @@ export function BrandsOutletsPage() {
     }
   }, [brands, outletBrandFilter]);
 
-  const openNewBrand = () => {
-    setEditingBrand(null);
-    setBrandFormOpen(true);
-  };
-  const openEditBrand = (b: BrandRecord) => {
-    setEditingBrand(b);
-    setBrandFormOpen(true);
-  };
+  const openNewBrand = () => navigate("/brands/new");
+  const openEditBrand = (b: BrandRecord) => navigate(`/brands/${b.id}/edit`);
   const openNewOutlet = (brandId?: string) => {
     setEditingOutlet(null);
     setOutletDefaultBrand(brandId);
@@ -356,7 +349,6 @@ export function BrandsOutletsPage() {
         </TabsContent>
       </Tabs>
 
-      <BrandForm open={brandFormOpen} onOpenChange={setBrandFormOpen} brand={editingBrand} />
       <OutletForm
         open={outletFormOpen}
         onOpenChange={setOutletFormOpen}

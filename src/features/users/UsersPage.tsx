@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { BadgeCheck, Clock, KeyRound, LayoutDashboard, Mail, MoreVertical, Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -38,7 +39,6 @@ import { useRoles } from "@/features/roles/hooks";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { sendPasswordReset } from "@/lib/supabase/profile";
 import { useDeleteUser, useUpdateUser, useUsers } from "./hooks";
-import { UserForm } from "./UserForm";
 import { AssignAccessDialog } from "@/features/viewers/AssignAccessDialog";
 import { ViewerAccessPanel } from "@/features/viewers/ViewerAccessPanel";
 import { RolesPanel } from "@/features/roles/RolesPanel";
@@ -62,8 +62,7 @@ export function UsersPage() {
   const [role, setRole] = useState("all");
   const [status, setStatus] = useState("all");
 
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<User | null>(null);
+  const navigate = useNavigate();
   const [assignFor, setAssignFor] = useState<User | null>(null);
 
   const filtered = useMemo(
@@ -136,13 +135,7 @@ export function UsersPage() {
 
         <TabsContent value="users">
           <div className="mb-4 flex justify-end">
-            <Button
-              variant="accent"
-              onClick={() => {
-                setEditing(null);
-                setFormOpen(true);
-              }}
-            >
+            <Button variant="accent" onClick={() => navigate("/users/new")}>
               <Plus className="h-4 w-4" /> Create User
             </Button>
           </div>
@@ -258,12 +251,7 @@ export function UsersPage() {
                             <BadgeCheck className="h-4 w-4" /> Verify &amp; Approve
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setEditing(u);
-                            setFormOpen(true);
-                          }}
-                        >
+                        <DropdownMenuItem onClick={() => navigate(`/users/${u.id}/edit`)}>
                           Edit
                         </DropdownMenuItem>
                         {u.role === "viewer" && (
@@ -320,7 +308,6 @@ export function UsersPage() {
         )}
       </Tabs>
 
-      <UserForm open={formOpen} onOpenChange={setFormOpen} user={editing} />
       <AssignAccessDialog
         user={assignFor}
         open={!!assignFor}

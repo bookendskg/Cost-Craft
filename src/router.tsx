@@ -21,9 +21,11 @@ const RecipeDetailPage = lazy(() => import("@/features/recipes/RecipeDetailPage"
 const ApprovalsPage = lazy(() => import("@/features/approvals/ApprovalsPage").then((m) => ({ default: m.ApprovalsPage })));
 const ReportsPage = lazy(() => import("@/features/reports/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const UsersPage = lazy(() => import("@/features/users/UsersPage").then((m) => ({ default: m.UsersPage })));
+const UserEditorPage = lazy(() => import("@/features/users/UserEditorPage").then((m) => ({ default: m.UserEditorPage })));
 const AuditPage = lazy(() => import("@/features/audit/AuditPage").then((m) => ({ default: m.AuditPage })));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const BrandsOutletsPage = lazy(() => import("@/features/brands/BrandsOutletsPage").then((m) => ({ default: m.BrandsOutletsPage })));
+const BrandEditorPage = lazy(() => import("@/features/brands/BrandEditorPage").then((m) => ({ default: m.BrandEditorPage })));
 const PackagingMasterPage = lazy(() => import("@/features/packaging/PackagingMasterPage").then((m) => ({ default: m.PackagingMasterPage })));
 const SharedRecipePage = lazy(() => import("@/features/share/SharedRecipePage").then((m) => ({ default: m.SharedRecipePage })));
 // Public marketing landing page (code-split; the app's public entry point at "/").
@@ -163,6 +165,22 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: "users/new",
+        element: (
+          <RequireRole roles={["admin"]} cap="user.manage">
+            <UserEditorPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "users/:id/edit",
+        element: (
+          <RequireRole roles={["admin"]} cap="user.manage">
+            <UserEditorPage />
+          </RequireRole>
+        ),
+      },
+      {
         path: "audit",
         element: (
           <RequireRole roles={["admin"]} cap="audit.view">
@@ -183,6 +201,22 @@ export const router = createBrowserRouter([
         element: (
           <RequireRole roles={["super_admin"]}>
             <BrandsOutletsPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "brands/new",
+        element: (
+          <RequireRole roles={["super_admin"]}>
+            <BrandEditorPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "brands/:id/edit",
+        element: (
+          <RequireRole roles={["super_admin"]}>
+            <BrandEditorPage />
           </RequireRole>
         ),
       },

@@ -1,49 +1,40 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, ShieldCheck } from "lucide-react";
-import { useUnsavedChanges, useFormDirty } from "@/lib/hooks/useUnsavedChanges";
-import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { userSchema, type UserValues } from "@/lib/validation/schemas";
 import { useSession } from "@/lib/auth/session";
 import { toast } from "@/components/ui/use-toast";
-import { type BrandScope, type OutletScope, type User } from "@/lib/data/types";
+import { type BrandScope, type OutletScope } from "@/lib/data/types";
 import { useBrands, useOutlets } from "@/features/brands/hooks";
 import { useRoles } from "@/features/roles/hooks";
-import { useCreateUser, useUpdateUser } from "./hooks";
+import { useUnsavedChanges, useFormDirty } from "@/lib/hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
+import { useCreateUser, useUpdateUser, useUsers } from "./hooks";
 
 type BrandScopeUi = "DEFAULT" | BrandScope;
 type OutletScopeUi = "DEFAULT" | OutletScope;
 
-export function UserForm({
-  open,
-  onOpenChange,
-  user,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  user?: User | null;
-}) {
-  const isEdit = !!user;
+/**
+ * Full-page Create / Edit User — mirrors the Recipe / Raw Material editor pages
+ * (dedicated route, page chrome, unsaved-changes protection) rather than a modal.
+ * Routes: /users/new and /users/:id/edit (Admin only).
+ */
+export function UserEditorPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEdit = !!id;
+  const { data: users = [], isLoading } = useUsers();
+  const user = id ? users.find((u) => u.id === id) ?? null : null;
+
   const createMut = useCreateUser();
   const updateMut = useUpdateUser();
   const me = useSession((s) => s.user);
@@ -78,11 +69,11 @@ export function UserForm({
     so: [...selectedOutletIds].sort(),
     ao: assignedOutlet,
   };
-  const { dirty, capture, markSaved } = useFormDirty(form, open, scopeState);
+  const { dirty, capture, markSaved } = useFormDirty(form, true, scopeState);
   const unsaved = useUnsavedChanges(dirty);
 
   useEffect(() => {
-    if (!open) return;
+    if (isEdit && !user) return; // wait for the record to load
     reset(
       user
         ? { name: user.name, email: user.email, role: user.role, status: user.status, password: "" }
@@ -103,7 +94,7 @@ export function UserForm({
       ao: user?.assigned_outlet ?? "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, user]);
+  }, [user, isEdit]);
 
   const role = watch("role");
   const showScope = role !== "super_admin";
@@ -111,10 +102,8 @@ export function UserForm({
   const toggle = (list: string[], id: string, on: boolean) =>
     on ? [...new Set([...list, id])] : list.filter((x) => x !== id);
 
-  // Keep the legacy accessible_brands (used by viewer RLS) in sync with brand_scope
-  // for read-only roles, so the two access systems never disagree.
   const syncedAccessibleBrands = (isReadOnly: boolean): string[] | undefined => {
-    if (!isReadOnly || brandScope === "DEFAULT") return undefined; // leave legacy value as-is
+    if (!isReadOnly || brandScope === "DEFAULT") return undefined;
     if (brandScope === "ALL_BRANDS") return brands.map((b) => b.id);
     if (brandScope === "SELECTED_BRANDS") return selectedBrandIds;
     return assignedBrand ? [assignedBrand] : [];
@@ -130,7 +119,6 @@ export function UserForm({
   });
 
   const onSubmit = async (values: UserValues) => {
-    // A "specific"/"single" scope with no selection would silently grant zero access.
     if (values.role !== "super_admin") {
       if (brandScope === "SELECTED_BRANDS" && selectedBrandIds.length === 0) {
         toast.error("Pick at least one brand for 'Specific brands' access");
@@ -151,10 +139,10 @@ export function UserForm({
     }
     try {
       const isReadOnly = values.role === "viewer" || values.role === "chef";
-      // Super Admins always have full access — never persist a restricting scope.
-      const scope = values.role === "super_admin"
-        ? { brand_scope: null, selected_brand_ids: [], assigned_brand: null, outlet_scope: null, selected_outlet_ids: [], assigned_outlet: null, accessible_brands: undefined as string[] | undefined }
-        : { ...scopePatch(), accessible_brands: syncedAccessibleBrands(isReadOnly) };
+      const scope =
+        values.role === "super_admin"
+          ? { brand_scope: null, selected_brand_ids: [], assigned_brand: null, outlet_scope: null, selected_outlet_ids: [], assigned_outlet: null, accessible_brands: undefined as string[] | undefined }
+          : { ...scopePatch(), accessible_brands: syncedAccessibleBrands(isReadOnly) };
       if (isEdit && user) {
         await updateMut.mutateAsync({
           id: user.id,
@@ -184,7 +172,7 @@ export function UserForm({
         toast.success("User created");
       }
       markSaved();
-      onOpenChange(false);
+      navigate("/users");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
     }
@@ -192,17 +180,22 @@ export function UserForm({
 
   const busy = createMut.isPending || updateMut.isPending;
 
+  if (isEdit && !user && isLoading) {
+    return <p className="p-8 text-center text-sm text-muted-foreground">Loading user…</p>;
+  }
+
   return (
     <>
-    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : unsaved.guardClose(() => onOpenChange(false)))}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit User" : "Create User"}</DialogTitle>
-          <DialogDescription>
-            {isEdit ? "Update profile, role, status, and access." : "Add a new user, assign a role and access."}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="-ml-2 mb-1 gap-1.5 text-muted-foreground">
+        <ArrowLeft className="h-4 w-4" /> Back
+      </Button>
+      <PageHeader
+        title={isEdit ? "Edit User" : "Create User"}
+        description={isEdit ? "Update profile, role, status, and access." : "Add a new user, assign a role and access."}
+      />
+
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl">
+        <Card className="space-y-4 p-5">
           <div className="space-y-1.5">
             <Label>Name *</Label>
             <Input {...register("name")} />
@@ -221,9 +214,6 @@ export function UserForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* Built-in + custom roles. Super Admin is assignable only by a
-                      Super Admin (addendum §8); it stays visible when editing an
-                      existing Super Admin but disabled for non-super actors. */}
                   {roles
                     .filter((r) => r.key !== "super_admin" || iAmSuper || user?.role === "super_admin")
                     .map((r) => (
@@ -253,7 +243,7 @@ export function UserForm({
             {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
           </div>
 
-          {/* ── Brand & outlet access (§19–§20) ─────────────────────────── */}
+          {/* ── Brand & outlet access ─────────────────────────────────── */}
           {showScope ? (
             <div className="space-y-3 rounded-md border p-3">
               <p className="text-sm font-semibold">Brand &amp; Outlet Access</p>
@@ -339,25 +329,24 @@ export function UserForm({
             </div>
           )}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => unsaved.guardClose(() => onOpenChange(false))}>
+          <div className="flex justify-end gap-2 border-t pt-4">
+            <Button type="button" variant="outline" onClick={() => unsaved.guardClose(() => navigate("/users"))}>
               Cancel
             </Button>
             <Button type="submit" variant="accent" disabled={busy}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {isEdit ? "Save Changes" : "Create User"}
             </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </div>
+        </Card>
+      </form>
 
-    <UnsavedChangesDialog
-      open={unsaved.promptOpen}
-      onContinueEditing={unsaved.continueEditing}
-      onDiscard={unsaved.discardChanges}
-      message="You have unsaved changes for this user. If you leave now, all entered information will be lost."
-    />
+      <UnsavedChangesDialog
+        open={unsaved.promptOpen}
+        onContinueEditing={unsaved.continueEditing}
+        onDiscard={unsaved.discardChanges}
+        message="You have unsaved changes for this user. If you leave now, all entered information will be lost."
+      />
     </>
   );
 }
