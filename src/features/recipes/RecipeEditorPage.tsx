@@ -151,7 +151,11 @@ export function RecipeEditorPage() {
         })),
       );
     } else if (!isEdit) {
-      setValue("category", newPrep ? "In-House Prep" : categories[0] ?? "");
+      const cat = newPrep ? "In-House Prep" : categories[0] ?? "";
+      // Seed the default via resetField so it updates the field's baseline too —
+      // a plain setValue would flip formState.isDirty and pop the unsaved prompt
+      // with no user edits. Only fill while still empty so a picked category stands.
+      if (cat && !form.getValues("category")) form.resetField("category", { defaultValue: cat });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEdit, existing, categories.length]);

@@ -254,7 +254,7 @@ export function AppLayout() {
             </div>
           )}
           {/* Keyed on the route so each navigation replays the entrance animation. */}
-          <div key={location.pathname} className="relative z-10 mx-auto max-w-7xl animate-fade-in-up">
+          <div key={location.pathname} className="relative z-10 animate-fade-in-up">
             <Suspense
               fallback={
                 <div className="flex items-center justify-center py-24 text-muted-foreground">

@@ -25,8 +25,12 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+    /** Prevent closing on outside-tap and Escape (only Cancel / X / Save close it).
+     *  Used by data-entry forms to avoid accidental dismissal of unsaved work. */
+    lockClose?: boolean;
+  }
+>(({ className, children, lockClose, onInteractOutside, onEscapeKeyDown, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -35,6 +39,8 @@ const DialogContent = React.forwardRef<
         "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg max-h-[90vh] overflow-y-auto",
         className,
       )}
+      onInteractOutside={lockClose ? (e) => e.preventDefault() : onInteractOutside}
+      onEscapeKeyDown={lockClose ? (e) => e.preventDefault() : onEscapeKeyDown}
       {...props}
     >
       {children}

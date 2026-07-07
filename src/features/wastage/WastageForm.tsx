@@ -251,7 +251,7 @@ export function WastageForm({
   return (
     <>
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : unsaved.guardClose(() => onOpenChange(false)))}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent lockClose className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Wastage" : "Record Wastage"}</DialogTitle>
           <DialogDescription>Log wasted items like a recipe — add as many as you need.</DialogDescription>

@@ -12,7 +12,7 @@ export default defineConfig({
   },
   // Bind to 0.0.0.0 so the app is reachable from other devices on the LAN
   // (phones/tablets/other PCs) at http://<this-machine-ip>:<port>.
-  server: { host: true, port: 5173, strictPort: false },
+  server: { host: true, port: 3005, strictPort: false },
   preview: { host: true, port: 4173, strictPort: false },
   build: {
     // pdfmake + its embedded fonts are unavoidably large but are lazy-loaded

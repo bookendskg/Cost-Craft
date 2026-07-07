@@ -105,7 +105,7 @@ export function BrandForm({
   return (
     <>
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : unsaved.guardClose(() => onOpenChange(false)))}>
-      <DialogContent className="max-w-md">
+      <DialogContent lockClose className="max-w-md">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Brand" : "New Brand"}</DialogTitle>
           <DialogDescription>

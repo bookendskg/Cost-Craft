@@ -26,8 +26,19 @@
   gap: 1rem;
   grid-template-columns: minmax(0, 1fr);
 }
+/* Stacked: give the table a definite height so pagination can size to it. */
+.dash-table-scroll { height: 60vh; }
 @container (min-width: 1180px) {
-  .dash-main-grid { grid-template-columns: minmax(0, 2.5fr) minmax(260px, 1fr); }
+  /* Side-by-side: the grid is pinned to a viewport-fit height (set inline); the
+     single row fills it, so the table body + pagination and the side panel all fit
+     the screen. The table body fills above the pagination bar; the side panel
+     scrolls internally if its cards are taller than the available height. */
+  .dash-main-grid {
+    grid-template-columns: minmax(0, 2.5fr) minmax(260px, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .dash-table-scroll { height: auto; flex: 1 1 0%; min-height: 0; }
+  .dash-side { min-height: 0; overflow-y: auto; }
 }
 
 /* Subtle entrance for public (marketing) sections. Honoured only when the user
