@@ -51,6 +51,87 @@
   animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* ── Futuristic landing toolkit (light-first, brand-tinted) ────────────────
+   Additive helper classes for the marketing landing page. Motion is neutralised
+   by the global prefers-reduced-motion block further down. */
+
+/* Faint blueprint grid — brand-blue hairlines on a 44px cell. */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, hsl(var(--primary) / 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--primary) / 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* Fade a decorative layer out toward the edges so there's no hard seam. */
+.mask-fade-y {
+  -webkit-mask-image: radial-gradient(ellipse 75% 60% at 50% 0%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 75% 60% at 50% 0%, #000 35%, transparent 100%);
+}
+.mask-fade-b {
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+}
+
+/* Brand gradient text (blue → indigo → red) for headline words / eyebrows. */
+.text-gradient-brand {
+  background-image: linear-gradient(100deg, #1b35a8, #4f46e5 45%, #ed1c24);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Frosted glass surface. */
+.glass {
+  background: rgba(255, 255, 255, 0.66);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+}
+
+/* Drifting aurora blobs. */
+@keyframes float-slow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(0, -26px, 0) scale(1.09); }
+}
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(64px);
+  animation: float-slow 15s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Soft brand glow + gradient hairline that appears on hover. */
+.card-glow {
+  position: relative;
+  transition: box-shadow 0.25s ease, transform 0.2s ease;
+}
+.card-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(130deg, rgba(27, 53, 168, 0.55), rgba(79, 70, 229, 0.35), rgba(237, 28, 36, 0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.card-glow:hover {
+  box-shadow: 0 14px 40px -14px rgba(27, 53, 168, 0.35);
+}
+.card-glow:hover::before { opacity: 1; }
+
+/* One-shot diagonal light sweep (hero preview accent). */
+@keyframes sheen {
+  0%   { transform: translateX(-120%) skewX(-18deg); }
+  60%, 100% { transform: translateX(320%) skewX(-18deg); }
+}
+.animate-sheen { animation: sheen 3.6s ease-in-out infinite; }
+
 @layer base {
   :root {
     --background: 0 0% 100%;

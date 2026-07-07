@@ -81,8 +81,16 @@ export function SectionHeading({
 }) {
   return (
     <div className={cn(align === "center" ? "mx-auto max-w-2xl text-center" : "max-w-2xl text-left", className)}>
-      {eyebrow && <p className="text-xs font-semibold uppercase tracking-wider text-primary">{eyebrow}</p>}
-      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{title}</h2>
+      {eyebrow && (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1 text-xs font-semibold uppercase tracking-wider">
+          <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-[#1b35a8] to-[#ed1c24]" />
+          <span className="text-gradient-brand">{eyebrow}</span>
+        </span>
+      )}
+      <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{title}</h2>
+      {align === "center" && (
+        <div className="mx-auto mt-4 h-px w-16 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      )}
       {description && <p className="mt-3 text-base leading-relaxed text-muted-foreground">{description}</p>}
     </div>
   );
@@ -103,15 +111,15 @@ export function FeatureCard({
   return (
     <div
       className={cn(
-        "group rounded-xl border bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+        "group card-glow rounded-2xl border bg-card p-6 shadow-sm ring-1 ring-black/[0.03] transition-all duration-200 hover:-translate-y-1 hover:shadow-lg",
         className,
       )}
     >
-      <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        <Icon className="h-5 w-5" />
+      <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-[#ed1c24]/10 text-primary shadow-sm ring-1 ring-primary/10 transition-transform duration-200 group-hover:scale-105">
+        <Icon className="h-6 w-6" />
       </span>
-      <h3 className="mt-4 text-base font-semibold text-foreground">{title}</h3>
-      {children && <div className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{children}</div>}
+      <h3 className="mt-5 text-base font-semibold text-foreground">{title}</h3>
+      {children && <div className="mt-2 text-sm leading-relaxed text-muted-foreground">{children}</div>}
     </div>
   );
 }
@@ -129,14 +137,15 @@ export function BrandBadge({
   points: string[];
 }) {
   const styles = {
-    bookends: { ring: "ring-[#1b35a8]/20", dot: "bg-[#1b35a8]", text: "text-[#1b35a8]", tint: "bg-[#eff6ff]" },
-    capiche: { ring: "ring-[#ed1c24]/20", dot: "bg-[#ed1c24]", text: "text-[#ed1c24]", tint: "bg-[#fef2f2]" },
-    aiko: { ring: "ring-amber-500/25", dot: "bg-[#f5c107]", text: "text-amber-600", tint: "bg-[#fffbeb]" },
+    bookends: { ring: "ring-[#1b35a8]/20", dot: "bg-[#1b35a8]", text: "text-[#1b35a8]", tint: "bg-[#eff6ff]", bar: "from-[#1b35a8] to-[#4f46e5]" },
+    capiche: { ring: "ring-[#ed1c24]/20", dot: "bg-[#ed1c24]", text: "text-[#ed1c24]", tint: "bg-[#fef2f2]", bar: "from-[#ed1c24] to-[#ff6a3d]" },
+    aiko: { ring: "ring-amber-500/25", dot: "bg-[#f5c107]", text: "text-amber-600", tint: "bg-[#fffbeb]", bar: "from-[#f5c107] to-[#ffb020]" },
   }[tone];
   const [logoOk, setLogoOk] = useState<boolean | null>(null);
 
   return (
-    <div className={cn("relative rounded-xl border p-6 ring-1", styles.ring, styles.tint)}>
+    <div className={cn("group relative overflow-hidden rounded-xl border p-6 ring-1 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg", styles.ring, styles.tint)}>
+      <span aria-hidden className={cn("absolute inset-x-0 top-0 h-1 bg-gradient-to-r", styles.bar)} />
       {/* Decorative brand icon mark (Capiche OK-hand / Aiko person), top-right. */}
       {(tone === "capiche" || tone === "aiko") && (
         <BrandLogo
@@ -178,14 +187,31 @@ export function BrandBadge({
 /** Full-width final call-to-action band. Login action → /login (§19). */
 export function CTASection() {
   return (
-    <section className="bg-[#152c8f]">
-      <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-20">
+    <section className="relative overflow-hidden bg-gradient-to-br from-[#1b35a8] via-[#152c8f] to-[#0e1f6b]">
+      {/* Futuristic overlay: faint white grid + soft brand glows. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 mask-fade-b opacity-60"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(255,255,255,0.10) 1px, transparent 1px)," +
+            "linear-gradient(to bottom, rgba(255,255,255,0.10) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+      <div aria-hidden className="pointer-events-none absolute -left-16 -top-10 h-64 w-64 rounded-full bg-[#4f46e5]/40 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -bottom-12 -right-10 h-56 w-56 rounded-full bg-[#ed1c24]/25 blur-3xl" />
+      <div className="relative mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-20">
         <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Ready to Access CostCraft?</h2>
         <p className="mx-auto mt-3 max-w-xl text-base text-white/70">
           Authorized Bookends Hospitality users can sign in to continue.
         </p>
         <div className="mt-8 flex justify-center">
-          <Button asChild size="lg" className="bg-white text-[#152c8f] hover:bg-white/90">
+          <Button
+            asChild
+            size="lg"
+            className="bg-white text-[#152c8f] shadow-lg shadow-black/20 transition-transform hover:scale-[1.03] hover:bg-white/90"
+          >
             <Link to="/login">Go to Login</Link>
           </Button>
         </div>
