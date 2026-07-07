@@ -83,43 +83,41 @@ export function LandingPage() {
   });
 
   return (
-    <div className="min-h-[100dvh] bg-background">
+    <div className="min-h-[100dvh] bg-[#faf8f3]">
       <PublicHeader />
 
       <main>
         {/* ── Hero ── */}
-        <section id="overview" className="relative overflow-hidden">
-          {/* Layered futuristic backdrop: blueprint grid + drifting aurora blobs. */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-grid mask-fade-y opacity-70" />
+        <section id="overview" className="bg-grain relative overflow-hidden">
+          {/* Editorial backdrop: fine grid + soft navy/gold ambient. */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-grid mask-fade-y opacity-50" />
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-            <span className="blob left-[-6%] top-[-12%] h-72 w-72 bg-[#1b35a8]/25" />
-            <span className="blob right-[-4%] top-[2%] h-64 w-64 bg-[#ed1c24]/20" style={{ animationDelay: "-5s" }} />
-            <span className="blob left-[32%] top-[46%] h-72 w-72 bg-[#f5c107]/20" style={{ animationDelay: "-9s" }} />
+            <span className="blob left-[-6%] top-[-12%] h-72 w-72 bg-[#1b35a8]/16" />
+            <span className="blob right-[-4%] top-[2%] h-64 w-64 bg-[#c69a3e]/20" style={{ animationDelay: "-5s" }} />
+            <span className="blob left-[34%] top-[48%] h-72 w-72 bg-[#c69a3e]/10" style={{ animationDelay: "-9s" }} />
           </div>
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 -z-10"
             style={{
               background:
-                "radial-gradient(50% 40% at 12% 0%, rgba(27,53,168,0.10), transparent 60%)," +
-                "radial-gradient(40% 35% at 100% 8%, rgba(237,28,36,0.08), transparent 60%)",
+                "radial-gradient(50% 40% at 12% 0%, rgba(27,53,168,0.08), transparent 60%)," +
+                "radial-gradient(40% 35% at 100% 8%, rgba(198,154,62,0.10), transparent 60%)",
             }}
           />
-          <div className="mx-auto grid max-w-[1728px] items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24">
+          <div className="mx-auto grid max-w-[1728px] items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:py-28">
             <div className="animate-fade-up">
-              <span className="glass inline-flex items-center gap-2 rounded-full border border-primary/15 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                </span>
-                Built for Bookends Hospitality · Capiche &amp; Aiko
+              <span className="inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#b8862b]">
+                <span className="h-px w-6 bg-[#c69a3e]/70" />
+                Bookends Hospitality · Capiche &amp; Aiko
               </span>
-              <h1 className="mt-6 text-balance text-[2.6rem] font-bold leading-[1.04] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                Smarter <span className="text-gradient-brand">Recipe Costing</span> for Better Restaurant Operations
+              <h1 className="font-display mt-6 text-balance text-[2.9rem] font-medium leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-[4.25rem] lg:leading-[1.02]">
+                Refined <span className="text-gradient-brand">recipe costing</span> for exceptional hospitality
               </h1>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+              <p className="mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground">
                 CostCraft brings recipe management, ingredient costing, yield, wastage and brand-level
-                operational visibility into one precise, beautifully organised platform.
+                operational visibility into one precise, beautifully organised platform — crafted for the
+                Bookends collective.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="h-11 shadow-lg shadow-primary/25">
@@ -144,7 +142,7 @@ export function LandingPage() {
         </section>
 
         {/* ── Metrics strip ── */}
-        <section className="relative border-y bg-gradient-to-b from-muted/40 to-background">
+        <section className="relative border-y bg-white">
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid mask-fade-b opacity-50" />
           <div className="relative mx-auto grid max-w-[1728px] grid-cols-2 gap-6 px-4 py-10 sm:px-6 md:grid-cols-4">
             {[
@@ -154,15 +152,15 @@ export function LandingPage() {
               { n: "0", l: "Spreadsheets needed" },
             ].map((m) => (
               <div key={m.l} className="text-center">
-                <p className="text-gradient-brand text-4xl font-bold tabular-nums sm:text-5xl">{m.n}</p>
-                <p className="mt-1 text-sm font-medium text-muted-foreground">{m.l}</p>
+                <p className="font-display text-gradient-brand text-5xl font-medium tabular-nums sm:text-6xl">{m.n}</p>
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{m.l}</p>
               </div>
             ))}
           </div>
         </section>
 
         {/* ── Overview ── */}
-        <section className="border-t bg-gradient-to-b from-muted/40 to-background">
+        <section className="border-t bg-white">
           <div className="mx-auto max-w-[1728px] px-4 py-16 sm:px-6 sm:py-20">
             <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
               <SectionHeading
@@ -187,7 +185,7 @@ export function LandingPage() {
         </section>
 
         {/* ── Product showcase ── */}
-        <section className="relative overflow-hidden border-t bg-gradient-to-b from-background to-muted/40">
+        <section className="relative overflow-hidden border-t bg-white">
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid mask-fade-y opacity-60" />
           <div aria-hidden className="blob left-1/2 top-6 h-72 w-72 -translate-x-1/2 bg-primary/15" />
           <div className="relative mx-auto max-w-[1728px] px-4 py-16 sm:px-6 sm:py-24">
@@ -221,7 +219,7 @@ export function LandingPage() {
         </section>
 
         {/* ── How it works ── */}
-        <section id="how-it-works" className="border-t bg-gradient-to-b from-muted/40 to-background">
+        <section id="how-it-works" className="border-t bg-white">
           <div className="mx-auto max-w-[1728px] px-4 py-16 sm:px-6 sm:py-24">
             <SectionHeading eyebrow="How it works" title="Four steps from ingredient to insight" />
             <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -273,7 +271,7 @@ export function LandingPage() {
         </section>
 
         {/* ── Benefits ── */}
-        <section className="border-t bg-gradient-to-b from-muted/40 to-background">
+        <section className="border-t bg-white">
           <div className="mx-auto max-w-[1728px] px-4 py-16 sm:px-6 sm:py-24">
             <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
               <SectionHeading
@@ -318,7 +316,7 @@ export function LandingPage() {
         </section>
 
         {/* ── Security ── */}
-        <section className="border-t bg-gradient-to-b from-muted/40 to-background">
+        <section className="border-t bg-white">
           <div className="mx-auto max-w-[1728px] px-4 py-16 sm:px-6 sm:py-24">
             <SectionHeading eyebrow="Security & access" title="Access designed for teams" />
             <div className="mt-12 grid gap-5 sm:grid-cols-3">

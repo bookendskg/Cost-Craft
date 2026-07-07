@@ -1,0 +1,110 @@
+[
+  {
+    "id": "r-prep-chilli-crisp-v1",
+    "recipe_id": "r-prep-chilli-crisp",
+    "version_no": 1,
+    "snapshot": null,
+    "notes": "Initial version",
+    "created_by": "u-editor",
+    "created_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "r-prep-bechamel-v1",
+    "recipe_id": "r-prep-bechamel",
+    "version_no": 1,
+    "snapshot": null,
+    "notes": "Initial version",
+    "created_by": "u-editor",
+    "created_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "r-prep-pizza-dough-v1",
+    "recipe_id": "r-prep-pizza-dough",
+    "version_no": 1,
+    "snapshot": null,
+    "notes": "Initial version",
+    "created_by": "u-editor",
+    "created_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "r-prep-pesto-white-base-v1",
+    "recipe_id": "r-prep-pesto-white-base",
+    "version_no": 1,
+    "snapshot": null,
+    "notes": "Initial version",
+    "created_by": "u-editor",
+    "created_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "r-prep-hydroponic-pesto-v1",
+    "recipe_id": "r-prep-hydroponic-pesto",
+    "version_no": 1,
+    "snapshot": null,
+    "notes": "Initial version",
+    "created_by": "u-editor",
+    "created_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "r-prep-chili-crunch-sauce-v1",
+    "recipe_id": "r-prep-chili-crunch-sauce",
+    "version_no": 1,
+    "snapshot": null,
+    "notes": "Initial version",
+    "created_by": "u-editor",
+    "created_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "r-prep-sesame-sushi-rice-v1",
+    "recipe_id": "r-prep-sesame-sushi-rice",
+    "version_no": 1,
+    "snapshot": null,
+    "notes": "Initial version",
+    "created_by": "u-editor",
+    "created_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "r-prep-ponzu-wasabi-mayo-v1",
+    "recipe_id": "r-prep-ponzu-wasabi-mayo",
+    "version_no": 1,
+    "snapshot": null,
+    "notes": "Initial version",
+    "created_by": "u-editor",
+    "created_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "r-prep-tamarind-water-v1",
+    "recipe_id": "r-prep-tamarind-water",
+    "version_no": 1,
+    "snapshot": null,
+    "notes": "Initial version",
+    "created_by": "u-editor",
+    "created_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "r-prep-beetroot-v1",
+    "recipe_id": "r-prep-beetroot",
+    "version_no": 1,
+    "snapshot": null,
+    "notes": "Initial version",
+    "created_by": "u-editor",
+    "created_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "r-prep-sl-curry-powder-v1",
+    "recipe_id": "r-prep-sl-curry-powder",
+    "version_no": 1,
+    "snapshot": null,
+    "notes": "Initial version",
+    "created_by": "u-editor",
+    "created_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "r-prep-sl-red-paste-v1",
+    "recipe_id": "r-prep-sl-red-paste",
+    "version_no": 1,
+    "snapshot": null,
+    "notes": "Initial version",
+    "created_by": "u-editor",
+    "created_at": "2026-06-01T09:00:00.000Z"
+  }
+]

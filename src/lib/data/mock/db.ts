@@ -24,7 +24,7 @@ import type {
   UserRecipeView,
   WastageEntry,
 } from "../types";
-import { buildSeed } from "../seed";
+import { buildSeed, buildMoinSeed } from "../seed";
 
 export interface MockDb {
   users: User[];
@@ -51,7 +51,10 @@ export interface MockDb {
 
 // Bump this when the seed/DB shape changes so stale localStorage data is reseeded.
 // v44: owner transfer — seed owner is now mspatel05831@gmail.com (Super Admin).
-const STORAGE_KEY = "rcms.mockdb.v48";
+// v49: live app started with an EMPTY catalog — the demo dataset was archived to /data.
+// v50: live app now seeds the imported "Reicpe for moin.xlsx" catalog (buildMoinSeed).
+// v51: dishes' packaging_cost populated so the dashboard PKG ₹ + FC%(with pkg) show.
+const STORAGE_KEY = "rcms.mockdb.v51";
 
 let cache: MockDb | null = null;
 
@@ -66,7 +69,9 @@ function load(): MockDb {
   } catch {
     // fall through to seed
   }
-  cache = buildSeed();
+  // Live app seeds the imported moin catalog (login + brands/outlets/roles/settings
+  // kept). The original demo catalog stays in buildSeed()/resetDb() for tests.
+  cache = buildMoinSeed();
   persist();
   return cache;
 }

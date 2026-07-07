@@ -82,16 +82,14 @@ export function SectionHeading({
   return (
     <div className={cn(align === "center" ? "mx-auto max-w-2xl text-center" : "max-w-2xl text-left", className)}>
       {eyebrow && (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1 text-xs font-semibold uppercase tracking-wider">
-          <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-[#1b35a8] to-[#ed1c24]" />
-          <span className="text-gradient-brand">{eyebrow}</span>
+        <span className={cn("inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#b8862b]", align === "center" && "justify-center")}>
+          <span className="h-px w-6 bg-[#c69a3e]/70" />
+          {eyebrow}
         </span>
       )}
-      <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{title}</h2>
-      {align === "center" && (
-        <div className="mx-auto mt-4 h-px w-16 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-      )}
-      {description && <p className="mt-3 text-base leading-relaxed text-muted-foreground">{description}</p>}
+      <h2 className="font-display mt-4 text-3xl font-medium tracking-tight text-foreground sm:text-[2.5rem] sm:leading-[1.12]">{title}</h2>
+      {align === "center" && <div className="rule-gold mx-auto mt-5 w-20" />}
+      {description && <p className="mt-4 text-base leading-relaxed text-muted-foreground">{description}</p>}
     </div>
   );
 }
@@ -115,10 +113,10 @@ export function FeatureCard({
         className,
       )}
     >
-      <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-[#ed1c24]/10 text-primary shadow-sm ring-1 ring-primary/10 transition-transform duration-200 group-hover:scale-105">
+      <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/12 to-[#c69a3e]/18 text-primary shadow-sm ring-1 ring-primary/10 transition-transform duration-200 group-hover:scale-105">
         <Icon className="h-6 w-6" />
       </span>
-      <h3 className="mt-5 text-base font-semibold text-foreground">{title}</h3>
+      <h3 className="font-display mt-5 text-lg font-medium text-foreground">{title}</h3>
       {children && <div className="mt-2 text-sm leading-relaxed text-muted-foreground">{children}</div>}
     </div>
   );
@@ -187,32 +185,36 @@ export function BrandBadge({
 /** Full-width final call-to-action band. Login action → /login (§19). */
 export function CTASection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-[#1b35a8] via-[#152c8f] to-[#0e1f6b]">
-      {/* Futuristic overlay: faint white grid + soft brand glows. */}
+    <section className="bg-grain relative overflow-hidden bg-gradient-to-br from-[#0f1c4d] via-[#16235e] to-[#0b1638]">
+      {/* Editorial overlay: faint white grid + a soft gold glow. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 mask-fade-b opacity-60"
+        className="pointer-events-none absolute inset-0 mask-fade-b opacity-50"
         style={{
           backgroundImage:
-            "linear-gradient(to right, rgba(255,255,255,0.10) 1px, transparent 1px)," +
-            "linear-gradient(to bottom, rgba(255,255,255,0.10) 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
+            "linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px)," +
+            "linear-gradient(to bottom, rgba(255,255,255,0.08) 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
         }}
       />
-      <div aria-hidden className="pointer-events-none absolute -left-16 -top-10 h-64 w-64 rounded-full bg-[#4f46e5]/40 blur-3xl" />
-      <div aria-hidden className="pointer-events-none absolute -bottom-12 -right-10 h-56 w-56 rounded-full bg-[#ed1c24]/25 blur-3xl" />
-      <div className="relative mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-20">
-        <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Ready to Access CostCraft?</h2>
-        <p className="mx-auto mt-3 max-w-xl text-base text-white/70">
-          Authorized Bookends Hospitality users can sign in to continue.
+      <div aria-hidden className="pointer-events-none absolute -left-16 -top-10 h-64 w-64 rounded-full bg-[#2a44b8]/40 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -bottom-16 -right-10 h-64 w-64 rounded-full bg-[#c69a3e]/20 blur-3xl" />
+      <div className="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 sm:py-24">
+        <div className="rule-gold mx-auto w-16" />
+        <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#e6c56b]">Bookends Hospitality</p>
+        <h2 className="font-display mx-auto mt-4 max-w-2xl text-3xl font-medium tracking-tight text-white sm:text-[2.6rem] sm:leading-[1.12]">
+          Precision, from prep to plate
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-white/65">
+          Authorised members of the Bookends collective may sign in to continue.
         </p>
-        <div className="mt-8 flex justify-center">
+        <div className="mt-9 flex justify-center">
           <Button
             asChild
             size="lg"
-            className="bg-white text-[#152c8f] shadow-lg shadow-black/20 transition-transform hover:scale-[1.03] hover:bg-white/90"
+            className="bg-[#c69a3e] text-[#1a1205] shadow-lg shadow-black/30 transition-transform hover:scale-[1.03] hover:bg-[#d8b45e]"
           >
-            <Link to="/login">Go to Login</Link>
+            <Link to="/login">Enter CostCraft</Link>
           </Button>
         </div>
       </div>
