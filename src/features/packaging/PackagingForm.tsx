@@ -101,7 +101,7 @@ export function PackagingForm({
   return (
     <>
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : unsaved.guardClose(() => onOpenChange(false)))}>
-      <DialogContent className="max-w-lg">
+      <DialogContent lockClose className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Packaging Item" : "Add Packaging Item"}</DialogTitle>
           <DialogDescription>Master packaging item with a unit price, used by recipes.</DialogDescription>

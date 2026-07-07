@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn, formatINR, formatDate } from "@/lib/utils";
 import { round2 } from "@/lib/costing";
@@ -140,13 +142,66 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
     };
   }, [recipes, brand, weightByRecipe]);
 
+  // Flatten the grouped rows into one ordered list so we can paginate across
+  // categories; group headers are re-inserted per page where the category changes.
+  const flatRows = useMemo(
+    () => data.categories.flatMap((c) => c.rows.map((row) => ({ row, category: c.name }))),
+    [data.categories],
+  );
+
+  const showTable = !isLoading && data.totalItems > 0;
+  const contentRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [gridH, setGridH] = useState<number | undefined>(undefined);
+  const [rowsPerPage, setRowsPerPage] = useState(18);
+  const [page, setPage] = useState(0);
+
+  // Fit the table + side panel into the viewport so the pagination bar stays
+  // visible: when side-by-side, pin the grid to the space below the KPIs and size
+  // each page to the rows that fit (the rest paginates). Driven off the container
+  // width and viewport — never the table's own height — so there's no feedback loop.
+  useEffect(() => {
+    const content = contentRef.current;
+    const grid = gridRef.current;
+    if (!content || !grid) return;
+    const ROW_H = 33;
+    const recompute = () => {
+      if (content.clientWidth >= 1180) {
+        const top = grid.getBoundingClientRect().top;
+        const h = Math.max(320, window.innerHeight - top - 16);
+        setGridH(h);
+        // Minus sticky header (~34) + pagination bar (~41), slack for category labels.
+        setRowsPerPage(Math.max(6, Math.floor((h - 75) / ROW_H) - 2));
+      } else {
+        setGridH(undefined);
+        setRowsPerPage(Math.max(6, Math.floor((window.innerHeight * 0.6 - 34) / ROW_H) - 2));
+      }
+    };
+    recompute();
+    const ro = new ResizeObserver(recompute);
+    ro.observe(content);
+    window.addEventListener("resize", recompute);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", recompute);
+    };
+  }, [showTable]);
+
+  // Reset to the first page whenever the dataset changes (e.g. brand toggle).
+  useEffect(() => setPage(0), [brand]);
+
+  const pageCount = Math.max(1, Math.ceil(flatRows.length / rowsPerPage));
+  const currentPage = Math.min(page, pageCount - 1);
+  const pageStart = currentPage * rowsPerPage;
+  const pageRows = flatRows.slice(pageStart, pageStart + rowsPerPage);
+
   const title = `${brandWordmark(brand)} MASTER COSTING`;
   const accent = brandAccentText(brand);
 
   return (
     // cq-content makes this dashboard an inline-size container so the main grid
     // stacks based on the real available width (after the sidebar), not the viewport.
-    <div className="cq-content space-y-4">
+    <div ref={contentRef} className="cq-content space-y-4">
       {/* Header bar */}
       <Card className="overflow-hidden border-0 bg-slate-900 text-white dark:bg-slate-950">
         <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -215,9 +270,9 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
         </DialogContent>
       </Dialog>
 
-      <div className="dash-main-grid">
+      <div ref={gridRef} className="dash-main-grid" style={gridH ? { height: gridH } : undefined}>
         {/* Costing table */}
-        <Card className="overflow-hidden">
+        <Card className="flex flex-col overflow-hidden">
           {isLoading ? (
             <div className="p-8 text-center text-sm text-muted-foreground">Loading costing…</div>
           ) : data.totalItems === 0 ? (
@@ -228,63 +283,95 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
               </p>
             </div>
           ) : (
-            <div className="max-h-[60vh] overflow-auto">
-              <table className="w-full min-w-[720px] border-collapse text-sm">
-                <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur">
-                  <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                    <th className="w-8 px-2 py-2 text-right">#</th>
-                    <th className="px-2 py-2">Food Name</th>
-                    <th className="px-2 py-2 text-right">Making ₹</th>
-                    <th className="px-2 py-2 text-right">Pkg ₹</th>
-                    <th className="px-2 py-2 text-right">Selling ₹</th>
-                    <th className="px-2 py-2 text-right">FC % w/ Pkg</th>
-                    <th className="px-2 py-2 text-right">FC % w/o Pkg</th>
-                    <th className="px-2 py-2 text-right">Weight</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(() => {
-                    let n = 0;
-                    return data.categories.map((cat) => (
-                      <CategoryGroup key={cat.name} name={cat.name}>
-                        {cat.rows.map((row) => {
-                          n += 1;
-                          const tone = fcBand(row.fcWith);
-                          return (
-                            <tr
-                              key={row.id}
-                              onClick={() => navigate(`/recipes/${row.id}`)}
-                              className={cn(
-                                "cursor-pointer border-b border-border/60 hover:bg-muted/50",
-                                row.missing && "bg-red-500/5",
-                              )}
-                            >
-                              <td className="px-2 py-1.5 text-right text-muted-foreground">{n}</td>
-                              <td className="px-2 py-1.5 font-medium">{row.name}</td>
-                              <td className="px-2 py-1.5 text-right font-mono">{row.making > 0 ? formatINR(row.making) : "—"}</td>
-                              <td className="px-2 py-1.5 text-right font-mono text-muted-foreground">{row.pkg > 0 ? formatINR(row.pkg) : "—"}</td>
-                              <td className="px-2 py-1.5 text-right font-mono">{row.selling > 0 ? formatINR(row.selling) : "—"}</td>
-                              <td className={cn("px-2 py-1.5 text-right font-mono", TONE_CELL[tone])}>
-                                {row.fcWith != null ? `${row.fcWith.toFixed(2)}%` : "—"}
+            <>
+              <div className="dash-table-scroll overflow-auto">
+                <table className="w-full min-w-[720px] border-collapse text-sm">
+                  <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur">
+                    <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                      <th className="w-8 px-2 py-2 text-right">#</th>
+                      <th className="px-2 py-2">Food Name</th>
+                      <th className="px-2 py-2 text-right">Making ₹</th>
+                      <th className="px-2 py-2 text-right">Pkg ₹</th>
+                      <th className="px-2 py-2 text-right">Selling ₹</th>
+                      <th className="px-2 py-2 text-right">FC % w/ Pkg</th>
+                      <th className="px-2 py-2 text-right">FC % w/o Pkg</th>
+                      <th className="px-2 py-2 text-right">Weight</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageRows.map(({ row, category }, i) => {
+                      const n = pageStart + i + 1;
+                      const showHeader = i === 0 || pageRows[i - 1].category !== category;
+                      const tone = fcBand(row.fcWith);
+                      return (
+                        <Fragment key={row.id}>
+                          {showHeader && (
+                            <tr className="bg-muted/40">
+                              <td colSpan={8} className="px-2 py-1.5 text-xs font-bold uppercase tracking-wide text-foreground">
+                                {category}
                               </td>
-                              <td className={cn("px-2 py-1.5 text-right font-mono", TONE_CELL[fcBand(row.fcWithout)])}>
-                                {row.fcWithout != null ? `${row.fcWithout.toFixed(2)}%` : "—"}
-                              </td>
-                              <td className="px-2 py-1.5 text-right text-muted-foreground">{row.weight > 0 ? `${Math.round(row.weight)}g` : "—"}</td>
                             </tr>
-                          );
-                        })}
-                      </CategoryGroup>
-                    ));
-                  })()}
-                </tbody>
-              </table>
-            </div>
+                          )}
+                          <tr
+                            onClick={() => navigate(`/recipes/${row.id}`)}
+                            className={cn(
+                              "cursor-pointer border-b border-border/60 hover:bg-muted/50",
+                              row.missing && "bg-red-500/5",
+                            )}
+                          >
+                            <td className="px-2 py-1.5 text-right text-muted-foreground">{n}</td>
+                            <td className="px-2 py-1.5 font-medium">{row.name}</td>
+                            <td className="px-2 py-1.5 text-right font-mono">{row.making > 0 ? formatINR(row.making) : "—"}</td>
+                            <td className="px-2 py-1.5 text-right font-mono text-muted-foreground">{row.pkg > 0 ? formatINR(row.pkg) : "—"}</td>
+                            <td className="px-2 py-1.5 text-right font-mono">{row.selling > 0 ? formatINR(row.selling) : "—"}</td>
+                            <td className={cn("px-2 py-1.5 text-right font-mono", TONE_CELL[tone])}>
+                              {row.fcWith != null ? `${row.fcWith.toFixed(2)}%` : "—"}
+                            </td>
+                            <td className={cn("px-2 py-1.5 text-right font-mono", TONE_CELL[fcBand(row.fcWithout)])}>
+                              {row.fcWithout != null ? `${row.fcWithout.toFixed(2)}%` : "—"}
+                            </td>
+                            <td className="px-2 py-1.5 text-right text-muted-foreground">{row.weight > 0 ? `${Math.round(row.weight)}g` : "—"}</td>
+                          </tr>
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination — pinned below the table so it sits at the Notes level */}
+              <div className="flex shrink-0 items-center justify-between gap-2 border-t px-3 py-2 text-xs text-muted-foreground">
+                <span className="tabular-nums">
+                  {pageStart + 1}–{Math.min(pageStart + rowsPerPage, flatRows.length)} of {flatRows.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 px-2"
+                    disabled={currentPage === 0}
+                    onClick={() => setPage(currentPage - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" /> Prev
+                  </Button>
+                  <span className="tabular-nums">Page {currentPage + 1} / {pageCount}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 px-2"
+                    disabled={currentPage >= pageCount - 1}
+                    onClick={() => setPage(currentPage + 1)}
+                  >
+                    Next <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </Card>
 
         {/* Sidebar panels */}
-        <div className="space-y-4">
+        <div className="dash-side space-y-4">
           <Card className="overflow-hidden">
             <p className="border-b bg-muted/60 px-4 py-2 text-sm font-semibold">Category Summary</p>
             {data.categories.length === 0 ? (
@@ -365,19 +452,6 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
         </div>
       </div>
     </div>
-  );
-}
-
-function CategoryGroup({ name, children }: { name: string; children: React.ReactNode }) {
-  return (
-    <>
-      <tr className="bg-muted/40">
-        <td colSpan={8} className="px-2 py-1.5 text-xs font-bold uppercase tracking-wide text-foreground">
-          {name}
-        </td>
-      </tr>
-      {children}
-    </>
   );
 }
 

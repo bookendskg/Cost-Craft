@@ -17,6 +17,16 @@ import type { FieldValues, UseFormReturn } from "react-hook-form";
  *   • capture()  — snapshot the current values as the clean baseline (after reset).
  *   • markSaved()— suppress the prompt for the close that follows a successful save.
  */
+// A blank field has several shapes — `undefined` (dropped by JSON.stringify), `null`,
+// `NaN` (a `valueAsNumber` input emits this when cleared), and `""`. Treat them all as
+// "absent" so a field typed into and then cleared back to blank isn't flagged dirty.
+// Real values (including `0`) are preserved. Applied to both the baseline and the live
+// key, so it can only make logically-equal states compare equal — never masks a change.
+const isEmptyish = (v: unknown) =>
+  v === undefined || v === null || v === "" || (typeof v === "number" && Number.isNaN(v));
+const serialize = (obj: unknown) =>
+  JSON.stringify(obj, (_k, v) => (isEmptyish(v) ? undefined : v));
+
 export function useFormDirty<T extends FieldValues>(
   form: UseFormReturn<T>,
   open: boolean,
@@ -27,7 +37,7 @@ export function useFormDirty<T extends FieldValues>(
   const baseline = useRef("");
   const saved = useRef(false);
   const values = form.watch();
-  const key = JSON.stringify({ v: values, x: extra });
+  const key = serialize({ v: values, x: extra });
 
   // Snapshot the clean baseline. Call at the end of the form's open/reset effect.
   // Pass the new extra explicitly (React state set in the same effect isn't
@@ -35,7 +45,7 @@ export function useFormDirty<T extends FieldValues>(
   const capture = useCallback(
     (extraAtReset?: unknown) => {
       saved.current = false;
-      baseline.current = JSON.stringify({ v: form.getValues(), x: extraAtReset });
+      baseline.current = serialize({ v: form.getValues(), x: extraAtReset });
     },
     [form],
   );

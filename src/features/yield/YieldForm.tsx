@@ -165,7 +165,7 @@ export function YieldForm({
   return (
     <>
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : unsaved.guardClose(() => onOpenChange(false)))}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+      <DialogContent lockClose className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Yield" : "Add Yield"}</DialogTitle>
           <DialogDescription>

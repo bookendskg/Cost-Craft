@@ -1,8 +1,7 @@
 import { Suspense, useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   Loader2,
-  LogOut,
   Menu,
   Moon,
   PanelLeftClose,
@@ -30,9 +29,7 @@ import { primeRoleCache, roleLabel } from "@/lib/auth/roleCache";
 
 export function AppLayout() {
   const user = useSession((s) => s.user);
-  const logout = useSession((s) => s.logout);
   const { dark, toggle } = useTheme();
-  const navigate = useNavigate();
   const brand = useDashboardBrand((s) => s.brand);
   const setBrand = useDashboardBrand((s) => s.setBrand);
   const { data: brandRecords = [] } = useBrands();
@@ -65,11 +62,6 @@ export function AppLayout() {
 
   if (!user) return null;
   const groups = navGroupsForRole(user.role);
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
 
   // `rail` collapses the desktop sidebar to icons only. The mobile drawer always
   // shows the full sidebar (rail=false).
@@ -132,14 +124,10 @@ export function AppLayout() {
       {!rail && <SidebarShowcase brand={brand} />}
       {!rail && (
         <div className="border-t border-black/5 p-3">
-          <div className="mb-2 px-1">
+          <div className="px-1">
             <p className="truncate text-sm font-medium">{user.name}</p>
             <p className="text-xs text-muted-foreground">{roleLabel(user.role)}</p>
           </div>
-          <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </Button>
         </div>
       )}
     </div>
@@ -254,7 +242,7 @@ export function AppLayout() {
             </div>
           )}
           {/* Keyed on the route so each navigation replays the entrance animation. */}
-          <div key={location.pathname} className="relative z-10 mx-auto max-w-7xl animate-fade-in-up">
+          <div key={location.pathname} className="relative z-10 animate-fade-in-up">
             <Suspense
               fallback={
                 <div className="flex items-center justify-center py-24 text-muted-foreground">
