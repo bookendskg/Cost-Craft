@@ -1,0 +1,207 @@
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Beef, BookOpen, ChefHat, Sprout, Upload } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { ImportDialog } from "@/components/ImportDialog";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useSession } from "@/lib/auth/session";
+import { useBrands } from "@/features/brands/hooks";
+import { useDashboardBrand } from "@/features/dashboard/brandTheme";
+import type { ImportConfig } from "@/lib/import/importTypes";
+import { materialsImportConfig, yieldImportConfig, recipeImportConfig } from "./importConfigs";
+
+/** Only the format-preview fields of a config (no generic T → no variance issues). */
+type PreviewConfig = Pick<ImportConfig<unknown>, "columns" | "sample">;
+
+type Section = "materials" | "prep" | "yield" | "recipes";
+
+/**
+ * Super-Admin-only import hub. All CSV/XLSX imports live here (revoked from the
+ * per-page buttons). Raw Materials / In-House Prep / Yield are common across brands;
+ * Menu Recipes are imported under a chosen brand (Aiko or Capiche). Route access is
+ * gated to super_admin in the router — no in-component role check needed.
+ */
+export function ImportDataPage() {
+  const user = useSession((s) => s.user)!;
+  const queryClient = useQueryClient();
+  const { data: brands = [] } = useBrands();
+  const headerBrand = useDashboardBrand((s) => s.brand);
+
+  const [open, setOpen] = useState<Section | null>(null);
+  const [brand, setBrand] = useState<"capiche" | "aiko">(headerBrand === "aiko" ? "aiko" : "capiche");
+
+  // Only the two real brands may receive menu recipes.
+  const brandOptions = brands.filter(
+    (b) => b.status === "active" && (b.id === "capiche" || b.id === "aiko"),
+  );
+
+  const materialsCfg = useMemo(
+    () => materialsImportConfig({ queryClient, userId: user.id }),
+    [queryClient, user.id],
+  );
+  const yieldCfg = useMemo(
+    () => yieldImportConfig({ queryClient, userId: user.id }),
+    [queryClient, user.id],
+  );
+  const prepCfg = useMemo(
+    () => recipeImportConfig({ queryClient, userId: user.id, isPrep: true, brand: "capiche" }),
+    [queryClient, user.id],
+  );
+  const recipesCfg = useMemo(
+    () => recipeImportConfig({ queryClient, userId: user.id, isPrep: false, brand }),
+    [queryClient, user.id, brand],
+  );
+
+  return (
+    <div>
+      <PageHeader
+        title="Import Data"
+        description="Bulk-import catalog data from CSV or XLSX. Restricted to Super Admins."
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <SectionCard
+          icon={<Beef className="h-5 w-5" />}
+          title="Raw Materials"
+          description="Ingredients with purchase price. Common across all brands."
+          config={materialsCfg}
+          onImport={() => setOpen("materials")}
+        />
+        <SectionCard
+          icon={<ChefHat className="h-5 w-5" />}
+          title="In-House Prep"
+          description="Reusable sub-recipes. Common across all brands."
+          config={prepCfg}
+          onImport={() => setOpen("prep")}
+        />
+        <SectionCard
+          icon={<Sprout className="h-5 w-5" />}
+          title="Yield"
+          description="Wastage → true yield per ingredient. Common across all brands."
+          config={yieldCfg}
+          onImport={() => setOpen("yield")}
+        />
+        <SectionCard
+          icon={<BookOpen className="h-5 w-5" />}
+          title="Menu Recipes"
+          description="Sellable dishes. Imported under the selected brand."
+          config={recipesCfg}
+          onImport={() => setOpen("recipes")}
+          importDisabled={brandOptions.length === 0}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Brand</span>
+            <Select value={brand} onValueChange={(v) => setBrand(v as "capiche" | "aiko")}>
+              <SelectTrigger className="h-9 w-40">
+                <SelectValue placeholder="Select brand" />
+              </SelectTrigger>
+              <SelectContent>
+                {brandOptions.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </SectionCard>
+      </div>
+
+      <ImportDialog open={open === "materials"} onOpenChange={(o) => setOpen(o ? "materials" : null)} config={materialsCfg} />
+      <ImportDialog open={open === "prep"} onOpenChange={(o) => setOpen(o ? "prep" : null)} config={prepCfg} />
+      <ImportDialog open={open === "yield"} onOpenChange={(o) => setOpen(o ? "yield" : null)} config={yieldCfg} />
+      <ImportDialog open={open === "recipes"} onOpenChange={(o) => setOpen(o ? "recipes" : null)} config={recipesCfg} />
+    </div>
+  );
+}
+
+function SectionCard({
+  icon,
+  title,
+  description,
+  config,
+  onImport,
+  importDisabled,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  config: PreviewConfig;
+  onImport: () => void;
+  importDisabled?: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <Card className="flex flex-col gap-3 p-5">
+      <div className="flex items-start gap-3">
+        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold text-foreground">{title}</h3>
+          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+        </div>
+      </div>
+
+      <FormatPreview config={config} />
+
+      <div className="mt-auto flex items-center justify-between gap-3">
+        {children ?? <span />}
+        <Button size="sm" onClick={onImport} disabled={importDisabled}>
+          <Upload className="h-4 w-4" /> Import
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+/** Compact preview of the expected columns + one sample row, so a Super Admin sees
+ *  the exact format before uploading. Data comes straight from the ImportConfig. */
+function FormatPreview({ config }: { config: PreviewConfig }) {
+  const sample = config.sample as Record<string, unknown>;
+  return (
+    <div>
+      <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        Expected format · {config.columns.length} columns
+      </p>
+      <div className="overflow-x-auto rounded-md border">
+        <table className="w-full border-collapse text-xs">
+          <thead>
+            <tr className="bg-muted/50">
+              {config.columns.map((c) => (
+                <th key={c.label} className="whitespace-nowrap px-2.5 py-1.5 text-left font-semibold text-foreground">
+                  {c.label}
+                  {c.required && <span className="text-destructive"> *</span>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {config.columns.map((c) => {
+                const v = sample[c.label];
+                return (
+                  <td key={c.label} className="whitespace-nowrap border-t px-2.5 py-1.5 text-muted-foreground">
+                    {v == null || v === "" ? "—" : String(v)}
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-1.5 text-[11px] text-muted-foreground">
+        <span className="text-destructive">*</span> required · one row per ingredient
+      </p>
+    </div>
+  );
+}

@@ -362,6 +362,7 @@ export const supabaseRecipesRepo = {
     rows: ImportRecipeLine[],
     actorId: string,
     isPrep = false,
+    brand: "capiche" | "aiko" = "capiche",
   ): Promise<ImportSummary> {
     const c = sb();
     const S: ImportSummary = { total: 0, imported: 0, updated: 0, skipped: 0, failed: 0, errors: [] };
@@ -448,7 +449,7 @@ export const supabaseRecipesRepo = {
         id,
         recipe_name: name,
         category,
-        brand: "capiche",
+        brand,
         description: null,
         method: [],
         parent_recipe_id: parentId,

@@ -12,16 +12,11 @@ import {
   Boxes,
   ClipboardCheck,
   Percent,
-  Upload,
   Trash2,
   Archive,
   ArchiveRestore,
 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
-import { ImportDialog } from "@/components/ImportDialog";
-import { recipesRepo, type ImportRecipeLine } from "@/lib/data";
-import { pick, toNum, toText, type ImportConfig } from "@/lib/import/importTypes";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -192,113 +187,6 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const canCreate = can(user.role, "recipe.create");
-  const queryClient = useQueryClient();
-  const [importOpen, setImportOpen] = useState(false);
-
-  const importConfig = useMemo<ImportConfig<ImportRecipeLine>>(
-    () =>
-      prepMode
-        ? {
-            // In-House Prep import: one row per ingredient (grouped by prep name).
-            // No size / selling price / packaging — a prep is costed by Total Cost only.
-            title: "Import In-House Prep",
-            columns: [
-              { label: "Prep Name", required: true },
-              { label: "Category" },
-              { label: "Ingredient", required: true },
-              { label: "Quantity", required: true },
-              { label: "Unit" },
-            ],
-            sample: {
-              "Prep Name": "Tomato Sauce",
-              Category: "Sauces",
-              Ingredient: "Tomato",
-              Quantity: 500,
-              Unit: "Gram",
-            },
-            parseRow: (row, n) => {
-              const recipe_name = toText(pick(row, ["Prep Name", "Recipe Name", "Name"]));
-              if (!recipe_name) return { error: `Row ${n}: prep name is required` };
-              const ingredient_name = toText(pick(row, ["Ingredient", "Ingredient Name"]));
-              if (!ingredient_name) return { error: `Row ${n}: ingredient is required` };
-              const quantity = toNum(pick(row, ["Quantity", "Qty"]));
-              if (quantity == null || Number.isNaN(quantity) || quantity <= 0) return { error: `Row ${n}: quantity must be greater than 0` };
-              return {
-                value: {
-                  recipe_name,
-                  category: toText(pick(row, ["Category"])) || "Uncategorised",
-                  size: null,
-                  ingredient_name,
-                  quantity,
-                  unit: toText(pick(row, ["Unit"])) || "Gram",
-                  selling_price: null,
-                  packaging_cost: null,
-                },
-              };
-            },
-            run: async (mode, rows) => {
-              const summary = await recipesRepo.importRecipes(mode, rows, user.id, true);
-              await queryClient.invalidateQueries({ queryKey: ["recipes"] });
-              await queryClient.invalidateQueries({ queryKey: ["materials"] });
-              return summary;
-            },
-          }
-        : {
-            title: "Import Recipes",
-            columns: [
-              { label: "Recipe Name", required: true },
-              { label: "Category" },
-              { label: "Size" },
-              { label: "Ingredient", required: true },
-              { label: "Quantity", required: true },
-              { label: "Unit" },
-              { label: "Selling Price" },
-              { label: "Packaging" },
-            ],
-            sample: {
-              "Recipe Name": "Margherita Pizza",
-              Category: "Pizza",
-              Size: "15-inch",
-              Ingredient: "Pizza Dough",
-              Quantity: 310,
-              Unit: "Gram",
-              "Selling Price": 940,
-              Packaging: 30,
-            },
-            parseRow: (row, n) => {
-              const recipe_name = toText(pick(row, ["Recipe Name", "Recipe", "Name"]));
-              if (!recipe_name) return { error: `Row ${n}: recipe name is required` };
-              const ingredient_name = toText(pick(row, ["Ingredient", "Ingredient Name"]));
-              if (!ingredient_name) return { error: `Row ${n}: ingredient is required` };
-              const quantity = toNum(pick(row, ["Quantity", "Qty"]));
-              if (quantity == null || Number.isNaN(quantity) || quantity <= 0) return { error: `Row ${n}: quantity must be greater than 0` };
-              const sizeRaw = toText(pick(row, ["Size", "Variant"])).toLowerCase();
-              const size = /11/.test(sizeRaw) ? "11_INCH" : /15/.test(sizeRaw) ? "15_INCH" : null;
-              const selling = toNum(pick(row, ["Selling Price", "Selling"]));
-              const pkg = toNum(pick(row, ["Packaging", "Packaging Cost"]));
-              return {
-                value: {
-                  recipe_name,
-                  category: toText(pick(row, ["Category"])) || "Uncategorised",
-                  size: size as "11_INCH" | "15_INCH" | null,
-                  ingredient_name,
-                  quantity,
-                  unit: toText(pick(row, ["Unit"])) || "Gram",
-                  selling_price: selling != null && !Number.isNaN(selling) ? selling : null,
-                  packaging_cost: pkg != null && !Number.isNaN(pkg) ? pkg : null,
-                },
-              };
-            },
-            run: async (mode, rows) => {
-              const summary = await recipesRepo.importRecipes(mode, rows, user.id, false);
-              await queryClient.invalidateQueries({ queryKey: ["recipes"] });
-              await queryClient.invalidateQueries({ queryKey: ["materials"] });
-              return summary;
-            },
-          },
-    [queryClient, user.id, prepMode],
-  );
-
   const filtered = useMemo(() => {
     const out = recipes.filter((r) => {
       // Archived recipes are hidden everywhere except the dedicated "Archived" view.
@@ -391,11 +279,6 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
             <Button variant="outline" onClick={() => navigate("/reports")}>
               <FileDown className="h-4 w-4" /> Export
             </Button>
-            {canCreate && (
-              <Button variant="outline" onClick={() => setImportOpen(true)}>
-                <Upload className="h-4 w-4" /> Import
-              </Button>
-            )}
             {canCreate && (
               <Button
                 variant="accent"
@@ -572,7 +455,6 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
         />
       </div>
       )}
-      <ImportDialog open={importOpen} onOpenChange={setImportOpen} config={importConfig} />
 
       <ConfirmDialog
         open={!!deletingId}

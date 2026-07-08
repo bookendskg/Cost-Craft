@@ -12,6 +12,7 @@ import {
   Trash2,
   Store,
   Package,
+  Upload,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/lib/data/types";
@@ -54,6 +55,8 @@ export const NAV_ITEMS: NavItem[] = [
   // data). No capability — the early return in navForRole shows every item to a
   // super_admin, and no other role matches roles:["super_admin"].
   { to: "/brands", label: "Brands & Outlets", icon: Store, group: "Admin", roles: ["super_admin"] },
+  // Import Data hub — Super-Admin only (same gating as Brands & Outlets: no cap).
+  { to: "/import-data", label: "Import Data", icon: Upload, group: "Admin", roles: ["super_admin"] },
   { to: "/audit", label: "Price Changes", icon: ScrollText, group: "Admin", roles: ["admin"], cap: "audit.view" },
   { to: "/settings", label: "Settings", icon: Settings, group: "Admin", roles: ["admin"], cap: "settings.manage" },
 ];

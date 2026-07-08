@@ -11,14 +11,8 @@ import {
   Plus,
   RotateCcw,
   Trash2,
-  Upload,
 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
-import { ImportDialog } from "@/components/ImportDialog";
-import { materialsRepo, type MaterialInput } from "@/lib/data";
-import { canonicalPurchase, type MeasurementType } from "@/lib/units";
-import { pick, toNum, toText, type ImportConfig } from "@/lib/import/importTypes";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { Pagination } from "@/components/Pagination";
@@ -87,61 +81,6 @@ export function MaterialsPage() {
   const bulkStatus = useBulkSetMaterialStatus();
   const delMat = useDeleteMaterial();
   const bulkDelMat = useBulkDeleteMaterial();
-  const queryClient = useQueryClient();
-  const [importOpen, setImportOpen] = useState(false);
-
-  const importConfig = useMemo<ImportConfig<MaterialInput>>(() => ({
-    title: "Import Ingredients",
-    columns: [
-      { label: "Ingredient", required: true },
-      { label: "Category" },
-      { label: "Material Type" },
-      { label: "Purchase Price" },
-      { label: "Notes" },
-    ],
-    sample: {
-      Ingredient: "Onion",
-      Category: "Vegetables",
-      "Material Type": "Weight",
-      "Purchase Price": 100,
-      Notes: "",
-    },
-    parseRow: (row, n) => {
-      const name = toText(pick(row, ["Ingredient", "Ingredient Name", "Name"]));
-      if (!name) return { error: `Row ${n}: ingredient name is required` };
-      const price = toNum(pick(row, ["Purchase Price", "Purchase Price (₹)", "Price"]));
-      if (price !== null && (Number.isNaN(price) || price < 0)) return { error: `Row ${n}: invalid purchase price` };
-      // Material Type → automatic purchase unit (1 kg / 1 litre / 1 piece). Case +
-      // whitespace insensitive; blank defaults to Weight.
-      const typeRaw = toText(pick(row, ["Material Type", "Type"])).trim().toLowerCase();
-      const type: MeasurementType | null =
-        typeRaw === "" ? "weight"
-          : /^(weight|kg|kilogram|gram|g)$/.test(typeRaw) ? "weight"
-            : /^(liquid|volume|litre|liter|l|ml)$/.test(typeRaw) ? "volume"
-              : /^(count|piece|pcs?|pc|unit|each|nos?)$/.test(typeRaw) ? "count"
-                : null;
-      if (!type) return { error: `Row ${n}: Material Type must be Weight, Liquid or Count (got "${typeRaw}")` };
-      const canon = canonicalPurchase(type);
-      return {
-        value: {
-          ingredient_name: name,
-          category: toText(pick(row, ["Category"])) || "Other",
-          notes: toText(pick(row, ["Notes"])) || null,
-          purchase_price: price,
-          purchase_quantity: 1,
-          purchase_unit: canon.purchase_unit,
-          base_unit: canon.base_unit,
-        },
-      };
-    },
-    run: async (mode, rows) => {
-      const summary = await materialsRepo.importMaterials(mode, rows, user.id);
-      await queryClient.invalidateQueries({ queryKey: ["materials"] });
-      await queryClient.invalidateQueries({ queryKey: ["recipes"] });
-      return summary;
-    },
-  }), [queryClient, user.id]);
-
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [status, setStatus_] = useState("active");
@@ -331,11 +270,6 @@ export function MaterialsPage() {
             <Button variant="outline" onClick={doExport} disabled={isExporting}>
               <Download className="h-4 w-4" /> Export
             </Button>
-            {canEdit && (
-              <Button variant="outline" onClick={() => setImportOpen(true)}>
-                <Upload className="h-4 w-4" /> Import
-              </Button>
-            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
@@ -539,7 +473,6 @@ export function MaterialsPage() {
         )}
       </Card>
 
-      <ImportDialog open={importOpen} onOpenChange={setImportOpen} config={importConfig} />
       <PriceHistoryDialog
         material={historyFor}
         open={!!historyFor}

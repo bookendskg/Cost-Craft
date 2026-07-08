@@ -324,6 +324,7 @@ export const recipesRepo = {
     rows: ImportRecipeLine[],
     actorId: string,
     isPrep = false,
+    brand: "capiche" | "aiko" = "capiche",
   ): Promise<ImportSummary> {
     return delay(
       mutate((db) => {
@@ -378,7 +379,7 @@ export const recipesRepo = {
           if (mode === "update") return { id: null, action: "skipped" };
           const id = uid();
           db.recipes.push({
-            id, recipe_name: name, category, brand: "capiche", description: null, method: [],
+            id, recipe_name: name, category, brand, description: null, method: [],
             parent_recipe_id: parentId, size_code: sizeCode,
             size_label: sizeCode === "11_INCH" ? "11-inch" : sizeCode === "15_INCH" ? "15-inch" : null,
             image_url: null, preparation_time: null, serving_size: 1, status: "draft",

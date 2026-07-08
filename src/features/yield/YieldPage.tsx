@@ -12,7 +12,6 @@ import {
   TriangleAlert,
   Trash2,
   ChefHat,
-  Upload,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -62,11 +61,6 @@ import { useUsersMap } from "@/features/users/hooks";
 import { YieldForm } from "./YieldForm";
 import { YieldBreakdownDialog } from "./YieldBreakdownDialog";
 import { toast } from "@/components/ui/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { ImportDialog } from "@/components/ImportDialog";
-import { yieldsRepo, type ImportYieldRow } from "@/lib/data";
-import { pick, toNum, toText, type ImportConfig } from "@/lib/import/importTypes";
-import { PURCHASE_UNITS } from "@/lib/units";
 
 const PAGE_SIZE = 10;
 type SortKey = "name" | "wastage" | "yield" | "cost";
@@ -79,63 +73,6 @@ export function YieldPage() {
   const { data: materials = [] } = useMaterials();
   const { data: recipes = [] } = useRecipes();
   const { data: recipeIngredients = [] } = useAllRecipeIngredients();
-  const queryClient = useQueryClient();
-  const [importOpen, setImportOpen] = useState(false);
-
-  const importConfig = useMemo<ImportConfig<ImportYieldRow>>(() => ({
-    title: "Import Yields",
-    columns: [
-      { label: "Ingredient", required: true },
-      { label: "Purchase Cost", required: true },
-      { label: "Purchase Quantity", required: true },
-      { label: "Purchase Unit", required: true },
-      { label: "Wastage Quantity", required: true },
-      { label: "Effective From" },
-      { label: "Notes" },
-    ],
-    sample: {
-      Ingredient: "Onion",
-      "Purchase Cost": 125,
-      "Purchase Quantity": 1,
-      "Purchase Unit": "KG",
-      "Wastage Quantity": 200,
-      "Effective From": "2026-06-01",
-      Notes: "Peeling + trimming loss",
-    },
-    parseRow: (row, n) => {
-      const ingredient_name = toText(pick(row, ["Ingredient", "Ingredient Name"]));
-      if (!ingredient_name) return { error: `Row ${n}: ingredient is required` };
-      const purchase_cost = toNum(pick(row, ["Purchase Cost", "Cost"]));
-      if (purchase_cost == null || Number.isNaN(purchase_cost) || purchase_cost <= 0)
-        return { error: `Row ${n}: purchase cost must be greater than 0` };
-      const purchase_quantity = toNum(pick(row, ["Purchase Quantity", "Quantity", "Qty"]));
-      if (purchase_quantity == null || Number.isNaN(purchase_quantity) || purchase_quantity <= 0)
-        return { error: `Row ${n}: purchase quantity must be greater than 0` };
-      const purchase_unit = toText(pick(row, ["Purchase Unit", "Unit"]));
-      if (!PURCHASE_UNITS.includes(purchase_unit as (typeof PURCHASE_UNITS)[number]))
-        return { error: `Row ${n}: invalid purchase unit "${purchase_unit}"` };
-      const wastage_quantity = toNum(pick(row, ["Wastage Quantity", "Wastage"]));
-      if (wastage_quantity == null || Number.isNaN(wastage_quantity) || wastage_quantity < 0)
-        return { error: `Row ${n}: wastage quantity cannot be negative` };
-      return {
-        value: {
-          ingredient_name,
-          purchase_cost,
-          purchase_quantity,
-          purchase_unit,
-          wastage_quantity,
-          effective_from: toText(pick(row, ["Effective From", "Date"])) || null,
-          notes: toText(pick(row, ["Notes"])) || null,
-        },
-      };
-    },
-    run: async (mode, rows) => {
-      const summary = await yieldsRepo.importYields(mode, rows, user.id);
-      await queryClient.invalidateQueries({ queryKey: ["yields"] });
-      await queryClient.invalidateQueries({ queryKey: ["recipes"] });
-      return summary;
-    },
-  }), [queryClient, user.id]);
   const deleteMut = useDeleteYield();
 
   const matById = useMemo(() => new Map(materials.map((m) => [m.id, m])), [materials]);
@@ -267,9 +204,6 @@ export function YieldPage() {
         actions={
           canEdit && (
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => setImportOpen(true)}>
-                <Upload className="h-4 w-4" /> Import
-              </Button>
               <Button variant="accent" onClick={openAdd}>
                 <Plus className="h-4 w-4" /> Add Yield
               </Button>
@@ -427,7 +361,6 @@ export function YieldPage() {
         )}
       </Card>
 
-      <ImportDialog open={importOpen} onOpenChange={setImportOpen} config={importConfig} />
       <YieldForm open={formOpen} onOpenChange={setFormOpen} record={editing} />
 
       {/* Drill-in: the yields counted as "Missing Price" */}

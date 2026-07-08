@@ -75,9 +75,13 @@ export function MaterialEditorPage() {
         measurement_type: type,
       });
     } else {
+      // A new ingredient starts with NO category selected (the Select shows its
+      // placeholder and category is required). Defaulting to categories[0] here
+      // desynced the dirty-baseline from the empty field shown to the user, which
+      // made an untouched form falsely prompt "Discard changes?".
       reset({
         ingredient_name: "",
-        category: categories[0] ?? "",
+        category: "",
         notes: "",
         purchase_price: undefined as unknown as number,
         measurement_type: "weight",

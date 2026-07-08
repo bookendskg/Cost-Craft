@@ -27,6 +27,7 @@ const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m)
 const BrandsOutletsPage = lazy(() => import("@/features/brands/BrandsOutletsPage").then((m) => ({ default: m.BrandsOutletsPage })));
 const BrandEditorPage = lazy(() => import("@/features/brands/BrandEditorPage").then((m) => ({ default: m.BrandEditorPage })));
 const PackagingMasterPage = lazy(() => import("@/features/packaging/PackagingMasterPage").then((m) => ({ default: m.PackagingMasterPage })));
+const ImportDataPage = lazy(() => import("@/features/data-import/ImportDataPage").then((m) => ({ default: m.ImportDataPage })));
 const SharedRecipePage = lazy(() => import("@/features/share/SharedRecipePage").then((m) => ({ default: m.SharedRecipePage })));
 // Public marketing landing page (code-split; the app's public entry point at "/").
 const LandingPage = lazy(() => import("@/features/marketing/LandingPage").then((m) => ({ default: m.LandingPage })));
@@ -195,6 +196,15 @@ export const router = createBrowserRouter([
       // the catch-all below redirects any stale links to /dashboard.
       // "Brands & Outlets" management has been removed. The old /brands route is
       // intentionally gone; the catch-all below redirects it to /dashboard.
+      {
+        // Data import hub — Super Admin only. All CSV/XLSX imports live here.
+        path: "import-data",
+        element: (
+          <RequireRole roles={["super_admin"]}>
+            <ImportDataPage />
+          </RequireRole>
+        ),
+      },
       {
         // Brands & Outlets master-data management — Super Admin only.
         path: "brands",
