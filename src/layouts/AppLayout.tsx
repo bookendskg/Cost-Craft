@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWordmark } from "@/features/dashboard/brandTheme";
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
-import { SidebarShowcase } from "./SidebarShowcase";
 import { useBrands } from "@/features/brands/hooks";
 import { useRoles } from "@/features/roles/hooks";
 import { primeBrandCache } from "@/lib/data/brandCache";
@@ -121,7 +120,6 @@ export function AppLayout() {
           </div>
         ))}
       </nav>
-      {!rail && <SidebarShowcase brand={brand} />}
       {!rail && (
         <div className="border-t border-black/5 p-3">
           <div className="px-1">
