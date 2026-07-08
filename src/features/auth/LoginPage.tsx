@@ -13,13 +13,10 @@ import { Logo } from "@/components/brand/Logo";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { AuthBrandPanel } from "./AuthBrandPanel";
 
-const DEMO = [
-  { role: "Admin", email: "rahul@brand.com" },
-  { role: "Editor", email: "priya@brand.com" },
-  { role: "Head Chef", email: "marco@brand.com" },
-  { role: "Chef", email: "sara@brand.com" },
-  { role: "Viewer", email: "amit@brand.com" },
-];
+// Only the Super Admin owner is seeded in the live mock DB (buildMoinSeed →
+// buildEmptySeed keeps super_admins only). The old @brand.com demo users exist
+// only in the test seed, so listing them here produced "invalid credentials".
+const DEMO = [{ role: "Owner (Super Admin)", email: "mspatel05831@gmail.com" }];
 
 /** A post-login destination is only honoured if it's a safe in-app path. */
 function safeDestination(path: unknown): string {

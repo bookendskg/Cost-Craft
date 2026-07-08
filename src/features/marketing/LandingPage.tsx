@@ -146,9 +146,9 @@ export function LandingPage() {
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid mask-fade-b opacity-50" />
           <div className="relative mx-auto grid max-w-[1728px] grid-cols-2 gap-6 px-4 py-10 sm:px-6 md:grid-cols-4">
             {[
-              { n: "3", l: "Restaurant brands" },
+              { n: "2", l: "Restaurant brands" },
               { n: "8", l: "Operational modules" },
-              { n: "1", l: "Source of truth" },
+              { n: "1", l: "Parent company" },
               { n: "0", l: "Spreadsheets needed" },
             ].map((m) => (
               <div key={m.l} className="text-center">
@@ -243,29 +243,38 @@ export function LandingPage() {
         <section id="brands">
           <div className="mx-auto max-w-[1728px] px-4 py-16 sm:px-6 sm:py-24">
             <SectionHeading
-              eyebrow="Multi-brand"
-              title="One platform, every Bookends brand"
-              description="CostCraft keeps recipes, categories and operational data separated per brand while sharing one consistent costing engine."
+              eyebrow="Parent company · Two brands"
+              title="One parent company, two distinct brands"
+              description="Bookends Hospitality is the parent company behind Capiche and Aiko. CostCraft keeps each brand's recipes, categories and operational data separate while sharing one consistent costing engine."
             />
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
-              <BrandBadge
-                name="Bookends Hospitality"
-                tone="bookends"
-                tagline="We believe in unreasonable hospitality."
-                points={["Central recipe & costing platform", "Brand and outlet reporting", "Unified user & role management"]}
-              />
-              <BrandBadge
-                name="Capiche"
-                tone="capiche"
-                tagline="It's always pizza time."
-                points={["Pizza-first recipes & size variants", "Capiche-specific categories", "Separate operational data"]}
-              />
-              <BrandBadge
-                name="Aiko"
-                tone="aiko"
-                tagline="Asian Inspired Komfort."
-                points={["Asian comfort recipes", "Aiko-specific categories", "Separate operational data"]}
-              />
+            <div className="mt-12">
+              {/* Parent company */}
+              <div className="mx-auto max-w-2xl">
+                <BrandBadge
+                  name="Bookends Hospitality"
+                  tone="bookends"
+                  label="Parent company"
+                  tagline="We believe in unreasonable hospitality."
+                  points={["Central recipe & costing platform", "Brand and outlet reporting", "Unified user & role management"]}
+                />
+              </div>
+              {/* The two brands it runs */}
+              <div className="mx-auto mt-6 grid max-w-2xl gap-6 sm:grid-cols-2">
+                <BrandBadge
+                  name="Capiche"
+                  tone="capiche"
+                  label="Brand"
+                  tagline="It's always pizza time."
+                  points={["Pizza-first recipes & size variants", "Capiche-specific categories", "Separate operational data"]}
+                />
+                <BrandBadge
+                  name="Aiko"
+                  tone="aiko"
+                  label="Brand"
+                  tagline="Asian Inspired Komfort."
+                  points={["Asian comfort recipes", "Aiko-specific categories", "Separate operational data"]}
+                />
+              </div>
             </div>
           </div>
         </section>

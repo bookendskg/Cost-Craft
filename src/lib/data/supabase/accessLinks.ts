@@ -10,7 +10,7 @@ import { sb, fail } from "./helpers";
 
 export type { CreateLinkInput, ResolvedLink };
 
-const LINK_TTL_MS = 30 * 60 * 1000;
+const LINK_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface RpcIngredient {
   id: string;

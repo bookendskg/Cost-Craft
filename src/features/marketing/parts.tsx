@@ -128,11 +128,14 @@ export function BrandBadge({
   tone,
   tagline,
   points,
+  label,
 }: {
   name: string;
   tone: "bookends" | "capiche" | "aiko";
   tagline: string;
   points: string[];
+  /** Small uppercase tag above the tagline, e.g. "Parent company" / "Brand". */
+  label?: string;
 }) {
   const styles = {
     bookends: { ring: "ring-[#1b35a8]/20", dot: "bg-[#1b35a8]", text: "text-[#1b35a8]", tint: "bg-[#eff6ff]", bar: "from-[#1b35a8] to-[#4f46e5]" },
@@ -167,7 +170,10 @@ export function BrandBadge({
           <span className={cn("text-lg font-semibold", styles.text)}>{name}</span>
         </div>
       )}
-      <p className={cn("text-sm font-medium italic text-foreground/70", logoOk === false ? "mt-2" : "mt-4")}>
+      {label && (
+        <p className={cn("mt-3 text-[10px] font-semibold uppercase tracking-[0.18em]", styles.text)}>{label}</p>
+      )}
+      <p className={cn("text-sm font-medium italic text-foreground/70", label ? "mt-1.5" : logoOk === false ? "mt-2" : "mt-4")}>
         “{tagline}”
       </p>
       <ul className="mt-4 space-y-2">

@@ -51,7 +51,7 @@ export function SharedRecipePage() {
 
   if (isLoading) return <Screen icon={<Loader2 className="h-6 w-6 animate-spin" />} title="Opening recipe…" sub="Validating your link." />;
   if (isError || !data) return <Screen icon={<ShieldAlert className="h-6 w-6" />} title="This recipe link is invalid." sub="The link may be malformed or no longer available." />;
-  if (data.status === "EXPIRED") return <Screen icon={<Lock className="h-6 w-6" />} title="This recipe link has expired." sub="Temporary links are valid for 30 minutes. Ask the sender for a new one." />;
+  if (data.status === "EXPIRED") return <Screen icon={<Lock className="h-6 w-6" />} title="This recipe link has expired." sub="Temporary links are valid for 7 days. Ask the sender for a new one." />;
   if (data.status === "REVOKED" || !data.recipe) return <Screen icon={<Lock className="h-6 w-6" />} title="This recipe link is no longer active." sub="Access has been revoked or the link is invalid." />;
 
   const recipe = data.recipe;

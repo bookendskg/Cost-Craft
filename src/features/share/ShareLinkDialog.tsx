@@ -17,7 +17,7 @@ const ACCESS_LABELS: Record<AccessType, string> = {
   VIEW_AND_DOWNLOAD: "View & download PDF",
 };
 
-const fmt = (iso: string) => new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" });
+const fmt = (iso: string) => new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export function ShareLinkDialog({
   open, onOpenChange, recipe, user,
@@ -69,7 +69,7 @@ export function ShareLinkDialog({
         <DialogHeader>
           <DialogTitle>Create temporary recipe link</DialogTitle>
           <DialogDescription>
-            A secure, read-only link to "{recipe.recipe_name}". It expires in 30 minutes and never exposes cost or price data.
+            A secure, read-only link to "{recipe.recipe_name}". It expires in 7 days and never exposes cost or price data.
           </DialogDescription>
         </DialogHeader>
 
@@ -93,7 +93,7 @@ export function ShareLinkDialog({
           </div>
         ) : (
           <div className="space-y-2 rounded-md border bg-muted/30 p-3">
-            <p className="text-xs font-medium text-emerald-700">Link expires in 30 minutes (at {fmt(created.expires)} IST).</p>
+            <p className="text-xs font-medium text-emerald-700">Link expires in 7 days (on {fmt(created.expires)} IST).</p>
             <div className="flex items-center gap-2">
               <Input readOnly value={created.url} className="text-xs" onFocus={(e) => e.currentTarget.select()} />
               <Button size="icon" variant="outline" onClick={copy}>

@@ -1,5 +1,5 @@
 // §11–§19 Temporary recipe share links. A cryptographically-random token is put in
-// the URL; only its SHA-256 hash is stored. Expiry (30 min) and revocation are checked
+// the URL; only its SHA-256 hash is stored. Expiry (7 days) and revocation are checked
 // when the token is resolved — never trusted from the client. Shared views strip ALL
 // financial fields before returning, so a link never exposes cost/price data.
 //
@@ -17,7 +17,7 @@ import type {
 import { delay, getDb, mutate, nowISO, uid } from "./db";
 import { findMaterial } from "./recompute";
 
-const LINK_TTL_MS = 30 * 60 * 1000; // 30 minutes (§11)
+const LINK_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days (§11)
 
 const toHex = (buf: ArrayBuffer | Uint8Array) =>
   Array.from(buf instanceof Uint8Array ? buf : new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
