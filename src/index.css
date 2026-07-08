@@ -51,6 +51,117 @@
   animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* ── Futuristic landing toolkit (light-first, brand-tinted) ────────────────
+   Additive helper classes for the marketing landing page. Motion is neutralised
+   by the global prefers-reduced-motion block further down. */
+
+/* Faint blueprint grid — brand-blue hairlines on a 44px cell. */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, hsl(var(--primary) / 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--primary) / 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* Fade a decorative layer out toward the edges so there's no hard seam. */
+.mask-fade-y {
+  -webkit-mask-image: radial-gradient(ellipse 75% 60% at 50% 0%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 75% 60% at 50% 0%, #000 35%, transparent 100%);
+}
+.mask-fade-b {
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+}
+
+/* Elegant serif display face for luxury headings (system stack — no web fonts). */
+.font-display {
+  font-family: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, Cambria, "Times New Roman", serif;
+  letter-spacing: -0.012em;
+}
+
+/* Brand gradient text — refined navy → brand-blue → antique gold. */
+.text-gradient-brand {
+  background-image: linear-gradient(100deg, #16235e, #2a44b8 42%, #c69a3e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* Pure gold gradient for numerals / small luxe accents. */
+.text-gold {
+  background-image: linear-gradient(100deg, #b8862b, #e6c56b 55%, #a9791f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Hairline rule with a gold centre — editorial section divider. */
+.rule-gold {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(198, 154, 62, 0.75), transparent);
+}
+
+/* Faint film-grain texture for a tactile, expensive finish. */
+.bg-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Frosted glass surface. */
+.glass {
+  background: rgba(255, 255, 255, 0.66);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+}
+
+/* Drifting aurora blobs. */
+@keyframes float-slow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(0, -26px, 0) scale(1.09); }
+}
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(64px);
+  animation: float-slow 15s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Soft brand glow + gradient hairline that appears on hover. */
+.card-glow {
+  position: relative;
+  transition: box-shadow 0.25s ease, transform 0.2s ease;
+}
+.card-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(130deg, rgba(22, 35, 94, 0.5), rgba(42, 68, 184, 0.3), rgba(198, 154, 62, 0.55));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.card-glow:hover {
+  box-shadow: 0 14px 40px -14px rgba(27, 53, 168, 0.35);
+}
+.card-glow:hover::before { opacity: 1; }
+
+/* One-shot diagonal light sweep (hero preview accent). */
+@keyframes sheen {
+  0%   { transform: translateX(-120%) skewX(-18deg); }
+  60%, 100% { transform: translateX(320%) skewX(-18deg); }
+}
+.animate-sheen { animation: sheen 3.6s ease-in-out infinite; }
+
 @layer base {
   :root {
     --background: 0 0% 100%;

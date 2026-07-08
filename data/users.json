@@ -1,0 +1,76 @@
+[
+  {
+    "id": "u-owner",
+    "name": "M S Patel (Owner)",
+    "email": "mspatel05831@gmail.com",
+    "role": "super_admin",
+    "status": "active",
+    "approved": true,
+    "email_verified": true,
+    "dashboard_access": true,
+    "password": "password123",
+    "created_at": "2026-06-01T09:00:00.000Z",
+    "updated_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "u-admin",
+    "name": "Rahul Sharma",
+    "email": "rahul@brand.com",
+    "role": "admin",
+    "status": "active",
+    "approved": true,
+    "email_verified": true,
+    "dashboard_access": true,
+    "password": "password123",
+    "created_at": "2026-06-01T09:00:00.000Z",
+    "updated_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "u-editor",
+    "name": "Priya Patel",
+    "email": "priya@brand.com",
+    "role": "editor",
+    "status": "active",
+    "approved": true,
+    "email_verified": true,
+    "password": "password123",
+    "created_at": "2026-06-01T09:00:00.000Z",
+    "updated_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "u-headchef",
+    "name": "Marco Bianchi",
+    "email": "marco@brand.com",
+    "role": "head_chef",
+    "status": "active",
+    "approved": true,
+    "email_verified": true,
+    "password": "password123",
+    "created_at": "2026-06-01T09:00:00.000Z",
+    "updated_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "u-chef",
+    "name": "Sara Khan",
+    "email": "sara@brand.com",
+    "role": "chef",
+    "status": "active",
+    "approved": true,
+    "email_verified": true,
+    "password": "password123",
+    "created_at": "2026-06-01T09:00:00.000Z",
+    "updated_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "u-viewer",
+    "name": "Amit Roy",
+    "email": "amit@brand.com",
+    "role": "viewer",
+    "status": "active",
+    "approved": true,
+    "email_verified": true,
+    "password": "password123",
+    "created_at": "2026-06-01T09:00:00.000Z",
+    "updated_at": "2026-06-01T09:00:00.000Z"
+  }
+]

@@ -6,7 +6,7 @@ export function PublicFooter() {
   const year = new Date().getFullYear();
   return (
     <footer className="border-t bg-background">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+      <div className="mx-auto max-w-[1728px] px-4 py-12 sm:px-6">
         <div className="flex flex-col items-start justify-between gap-8 sm:flex-row">
           <div className="max-w-xs">
             <Logo size="md" withSubtitle />

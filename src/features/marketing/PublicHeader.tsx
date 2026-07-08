@@ -27,7 +27,7 @@ export function PublicHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-[1728px] items-center justify-between px-4 sm:px-6">
         <Link
           to="/"
           aria-label="CostCraft home"
@@ -70,7 +70,7 @@ export function PublicHeader() {
 
       {/* Mobile menu */}
       <div id="mobile-menu" className={cn("border-t bg-background md:hidden", open ? "block" : "hidden")}>
-        <nav aria-label="Primary mobile" className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
+        <nav aria-label="Primary mobile" className="mx-auto max-w-[1728px] px-4 py-4 sm:px-6">
           <ul className="space-y-1">
             {NAV.map((item) => (
               <li key={item.href}>

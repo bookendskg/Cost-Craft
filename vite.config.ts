@@ -1,10 +1,42 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: "autoUpdate",
+      // Generate the icon set (192/512/maskable, apple-touch, favicon) from
+      // public/app-icon.svg via pwa-assets.config.ts and inject them.
+      pwaAssets: { config: true, overrideManifestIcons: true },
+      manifest: {
+        id: "/",
+        name: "CostCraft — Recipe Costing",
+        short_name: "CostCraft",
+        description: "Recipe costing, yield and wastage for Bookends Hospitality — Capiche & Aiko.",
+        theme_color: "#1b35a8",
+        background_color: "#faf8f3",
+        display: "standalone",
+        orientation: "any",
+        start_url: "/",
+        scope: "/",
+        categories: ["business", "productivity", "food"],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+        // SPA fallback: the service worker serves index.html for app routes so
+        // deep-link refreshes work (even offline) once the SW is active.
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/assets\//],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        cleanupOutdatedCaches: true,
+      },
+      devOptions: { enabled: false },
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

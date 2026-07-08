@@ -1,0 +1,32 @@
+[
+  {
+    "id": "capiche",
+    "name": "Capiche",
+    "normalized_name": "capiche",
+    "brand_code": "CAP",
+    "display_name": "Capiche",
+    "accent_color": "#ed1c24",
+    "logo_url": null,
+    "status": "active",
+    "notes": null,
+    "created_by": "u-admin",
+    "created_at": "2026-06-01T09:00:00.000Z",
+    "updated_by": "u-admin",
+    "updated_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "aiko",
+    "name": "Aiko",
+    "normalized_name": "aiko",
+    "brand_code": "AIKO",
+    "display_name": "Aiko",
+    "accent_color": "#d4a017",
+    "logo_url": null,
+    "status": "active",
+    "notes": null,
+    "created_by": "u-admin",
+    "created_at": "2026-06-01T09:00:00.000Z",
+    "updated_by": "u-admin",
+    "updated_at": "2026-06-01T09:00:00.000Z"
+  }
+]

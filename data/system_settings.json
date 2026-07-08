@@ -1,0 +1,30 @@
+[
+  {
+    "id": "s-foodcost",
+    "key": "food_cost_pct",
+    "value": "30",
+    "updated_by": "u-admin",
+    "updated_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "s-margin",
+    "key": "margin_alert_pct",
+    "value": "35",
+    "updated_by": "u-admin",
+    "updated_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "s-categories",
+    "key": "ingredient_categories",
+    "value": "[\"Vegetables\",\"Protein\",\"Dairy\",\"Grains & Flour\",\"Oils & Fats\",\"Spices\",\"Sauces & Condiments\",\"Beverages\",\"Bakery\",\"Dry Fruits\",\"In-House Prep\"]",
+    "updated_by": "u-admin",
+    "updated_at": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "s-recipe-categories",
+    "key": "recipe_categories",
+    "value": "[\"Pasta\",\"Pizza\",\"Sushi\",\"Mains\",\"Appetizers\",\"Small Plates\",\"Sides\",\"Salad\",\"Dessert\",\"Beverage\",\"In-House Prep\"]",
+    "updated_by": "u-admin",
+    "updated_at": "2026-06-01T09:00:00.000Z"
+  }
+]
