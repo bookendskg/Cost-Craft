@@ -782,6 +782,13 @@ export const supabaseRecipesRepo = {
     return attach((linesRes.data ?? []) as RecipeIngredient[], mats, recs);
   },
 
+  /** All recipe→packaging link rows (bulk — for brand-scope derivation). */
+  async allPackaging(): Promise<RecipePackaging[]> {
+    const { data, error } = await sb().from("recipe_packaging").select("*");
+    if (error) fail("Load recipe packaging", error.message);
+    return (data ?? []) as RecipePackaging[];
+  },
+
   async setImage(id: string, imageUrl: string | null, actorId: string): Promise<Recipe> {
     const { data, error } = await sb()
       .from("recipes")

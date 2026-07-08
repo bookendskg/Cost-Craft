@@ -4,6 +4,7 @@ import type {
   RecipeCostHistory,
   RecipeIngredient,
   RecipeIngredientWithMaterial,
+  RecipePackaging,
   RecipePackagingWithItem,
   RecipeVersion,
 } from "../types";
@@ -619,6 +620,11 @@ export const recipesRepo = {
   async allIngredients(): Promise<RecipeIngredientWithMaterial[]> {
     const db = getDb();
     return delay(attachMaterials(db, db.recipe_ingredients));
+  },
+
+  /** All recipe→packaging link rows (bulk — for brand-scope derivation). */
+  async allPackaging(): Promise<RecipePackaging[]> {
+    return delay([...getDb().recipe_packaging]);
   },
 
   async setImage(id: string, imageUrl: string | null, actorId: string): Promise<Recipe> {

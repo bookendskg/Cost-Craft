@@ -16,12 +16,14 @@ import { useSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { PACKAGING_TYPE_LABELS, type PackagingItem, type PackagingType } from "@/lib/data/types";
 import { usePackagingItems, useDeletePackaging, useSetPackagingStatus } from "./hooks";
+import { useBrandScope } from "@/features/brands/useBrandScope";
 import { PackagingForm } from "./PackagingForm";
 
 export function PackagingMasterPage() {
   const role = useSession((s) => s.user?.role);
   const canManage = can(role, "packaging.manage");
   const { data: items = [], isLoading } = usePackagingItems();
+  const { inPackagingScope } = useBrandScope();
   const delMut = useDeletePackaging();
   const statusMut = useSetPackagingStatus();
 
@@ -34,11 +36,12 @@ export function PackagingMasterPage() {
   const filtered = useMemo(
     () =>
       items.filter((p) => {
+        if (!inPackagingScope(p.id)) return false; // brand scope: only this brand's packaging
         if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
         if (typeFilter !== "all" && p.packaging_type !== typeFilter) return false;
         return true;
       }),
-    [items, search, typeFilter],
+    [items, search, typeFilter, inPackagingScope],
   );
 
   const openAdd = () => {
