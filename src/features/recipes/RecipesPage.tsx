@@ -86,11 +86,15 @@ export function RecipesPage({ prepMode = false }: { prepMode?: boolean } = {}) {
   const recipes = useMemo(() => {
     // Exclude size variants — a pizza shows once as its master (§14).
     let base = allRecipes.filter((r) => (prepMode ? r.is_prep : !r.is_prep) && !r.parent_recipe_id);
-    if (user.role === "viewer") {
-      const brands = viewerBrands(user, allBrandIds);
-      base = base.filter((r) => r.status === "approved" && brands.includes(r.brand));
-    } else if (globalBrand !== "all") {
-      base = base.filter((r) => r.brand === globalBrand);
+    // In-House Prep is COMMON across brands (shared sub-recipes) — never brand-filtered.
+    // Only menu recipes are brand-specific.
+    if (!prepMode) {
+      if (user.role === "viewer") {
+        const brands = viewerBrands(user, allBrandIds);
+        base = base.filter((r) => r.status === "approved" && brands.includes(r.brand));
+      } else if (globalBrand !== "all") {
+        base = base.filter((r) => r.brand === globalBrand);
+      }
     }
     // Collapse name-variant families (Baby/Mid/Prime Hulk) to ONE entry — the
     // variant switcher on the detail page reaches the others. Prefer the flagship.

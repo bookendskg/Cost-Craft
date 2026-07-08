@@ -63,7 +63,6 @@ import {
   useBulkDeleteMaterial,
 } from "./hooks";
 import { useCategories } from "@/features/settings/hooks";
-import { useBrandScope } from "@/features/brands/useBrandScope";
 import { PriceHistoryDialog } from "./PriceHistoryDialog";
 import { exportMaterials } from "./exportMaterials";
 import { toast } from "@/components/ui/use-toast";
@@ -83,7 +82,6 @@ export function MaterialsPage() {
   const user = useSession((s) => s.user)!;
   const canEdit = can(user.role, "material.edit"); // admin-only — ingredients locked otherwise
   const { data: materials = [], isLoading } = useMaterials();
-  const { inMaterialScope } = useBrandScope();
   const { data: categories = [] } = useCategories();
   const setStatus = useSetMaterialStatus();
   const bulkStatus = useBulkSetMaterialStatus();
@@ -165,15 +163,16 @@ export function MaterialsPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkReactivateOpen, setBulkReactivateOpen] = useState(false);
 
+  // Raw materials are COMMON across brands (shared kitchen building blocks) — not
+  // filtered by the brand selector.
   const filtered = useMemo(() => {
     return materials.filter((m) => {
-      if (!inMaterialScope(m.id)) return false; // brand scope: only this brand's ingredients
       if (search && !m.ingredient_name.toLowerCase().includes(search.toLowerCase())) return false;
       if (category !== "all" && m.category !== category) return false;
       if (status !== "all" && m.status !== status) return false;
       return true;
     });
-  }, [materials, search, category, status, inMaterialScope]);
+  }, [materials, search, category, status]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];

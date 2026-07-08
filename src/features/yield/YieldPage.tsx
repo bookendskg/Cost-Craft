@@ -59,7 +59,6 @@ import { useRecipes } from "@/features/recipes/hooks";
 import { useAllRecipeIngredients } from "@/features/reports/hooks";
 import { useYields, useDeleteYield } from "./hooks";
 import { useUsersMap } from "@/features/users/hooks";
-import { useBrandScope } from "@/features/brands/useBrandScope";
 import { YieldForm } from "./YieldForm";
 import { YieldBreakdownDialog } from "./YieldBreakdownDialog";
 import { toast } from "@/components/ui/use-toast";
@@ -78,7 +77,6 @@ export function YieldPage() {
   const canEdit = can(user.role, "yield.manage");
   const { data: yields = [], isLoading } = useYields();
   const { data: materials = [] } = useMaterials();
-  const { inMaterialScope } = useBrandScope();
   const { data: recipes = [] } = useRecipes();
   const { data: recipeIngredients = [] } = useAllRecipeIngredients();
   const queryClient = useQueryClient();
@@ -182,9 +180,9 @@ export function YieldPage() {
     [yields, matById],
   );
 
+  // Yields are COMMON across brands (shared with raw materials) — not brand-filtered.
   const filtered = useMemo(() => {
     const out = rows.filter((r) => {
-      if (!inMaterialScope(r.ingredient_id)) return false; // brand scope: only this brand's ingredients
       if (search) {
         const q = search.toLowerCase();
         const yn = (r.name || `${r.material?.ingredient_name ?? ""} Yield`).toLowerCase();
@@ -211,7 +209,7 @@ export function YieldPage() {
       return sort.dir === "asc" ? cmp : -cmp;
     });
     return out;
-  }, [rows, search, category, wastageBand, yieldBand, sort, usersMap, inMaterialScope]);
+  }, [rows, search, category, wastageBand, yieldBand, sort, usersMap]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, pageCount);

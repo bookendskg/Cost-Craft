@@ -216,7 +216,7 @@ export function WastagePage() {
           <Select value={brand} onValueChange={(v) => { setBrand(v); setOutlet("all"); resetPage(); }}>
             <SelectTrigger><SelectValue placeholder="Brand" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Brands</SelectItem>
+              <SelectItem value="all">Bookends</SelectItem>
               {brands.filter((b) => b.status === "active" && myBrands.includes(b.id)).map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
             </SelectContent>
           </Select>

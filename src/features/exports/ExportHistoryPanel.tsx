@@ -93,7 +93,7 @@ export function ExportHistoryPanel() {
           <Select value={brand} onValueChange={setBrand}>
             <SelectTrigger><SelectValue placeholder="Brand" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Brands</SelectItem>
+              <SelectItem value="all">Bookends</SelectItem>
               {brands.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
             </SelectContent>
           </Select>

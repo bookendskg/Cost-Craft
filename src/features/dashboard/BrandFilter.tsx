@@ -26,7 +26,7 @@ export function BrandFilter({
 }) {
   const { data: brands = [] } = useBrands();
   const options = [
-    { id: "all", name: "All Brands", accent: null as string | null },
+    { id: "all", name: "Bookends", accent: null as string | null },
     ...brands
       .filter((b) => b.status === "active")
       .map((b) => ({ id: b.id, name: b.name, accent: b.accent_color })),
