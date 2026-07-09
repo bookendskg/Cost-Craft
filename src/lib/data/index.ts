@@ -59,7 +59,13 @@ export const packagingRepo = isSupabaseDataBackend ? supabasePackagingRepo : moc
 // so a custom role and the users it's assigned to always live in the same store.
 export const rolesRepo = isSupabaseConfigured ? supabaseRolesRepo : mockRolesRepo;
 
-export { viewsRepo, settingsRepo, auditRepo } from "./mock/misc";
+// Viewer-access stays on the mock layer (its table FKs to a legacy `users` table).
+// Settings + audit follow the data backend so they're SHARED in Supabase mode.
+import { viewsRepo, settingsRepo as mockSettingsRepo, auditRepo as mockAuditRepo } from "./mock/misc";
+import { supabaseSettingsRepo, supabaseAuditRepo } from "./supabase/misc";
+export { viewsRepo };
+export const settingsRepo = isSupabaseDataBackend ? supabaseSettingsRepo : mockSettingsRepo;
+export const auditRepo = isSupabaseDataBackend ? supabaseAuditRepo : mockAuditRepo;
 export type { AuditFilter } from "./mock/misc";
 export type { ExportRecordInput } from "./mock/exports";
 export type { CreateLinkInput, ResolvedLink } from "./mock/accessLinks";
