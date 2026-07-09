@@ -7,6 +7,7 @@ import { canConvert } from "@/lib/units";
 import { formatINR, formatUnit, formatWeight } from "@/lib/utils";
 import { type Recipe, type RecipeIngredientWithMaterial } from "@/lib/data/types";
 import { brandLabel as resolveBrandLabel, brandAccentHex } from "@/lib/data/brandCache";
+import { BRAND_LOGOS } from "./brandLogos";
 import { roleLabel as resolveRoleLabel } from "@/lib/auth/roleCache";
 import type { ViewVisibility } from "@/lib/auth/permissions";
 
@@ -48,15 +49,14 @@ async function loadPdfMake() {
   return pdfMake;
 }
 
-// Per-brand PDF look, mirroring the public share page (SharedRecipePage).
-const BRAND_STYLES: Record<string, { accent: string; logo: string }> = {
-  capiche: { accent: "#ed1c24", logo: "/brands/capiche.png" },
-  aiko: { accent: "#b8860b", logo: "/brands/aiko.png" },
-  bookends: { accent: "#1b35a8", logo: "/brands/bookends.png" },
-};
+// Per-brand PDF look, mirroring the public share page (SharedRecipePage). Logos
+// are embedded base64 (brandLogos.ts) so they always render — a runtime fetch of
+// /brands/*.png is unreliable behind the SPA rewrite / service worker.
+const BRAND_ACCENTS: Record<string, string> = { capiche: "#ed1c24", aiko: "#b8860b", bookends: "#1b35a8" };
 function brandStyle(brand: string): { accent: string; logo: string | null } {
   const key = String(brand || "").toLowerCase();
-  return BRAND_STYLES[key] ?? { accent: brandAccentHex(brand) || "#1b35a8", logo: null };
+  const accent = BRAND_ACCENTS[key] ?? brandAccentHex(brand) ?? "#1b35a8";
+  return { accent, logo: BRAND_LOGOS[key] ?? null };
 }
 
 /** Blend a #hex toward white (amt 0→1) for zebra row fills. */
@@ -67,25 +67,6 @@ function tint(hex: string, amt: number): string {
   const mix = (c: number) => Math.round(c + (255 - c) * amt);
   const to2 = (c: number) => c.toString(16).padStart(2, "0");
   return `#${to2(mix(ch(0)))}${to2(mix(ch(2)))}${to2(mix(ch(4)))}`;
-}
-
-/** Fetch a same-origin image (public/brands/*) as a base64 data URI for pdfmake.
- *  Returns null on any failure so the PDF still renders (just without the logo). */
-async function loadImageDataUri(path: string | null): Promise<string | null> {
-  if (!path) return null;
-  try {
-    const res = await fetch(path);
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    return await new Promise<string | null>((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : null);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
 }
 
 export async function generateRecipePdf(
@@ -108,8 +89,7 @@ export async function generateRecipePdf(
 
   // Branding: brand accent + logo (matches the public share page), plus the
   // confidential footer line (drops "Financial data hidden" for authorised exports).
-  const { accent, logo } = brandStyle(recipe.brand);
-  const logoDataUri = await loadImageDataUri(logo);
+  const { accent, logo: logoDataUri } = brandStyle(recipe.brand);
   const footerText = showCost
     ? "Confidential · Shared via CostCraft · Bookends Hospitality"
     : "Confidential · Financial data hidden · Shared via CostCraft · Bookends Hospitality";
