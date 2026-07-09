@@ -28,6 +28,8 @@ import { rolesRepo as mockRolesRepo } from "./mock/roles";
 import { supabaseRolesRepo } from "./supabase/roles";
 import { packagingRepo as mockPackagingRepo } from "./mock/packaging";
 import { supabasePackagingRepo } from "./supabase/packaging";
+import { mockAdminRepo } from "./mock/admin";
+import { supabaseAdminRepo } from "./supabase/admin";
 
 export { authenticate } from "./mock/users";
 export { applicableUnitCost } from "./mock/wastage";
@@ -55,6 +57,9 @@ export const brandsRepo = isSupabaseDataBackend ? supabaseBrandsRepo : mockBrand
 export const outletsRepo = isSupabaseDataBackend ? supabaseOutletsRepo : mockOutletsRepo;
 // Packaging master: dynamically-managed cost items (admin-managed).
 export const packagingRepo = isSupabaseDataBackend ? supabasePackagingRepo : mockPackagingRepo;
+// Super-admin catalog wipe: Supabase path calls the server-gated wipe_catalog()
+// RPC; mock path clears the local catalog arrays.
+export const adminRepo = isSupabaseDataBackend ? supabaseAdminRepo : mockAdminRepo;
 // Roles & permissions: follow the USERS backend (roles couple to user_profiles.role),
 // so a custom role and the users it's assigned to always live in the same store.
 export const rolesRepo = isSupabaseConfigured ? supabaseRolesRepo : mockRolesRepo;

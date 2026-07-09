@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Camera, KeyRound, Loader2, Mail, Phone, ShieldCheck, Trash2 } from "lucide-react";
+import { AlertTriangle, Camera, KeyRound, Loader2, Mail, Phone, ShieldCheck, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
 import { formatDateTime } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
 import { roleLabel } from "@/lib/auth/roleCache";
 import { Avatar } from "@/layouts/HeaderControls";
 import { useUpdateUser } from "@/features/users/hooks";
+import { useWipeCatalog } from "./adminHooks";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { updateOwnProfile } from "@/lib/supabase/profile";
 
@@ -98,6 +107,23 @@ export function ProfilePage() {
       toast.success("Password changed");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Change failed");
+    }
+  };
+
+  // ── Danger Zone (super admin only) ────────────────────────────────────
+  const isSuperAdmin = user.role === "super_admin";
+  const [wipeOpen, setWipeOpen] = useState(false);
+  const [wipeConfirm, setWipeConfirm] = useState("");
+  const wipeMut = useWipeCatalog();
+
+  const runWipe = async () => {
+    try {
+      await wipeMut.mutateAsync();
+      setWipeOpen(false);
+      setWipeConfirm("");
+      toast.success("All catalog data deleted", "Recipes, ingredients, packaging and history have been wiped.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Wipe failed");
     }
   };
 
@@ -210,6 +236,62 @@ export function ProfilePage() {
         </TabsContent>
 
       </Tabs>
+
+      {isSuperAdmin && (
+        <Card className="mt-6 border-destructive/50 p-6">
+          <div className="mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <p className="text-sm font-semibold text-destructive">Danger Zone</p>
+          </div>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Permanently delete <strong>all recipes, in-house prep, ingredients, raw materials,
+            yields, packaging and wastage</strong> — along with their cost and price history. Users,
+            roles, brands, outlets and settings are kept. This cannot be undone.
+          </p>
+          <div className="mt-4">
+            <Button variant="destructive" onClick={() => { setWipeConfirm(""); setWipeOpen(true); }}>
+              <Trash2 className="h-4 w-4" /> Wipe all catalog data
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      <Dialog open={wipeOpen} onOpenChange={(o) => { if (!wipeMut.isPending) { setWipeOpen(o); if (!o) setWipeConfirm(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Wipe all catalog data?</DialogTitle>
+            <DialogDescription>
+              This permanently deletes every recipe, ingredient, raw material, yield, packaging item
+              and wastage entry (plus their cost/price history). Users, roles, brands, outlets and
+              settings are kept. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label>
+              Type <span className="font-mono font-semibold text-destructive">WIPE</span> to confirm
+            </Label>
+            <Input
+              value={wipeConfirm}
+              onChange={(e) => setWipeConfirm(e.target.value)}
+              placeholder="WIPE"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWipeOpen(false)} disabled={wipeMut.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={runWipe}
+              disabled={wipeConfirm !== "WIPE" || wipeMut.isPending}
+            >
+              {wipeMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Delete everything
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
