@@ -43,8 +43,8 @@ export function BrandEditorPage() {
   const { register, handleSubmit, reset, watch, setValue, formState } = form;
   const { errors } = formState;
 
-  const { dirty, capture, markSaved } = useFormDirty(form, true);
-  const unsaved = useUnsavedChanges(dirty);
+  const { dirty, isDirtyNow, capture, markSaved } = useFormDirty(form, true);
+  const unsaved = useUnsavedChanges(dirty, isDirtyNow);
 
   useEffect(() => {
     if (isEdit && !brand) return; // wait for the record to load

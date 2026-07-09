@@ -54,8 +54,8 @@ export function MaterialEditorPage() {
   });
   const { register, handleSubmit, reset, watch, setValue, formState } = form;
 
-  const { dirty, capture, markSaved } = useFormDirty(form, true);
-  const unsaved = useUnsavedChanges(dirty);
+  const { dirty, isDirtyNow, capture, markSaved } = useFormDirty(form, true);
+  const unsaved = useUnsavedChanges(dirty, isDirtyNow);
 
   // Populate: existing material (once loaded) or a blank create form.
   useEffect(() => {

@@ -55,7 +55,19 @@ export function useFormDirty<T extends FieldValues>(
 
   const dirty = open && !saved.current && baseline.current !== "" && key !== baseline.current;
 
-  return { dirty, capture, markSaved };
+  // Live getter for the route blocker: `markSaved()` flips a ref (no re-render),
+  // so the blocker must read the current state through refs — not the stale
+  // rendered `dirty` — or a save-then-navigate would still trip the prompt.
+  const openRef = useRef(open);
+  openRef.current = open;
+  const keyRef = useRef(key);
+  keyRef.current = key;
+  const isDirtyNow = useCallback(
+    () => openRef.current && !saved.current && baseline.current !== "" && keyRef.current !== baseline.current,
+    [],
+  );
+
+  return { dirty, isDirtyNow, capture, markSaved };
 }
 
 /**
@@ -75,9 +87,12 @@ export function useFormDirty<T extends FieldValues>(
  * Multiple mounted forms are safe: React Router keys each blocker independently,
  * and a non-dirty form's blocker is inert (only ever one form is dirty at a time).
  */
-export function useUnsavedChanges(dirty: boolean) {
+export function useUnsavedChanges(dirty: boolean, isDirtyNow?: () => boolean) {
   // In-app route navigation (sidebar menu, links, Back/Forward, URL changes).
-  const blocker = useBlocker(useCallback(() => dirty, [dirty]));
+  // Prefer the live getter so a save-then-navigate (which flips a ref without a
+  // re-render) doesn't block on a stale `dirty`; fall back to `dirty` otherwise.
+  const shouldBlock = useCallback(() => (isDirtyNow ? isDirtyNow() : dirty), [isDirtyNow, dirty]);
+  const blocker = useBlocker(shouldBlock);
   // A manual close (modal Cancel / X / Escape / overlay) deferred until confirmed.
   const [pendingClose, setPendingClose] = useState<null | (() => void)>(null);
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useUnsavedChanges } from "@/lib/hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
@@ -208,7 +208,12 @@ export function RecipeEditorPage() {
 
   // §12: warn before leaving with unsaved changes (in-app nav + browser unload).
   const isDirty = (formState.isDirty || touched) && !savedRef.current;
-  const unsaved = useUnsavedChanges(isDirty);
+  // Live getter for the route blocker so a save-then-navigate (savedRef flips a
+  // ref, no re-render) doesn't trip the prompt. Reads current state via refs.
+  const dirtyInputsRef = useRef(false);
+  dirtyInputsRef.current = formState.isDirty || touched;
+  const isDirtyNow = useCallback(() => dirtyInputsRef.current && !savedRef.current, []);
+  const unsaved = useUnsavedChanges(isDirty, isDirtyNow);
 
   const selectComponent = (key: string, pick: ComponentPick) => {
     if (pick.type === "recipe") {

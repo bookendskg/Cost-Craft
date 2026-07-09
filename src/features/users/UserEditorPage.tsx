@@ -72,8 +72,8 @@ export function UserEditorPage() {
     ao: assignedOutlet,
     ci: canImportGrant,
   };
-  const { dirty, capture, markSaved } = useFormDirty(form, true, scopeState);
-  const unsaved = useUnsavedChanges(dirty);
+  const { dirty, isDirtyNow, capture, markSaved } = useFormDirty(form, true, scopeState);
+  const unsaved = useUnsavedChanges(dirty, isDirtyNow);
 
   useEffect(() => {
     if (isEdit && !user) return; // wait for the record to load
