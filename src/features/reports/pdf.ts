@@ -1,12 +1,12 @@
 // PDF export — PRD §6.2 / §13.1. Uses pdfmake. Cost columns are omitted when
 // the viewer's visibility hides them (Capiche view).
 
-import type { TDocumentDefinitions } from "pdfmake/interfaces";
+import type { TDocumentDefinitions, TableCell, Content } from "pdfmake/interfaces";
 import { calculateIngredientCost, round2 } from "@/lib/costing";
 import { canConvert } from "@/lib/units";
 import { formatINR, formatUnit, formatWeight } from "@/lib/utils";
 import { type Recipe, type RecipeIngredientWithMaterial } from "@/lib/data/types";
-import { brandLabel as resolveBrandLabel } from "@/lib/data/brandCache";
+import { brandLabel as resolveBrandLabel, brandAccentHex } from "@/lib/data/brandCache";
 import { roleLabel as resolveRoleLabel } from "@/lib/auth/roleCache";
 import type { ViewVisibility } from "@/lib/auth/permissions";
 
@@ -48,6 +48,46 @@ async function loadPdfMake() {
   return pdfMake;
 }
 
+// Per-brand PDF look, mirroring the public share page (SharedRecipePage).
+const BRAND_STYLES: Record<string, { accent: string; logo: string }> = {
+  capiche: { accent: "#ed1c24", logo: "/brands/capiche.png" },
+  aiko: { accent: "#b8860b", logo: "/brands/aiko.png" },
+  bookends: { accent: "#1b35a8", logo: "/brands/bookends.png" },
+};
+function brandStyle(brand: string): { accent: string; logo: string | null } {
+  const key = String(brand || "").toLowerCase();
+  return BRAND_STYLES[key] ?? { accent: brandAccentHex(brand) || "#1b35a8", logo: null };
+}
+
+/** Blend a #hex toward white (amt 0→1) for zebra row fills. */
+function tint(hex: string, amt: number): string {
+  const h = hex.replace(/^#/, "");
+  const n = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const ch = (i: number) => parseInt(n.slice(i, i + 2), 16);
+  const mix = (c: number) => Math.round(c + (255 - c) * amt);
+  const to2 = (c: number) => c.toString(16).padStart(2, "0");
+  return `#${to2(mix(ch(0)))}${to2(mix(ch(2)))}${to2(mix(ch(4)))}`;
+}
+
+/** Fetch a same-origin image (public/brands/*) as a base64 data URI for pdfmake.
+ *  Returns null on any failure so the PDF still renders (just without the logo). */
+async function loadImageDataUri(path: string | null): Promise<string | null> {
+  if (!path) return null;
+  try {
+    const res = await fetch(path);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function generateRecipePdf(
   recipe: Recipe,
   ingredients: RecipeIngredientWithMaterial[],
@@ -66,11 +106,21 @@ export async function generateRecipePdf(
   const brandLabel = opts.brandLabel ?? resolveBrandLabel(recipe.brand);
   const stamp = istStamp();
 
+  // Branding: brand accent + logo (matches the public share page), plus the
+  // confidential footer line (drops "Financial data hidden" for authorised exports).
+  const { accent, logo } = brandStyle(recipe.brand);
+  const logoDataUri = await loadImageDataUri(logo);
+  const footerText = showCost
+    ? "Confidential · Shared via CostCraft · Bookends Hospitality"
+    : "Confidential · Financial data hidden · Shared via CostCraft · Bookends Hospitality";
+
   const headRow = ["#", "Ingredient", "Qty", "Unit"];
   if (showUnitCost) headRow.push("Unit Cost");
   if (showCost) headRow.push("Total");
 
-  const body: string[][] = [headRow];
+  const body: TableCell[][] = [
+    headRow.map((h) => ({ text: h, color: "#ffffff", bold: true, fontSize: 9 })),
+  ];
   ingredients.forEach((ing, idx) => {
     const isSub = ing.component_type === "recipe";
     const m = ing.material;
@@ -83,9 +133,14 @@ export async function generateRecipePdf(
         : !isSub && m && m.cost_per_base_unit !== null && canConvert(ing.unit_used, m.base_unit)
           ? calculateIngredientCost(m.cost_per_base_unit, ing.quantity_used, ing.unit_used, m.base_unit)
           : null;
-    const row = [String(idx + 1), name, qtyStr(ing.quantity_used), formatUnit(ing.unit_used)];
-    if (showUnitCost) row.push(isSub ? "—" : formatINR(m?.cost_per_base_unit ?? null));
-    if (showCost) row.push(formatINR(cost));
+    const row: TableCell[] = [
+      { text: String(idx + 1), color: accent, bold: true },
+      { text: name },
+      { text: qtyStr(ing.quantity_used), alignment: "right" },
+      { text: formatUnit(ing.unit_used), color: "#6b7280" },
+    ];
+    if (showUnitCost) row.push({ text: isSub ? "—" : formatINR(m?.cost_per_base_unit ?? null), alignment: "right" });
+    if (showCost) row.push({ text: formatINR(cost), alignment: "right" });
     body.push(row);
   });
 
@@ -134,26 +189,49 @@ export async function generateRecipePdf(
   const roleLabel = exporter ? resolveRoleLabel(exporter.role) : "";
 
   const doc: TDocumentDefinitions = {
-    pageMargins: [40, 40, 40, 54],
-    footer: (currentPage: number, pageCount: number) => ({
-      margin: [40, 14, 40, 0] as [number, number, number, number],
-      columns: [
-        { text: `${brandLabel} · Generated from CostCraft`, fontSize: 8, color: "#94a3b8" },
-        { text: `Page ${currentPage} of ${pageCount}`, alignment: "center" as const, fontSize: 8, color: "#94a3b8" },
-        { text: "Confidential", alignment: "right" as const, fontSize: 8, color: "#94a3b8" },
-      ],
-    }),
+    pageSize: "A4",
+    // Content flows INSIDE the white card (see background); big top margin leaves
+    // room for the logo band, bottom margin for the footer band.
+    pageMargins: [46, 142, 46, 86],
+    background: (currentPage, pageSize): Content => {
+      const W = pageSize.width;
+      const H = pageSize.height;
+      const cardX = 22;
+      const cardTop = 118;
+      const cardBottom = 60;
+      const bg: Content[] = [
+        {
+          canvas: [
+            { type: "rect", x: 0, y: 0, w: W, h: H, color: accent }, // full-bleed brand colour
+            { type: "rect", x: cardX, y: cardTop, w: W - cardX * 2, h: H - cardTop - cardBottom, r: 12, color: "#ffffff" }, // white card
+            { type: "rect", x: cardX + 16, y: cardTop, w: W - cardX * 2 - 32, h: 4, color: accent }, // accent bar at card top
+          ],
+        },
+        { text: footerText, absolutePosition: { x: 0, y: H - 38 }, width: W, alignment: "center", color: "#ffffff", fontSize: 8 } as Content,
+      ];
+      if (currentPage === 1 && logoDataUri) {
+        const chipW = 158;
+        const chipH = 56;
+        const chipX = (W - chipW) / 2;
+        const chipY = 28;
+        bg.push({ canvas: [{ type: "rect", x: chipX, y: chipY, w: chipW, h: chipH, r: 12, color: "#ffffff" }] });
+        bg.push({ image: logoDataUri, fit: [chipW - 30, chipH - 18], absolutePosition: { x: chipX + 15, y: chipY + 9 } });
+        bg.push({ text: brandLabel, absolutePosition: { x: 0, y: chipY + chipH + 6 }, width: W, alignment: "center", color: "#ffffff", fontSize: 10, bold: true } as Content);
+      }
+      return bg;
+    },
     content: [
       {
         columns: [
-          [
-            { text: "CostCraft", style: "brandMark" },
-            { text: "Bookends Hospitality", style: "org" },
-          ],
-          { text: brandLabel.toUpperCase(), style: "brandName", alignment: "right" as const },
+          { width: "*", stack: [{ text: "CostCraft", style: "brandMark" }, { text: "Bookends Hospitality", style: "org" }] },
+          {
+            width: "auto",
+            table: { body: [[{ text: brandLabel.toUpperCase(), color: "#ffffff", bold: true, fontSize: 9 }]] },
+            layout: { defaultBorder: false, fillColor: () => accent, paddingLeft: () => 8, paddingRight: () => 8, paddingTop: () => 3, paddingBottom: () => 3 },
+          },
         ],
       },
-      { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: "#e2e8f0" }], margin: [0, 8, 0, 12] as [number, number, number, number] },
+      { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 503, y2: 0, lineWidth: 1, lineColor: "#e5e7eb" }], margin: [0, 8, 0, 12] as [number, number, number, number] },
       { text: recipe.recipe_name, style: "title" },
       { text: subtitle, style: "subtitle" },
       {
@@ -179,7 +257,16 @@ export async function generateRecipePdf(
       { text: "Ingredients", style: "section" },
       {
         table: { headerRows: 1, widths: tableWidths(headRow.length), body },
-        layout: "lightHorizontalLines",
+        layout: {
+          fillColor: (rowIndex) => (rowIndex === 0 ? accent : rowIndex % 2 === 0 ? tint(accent, 0.93) : null),
+          hLineWidth: (i, node) => (i === 0 || i === 1 || i === node.table.body.length ? 0.8 : 0.4),
+          hLineColor: () => "#e5e7eb",
+          vLineWidth: () => 0,
+          paddingTop: () => 5,
+          paddingBottom: () => 5,
+          paddingLeft: () => 7,
+          paddingRight: () => 7,
+        },
       },
       ...(summary.length
         ? [
@@ -198,13 +285,12 @@ export async function generateRecipePdf(
         : []),
     ],
     styles: {
-      brandMark: { fontSize: 15, bold: true, color: "#0f172a" },
+      brandMark: { fontSize: 14, bold: true, color: "#0f172a" },
       org: { fontSize: 9, color: "#64748b" },
-      brandName: { fontSize: 13, bold: true, color: "#0f172a" },
-      title: { fontSize: 18, bold: true, margin: [0, 0, 0, 2] },
+      title: { fontSize: 18, bold: true, margin: [0, 4, 0, 2] },
       subtitle: { fontSize: 10, color: "#64748b", margin: [0, 0, 0, 10] },
       meta: { fontSize: 9, margin: [0, 0, 0, 6], lineHeight: 1.3, color: "#334155" },
-      section: { fontSize: 12, bold: true, margin: [0, 14, 0, 6] },
+      section: { fontSize: 12, bold: true, color: accent, margin: [0, 14, 0, 6] },
       body: { fontSize: 10, lineHeight: 1.3 },
     },
     defaultStyle: { fontSize: 10 },
