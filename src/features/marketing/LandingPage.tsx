@@ -141,24 +141,6 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* ── Metrics strip ── */}
-        <section className="relative border-y bg-white">
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid mask-fade-b opacity-50" />
-          <div className="relative mx-auto grid max-w-[1728px] grid-cols-2 gap-6 px-4 py-10 sm:px-6 md:grid-cols-4">
-            {[
-              { n: "2", l: "Restaurant brands" },
-              { n: "8", l: "Operational modules" },
-              { n: "1", l: "Parent company" },
-              { n: "0", l: "Spreadsheets needed" },
-            ].map((m) => (
-              <div key={m.l} className="text-center">
-                <p className="font-display text-gradient-brand text-5xl font-medium tabular-nums sm:text-6xl">{m.n}</p>
-                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{m.l}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* ── Overview ── */}
         <section className="border-t bg-white">
           <div className="mx-auto max-w-[1728px] px-4 py-16 sm:px-6 sm:py-20">

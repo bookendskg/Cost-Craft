@@ -11,12 +11,13 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const isSupabaseConfigured = Boolean(url && anonKey);
 
 /**
- * Phase 2 data backend (materials/recipes/yields/wastage) — OPT-IN and separate
- * from auth so enabling Supabase auth doesn't silently swap the whole data layer
- * onto the (newer) Supabase repos. Set VITE_DATA_BACKEND=supabase to turn it on.
+ * Data backend (materials/recipes/yields/wastage/…). Data now follows auth: when
+ * Supabase is configured, the shared Supabase repos are used so the app is truly
+ * multi-user. Set VITE_DATA_BACKEND=mock to force the local/localStorage layer
+ * (e.g. offline/local dev). Tests have no Supabase env, so they stay on mock.
  */
 export const isSupabaseDataBackend =
-  isSupabaseConfigured && import.meta.env.VITE_DATA_BACKEND === "supabase";
+  isSupabaseConfigured && import.meta.env.VITE_DATA_BACKEND !== "mock";
 
 /**
  * The Supabase client, or `null` in mock mode. Feature code must NOT import this

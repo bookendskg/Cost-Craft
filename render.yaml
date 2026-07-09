@@ -16,6 +16,12 @@ services:
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
         sync: false
+      # Data now follows auth (see src/lib/supabase/client.ts): when the two
+      # VITE_SUPABASE_* vars are set, the app uses the shared Supabase data layer
+      # and is multi-user. This var is optional — set it to "mock" only to force
+      # the local/localStorage layer.
+      - key: VITE_DATA_BACKEND
+        value: supabase
     # SPA fallback so React Router deep links resolve to index.html.
     routes:
       - type: rewrite
