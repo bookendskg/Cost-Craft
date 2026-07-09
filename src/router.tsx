@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { AppLayout } from "@/layouts/AppLayout";
 import { RequireAuth, RequireRole } from "@/features/auth/guards";
+import { canImport } from "@/lib/auth/permissions";
 // Auth shell stays eager (small, first paint); everything else is code-split.
 import { LoginPage } from "@/features/auth/LoginPage";
 import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
@@ -197,10 +198,11 @@ export const router = createBrowserRouter([
       // "Brands & Outlets" management has been removed. The old /brands route is
       // intentionally gone; the catch-all below redirects it to /dashboard.
       {
-        // Data import hub — Super Admin only. All CSV/XLSX imports live here.
+        // Data import hub — Super Admins, plus any user a Super Admin grants
+        // Data Import access (can_import).
         path: "import-data",
         element: (
-          <RequireRole roles={["super_admin"]}>
+          <RequireRole roles={["super_admin"]} allow={canImport}>
             <ImportDataPage />
           </RequireRole>
         ),

@@ -59,6 +59,8 @@ export function UserEditorPage() {
   const [outletScope, setOutletScope] = useState<OutletScopeUi>("DEFAULT");
   const [selectedOutletIds, setSelectedOutletIds] = useState<string[]>([]);
   const [assignedOutlet, setAssignedOutlet] = useState<string>("");
+  // Per-user Data Import grant (Super Admin only). Non-RHF, like the scopes.
+  const [canImportGrant, setCanImportGrant] = useState(false);
 
   // Dirty tracking spans RHF fields AND all the access-scope state (extra).
   const scopeState = {
@@ -68,6 +70,7 @@ export function UserEditorPage() {
     os: outletScope,
     so: [...selectedOutletIds].sort(),
     ao: assignedOutlet,
+    ci: canImportGrant,
   };
   const { dirty, capture, markSaved } = useFormDirty(form, true, scopeState);
   const unsaved = useUnsavedChanges(dirty);
@@ -85,6 +88,7 @@ export function UserEditorPage() {
     setOutletScope(user?.outlet_scope ?? "DEFAULT");
     setSelectedOutletIds(user?.selected_outlet_ids ?? []);
     setAssignedOutlet(user?.assigned_outlet ?? "");
+    setCanImportGrant(user?.can_import === true);
     capture({
       bs: user?.brand_scope ?? "DEFAULT",
       sb: [...(user?.selected_brand_ids ?? [])].sort(),
@@ -92,6 +96,7 @@ export function UserEditorPage() {
       os: user?.outlet_scope ?? "DEFAULT",
       so: [...(user?.selected_outlet_ids ?? [])].sort(),
       ao: user?.assigned_outlet ?? "",
+      ci: user?.can_import === true,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isEdit]);
@@ -153,6 +158,7 @@ export function UserEditorPage() {
             status: values.status,
             password: values.password || undefined,
             ...scope,
+            ...(iAmSuper ? { can_import: canImportGrant } : {}),
           },
         });
         toast.success("User updated");
@@ -168,6 +174,7 @@ export function UserEditorPage() {
           status: values.status,
           password: values.password,
           ...scope,
+          ...(iAmSuper ? { can_import: canImportGrant } : {}),
         });
         toast.success("User created");
       }
@@ -327,6 +334,20 @@ export function UserEditorPage() {
               <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-400" />
               Super Admins have full access to all brands and outlets — current and future.
             </div>
+          )}
+
+          {/* Data Import grant — only a Super Admin may set it, and it's redundant
+              for a Super Admin target (they always have access). */}
+          {iAmSuper && role !== "super_admin" && (
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-md border p-3 text-sm">
+              <Checkbox className="mt-0.5" checked={canImportGrant} onCheckedChange={(c) => setCanImportGrant(!!c)} />
+              <span>
+                <span className="font-medium">Allow access to Data Import</span>
+                <span className="block text-[11px] text-muted-foreground">
+                  Lets this user open the Import Data hub to bulk-import raw materials, recipes, prep and yields.
+                </span>
+              </span>
+            </label>
           )}
 
           <div className="flex justify-end gap-2 border-t pt-4">

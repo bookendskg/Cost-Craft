@@ -15,8 +15,8 @@ import {
   Upload,
   type LucideIcon,
 } from "lucide-react";
-import type { Role } from "@/lib/data/types";
-import { can, type Capability } from "@/lib/auth/permissions";
+import type { Role, User } from "@/lib/data/types";
+import { can, canImport, type Capability } from "@/lib/auth/permissions";
 
 /** Sidebar section a nav item belongs to (rendered as a labelled group). */
 export type NavGroup = "Overview" | "Catalog" | "Operations" | "Admin";
@@ -33,6 +33,9 @@ export interface NavItem {
   cap?: Capability;
   /** Item is shown to every authenticated user (e.g. the dashboard). */
   always?: boolean;
+  /** Item is also shown when this per-user predicate passes (e.g. a granted flag
+   *  that no role/capability expresses). */
+  grant?: (user: User) => boolean;
   group: NavGroup;
 }
 
@@ -55,8 +58,8 @@ export const NAV_ITEMS: NavItem[] = [
   // data). No capability — the early return in navForRole shows every item to a
   // super_admin, and no other role matches roles:["super_admin"].
   { to: "/brands", label: "Brands & Outlets", icon: Store, group: "Admin", roles: ["super_admin"] },
-  // Import Data hub — Super-Admin only (same gating as Brands & Outlets: no cap).
-  { to: "/import-data", label: "Import Data", icon: Upload, group: "Admin", roles: ["super_admin"] },
+  // Import Data hub — Super Admins, plus any user a Super Admin grants can_import.
+  { to: "/import-data", label: "Import Data", icon: Upload, group: "Admin", roles: ["super_admin"], grant: canImport },
   { to: "/audit", label: "Price Changes", icon: ScrollText, group: "Admin", roles: ["admin"], cap: "audit.view" },
   { to: "/settings", label: "Settings", icon: Settings, group: "Admin", roles: ["admin"], cap: "settings.manage" },
 ];
@@ -69,9 +72,29 @@ export function navForRole(role: Role): NavItem[] {
   );
 }
 
+/** Like navForRole, but also honours per-user `grant` predicates (e.g. can_import). */
+export function navForUser(user: User): NavItem[] {
+  if (user.role === "super_admin") return NAV_ITEMS;
+  return NAV_ITEMS.filter(
+    (item) =>
+      item.always ||
+      item.roles.includes(user.role) ||
+      (item.cap ? can(user.role, item.cap) : false) ||
+      (item.grant ? item.grant(user) : false),
+  );
+}
+
 /** Nav items for a role, bucketed into their groups in display order. */
 export function navGroupsForRole(role: Role): { group: NavGroup; items: NavItem[] }[] {
-  const items = navForRole(role);
+  return groupNav(navForRole(role));
+}
+
+/** Nav items for a specific user (role + per-user grants), bucketed into groups. */
+export function navGroupsForUser(user: User): { group: NavGroup; items: NavItem[] }[] {
+  return groupNav(navForUser(user));
+}
+
+function groupNav(items: NavItem[]): { group: NavGroup; items: NavItem[] }[] {
   return NAV_GROUP_ORDER.map((group) => ({
     group,
     items: items.filter((i) => i.group === group),

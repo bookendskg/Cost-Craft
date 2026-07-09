@@ -21,6 +21,7 @@ export interface CreateUserInput {
   outlet_scope?: OutletScope | null;
   selected_outlet_ids?: string[];
   accessible_brands?: string[];
+  can_import?: boolean;
   password: string;
 }
 
@@ -42,6 +43,7 @@ export interface UpdateUserInput {
   accessible_brands?: string[];
   show_cost?: boolean;
   dashboard_access?: boolean;
+  can_import?: boolean;
   approved?: boolean;
 }
 
@@ -92,6 +94,8 @@ export const usersRepo = {
           outlet_scope: input.outlet_scope ?? null,
           selected_outlet_ids: input.selected_outlet_ids,
           accessible_brands: input.accessible_brands,
+          // Data Import access is only honoured when a Super Admin creates the user.
+          can_import: db.users.find((x) => x.id === actorId)?.role === "super_admin" ? input.can_import : undefined,
           approved: true, // an admin is creating this account → pre-approved
           last_role_update: nowISO(),
           role_updated_by: actorId,
@@ -175,6 +179,8 @@ export const usersRepo = {
         if (patch.accessible_brands !== undefined) u.accessible_brands = patch.accessible_brands;
         if (patch.show_cost !== undefined) u.show_cost = patch.show_cost;
         if (patch.dashboard_access !== undefined) u.dashboard_access = patch.dashboard_access;
+        // Only a Super Admin may grant/revoke Data Import access.
+        if (patch.can_import !== undefined && actorIsSuper) u.can_import = patch.can_import;
         if (patch.approved !== undefined) u.approved = patch.approved;
         if (roleChanged) {
           u.last_role_update = nowISO();

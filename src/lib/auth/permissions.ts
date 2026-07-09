@@ -301,6 +301,15 @@ export function canViewMasterDashboard(user: User | null): boolean {
 }
 
 /**
+ * Whether the user may reach the Data Import hub. Super Admins always; any other
+ * user (any role) only when a Super Admin grants `can_import`.
+ */
+export function canImport(user: User | null): boolean {
+  if (!user) return false;
+  return user.role === "super_admin" || user.can_import === true;
+}
+
+/**
  * A self sign-up that an admin hasn't verified yet. Such users are authenticated
  * but blocked from the app (shown the pending-approval screen). Admins are never
  * pending. A missing `approved` value means approved (legacy/seed users).

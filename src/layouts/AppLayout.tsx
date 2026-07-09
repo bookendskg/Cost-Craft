@@ -14,7 +14,7 @@ import { Logo, BrandMark } from "@/components/brand/Logo";
 import { useSession } from "@/lib/auth/session";
 import { useTheme } from "@/lib/theme";
 import { usePrefs } from "@/lib/prefs";
-import { navGroupsForRole } from "./nav";
+import { navGroupsForUser } from "./nav";
 import { useUsers } from "@/features/users/hooks";
 // (global command-palette search removed per request)
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ export function AppLayout() {
   }, []);
 
   if (!user) return null;
-  const groups = navGroupsForRole(user.role);
+  const groups = navGroupsForUser(user);
 
   // `rail` collapses the desktop sidebar to icons only. The mobile drawer always
   // shows the full sidebar (rail=false).
