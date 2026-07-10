@@ -10,6 +10,7 @@ import {
   MoreVertical,
   Plus,
   RotateCcw,
+  Tags,
   Trash2,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -57,6 +58,7 @@ import {
   useBulkDeleteMaterial,
 } from "./hooks";
 import { useCategories } from "@/features/settings/hooks";
+import { CategoryManagerDialog } from "./CategoryManagerDialog";
 import { PriceHistoryDialog } from "./PriceHistoryDialog";
 import { exportMaterials } from "./exportMaterials";
 import { toast } from "@/components/ui/use-toast";
@@ -101,6 +103,7 @@ export function MaterialsPage() {
   const [deleting, setDeleting] = useState<RawMaterial | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkReactivateOpen, setBulkReactivateOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
 
   // Raw materials are COMMON across brands (shared kitchen building blocks) — not
   // filtered by the brand selector.
@@ -294,6 +297,11 @@ export function MaterialsPage() {
               </DropdownMenuContent>
             </DropdownMenu>
             {canEdit && (
+              <Button variant="outline" onClick={() => setCategoriesOpen(true)}>
+                <Tags className="h-4 w-4" /> Categories
+              </Button>
+            )}
+            {canEdit && (
               <Button variant="accent" onClick={openAdd}>
                 <Plus className="h-4 w-4" /> Add Ingredient
               </Button>
@@ -473,6 +481,7 @@ export function MaterialsPage() {
         )}
       </Card>
 
+      <CategoryManagerDialog open={categoriesOpen} onOpenChange={setCategoriesOpen} />
       <PriceHistoryDialog
         material={historyFor}
         open={!!historyFor}

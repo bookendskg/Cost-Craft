@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { materialSchema, type MaterialValues } from "@/lib/validation/schemas";
 import {
   canonicalPurchase,
@@ -23,10 +31,11 @@ import { formatINR } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { useUnsavedChanges, useFormDirty } from "@/lib/hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
-import { useCategories } from "@/features/settings/hooks";
+import { useCategories, useSaveCategories } from "@/features/settings/hooks";
 import { useCreateMaterial, useMaterial, useUpdateMaterial } from "./hooks";
 
 const TYPES: MeasurementType[] = ["weight", "volume", "count"];
+const NEW_CATEGORY = "__new_category__";
 
 /**
  * Full-page Add / Edit Raw Material — mirrors the Recipe editor page (dedicated
@@ -56,6 +65,40 @@ export function MaterialEditorPage() {
 
   const { dirty, isDirtyNow, capture, markSaved } = useFormDirty(form, true);
   const unsaved = useUnsavedChanges(dirty, isDirtyNow);
+
+  // Inline "add a new category" from the Category dropdown.
+  const saveCategories = useSaveCategories();
+  const [newCatOpen, setNewCatOpen] = useState(false);
+  const [newCat, setNewCat] = useState("");
+
+  const onPickCategory = (v: string) => {
+    if (v === NEW_CATEGORY) {
+      setNewCat("");
+      setNewCatOpen(true);
+    } else {
+      setValue("category", v, { shouldValidate: true, shouldDirty: true });
+    }
+  };
+
+  const addCategory = async () => {
+    const trimmed = newCat.trim();
+    if (!trimmed) return;
+    const existing = categories.find((c) => c.toLowerCase() === trimmed.toLowerCase());
+    if (existing) {
+      // Already there — just select it rather than erroring.
+      setValue("category", existing, { shouldValidate: true, shouldDirty: true });
+      setNewCatOpen(false);
+      return;
+    }
+    try {
+      await saveCategories.mutateAsync([...categories, trimmed]);
+      setValue("category", trimmed, { shouldValidate: true, shouldDirty: true });
+      setNewCatOpen(false);
+      toast.success("Category added");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not add category");
+    }
+  };
 
   // Populate: existing material (once loaded) or a blank create form.
   useEffect(() => {
@@ -150,7 +193,7 @@ export function MaterialEditorPage() {
 
           <div className="space-y-1.5">
             <Label>Category *</Label>
-            <Select value={watch("category")} onValueChange={(v) => setValue("category", v)}>
+            <Select value={watch("category")} onValueChange={onPickCategory}>
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
@@ -160,6 +203,11 @@ export function MaterialEditorPage() {
                     {c}
                   </SelectItem>
                 ))}
+                <SelectItem value={NEW_CATEGORY} className="mt-1 border-t text-primary">
+                  <span className="flex items-center gap-1.5">
+                    <Plus className="h-3.5 w-3.5" /> New category…
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
             {formState.errors.category && (
@@ -233,6 +281,36 @@ export function MaterialEditorPage() {
         onDiscard={unsaved.discardChanges}
         message="You have unsaved changes in this Raw Material. If you leave now, all entered information will be lost."
       />
+
+      <Dialog open={newCatOpen} onOpenChange={(o) => !saveCategories.isPending && setNewCatOpen(o)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>New Category</DialogTitle>
+            <DialogDescription>Add an ingredient category and select it for this ingredient.</DialogDescription>
+          </DialogHeader>
+          <Input
+            value={newCat}
+            onChange={(e) => setNewCat(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCategory();
+              }
+            }}
+            placeholder="e.g. Seafood"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewCatOpen(false)} disabled={saveCategories.isPending}>
+              Cancel
+            </Button>
+            <Button variant="accent" onClick={addCategory} disabled={!newCat.trim() || saveCategories.isPending}>
+              {saveCategories.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Add Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -62,3 +62,14 @@ export function useSetSetting() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["settings"] }),
   });
 }
+
+/** Persist the ingredient-category list (stored as a JSON array of names). */
+export function useSaveCategories() {
+  const qc = useQueryClient();
+  const actorId = useActorId();
+  return useMutation({
+    mutationFn: (categories: string[]) =>
+      settingsRepo.set("ingredient_categories", JSON.stringify(categories), actorId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["settings"] }),
+  });
+}
