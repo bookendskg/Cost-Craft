@@ -147,6 +147,7 @@ export function RecipeDetailPage() {
   const [removePhotoOpen, setRemovePhotoOpen] = useState(false);
   const [sellingInput, setSellingInput] = useState("");
   const [cookedInput, setCookedInput] = useState("");
+  const [editingCooked, setEditingCooked] = useState(false);
   const recipeId = data?.recipe?.id;
   const recipeSellingPrice = data?.recipe?.selling_price ?? null;
   const recipeCookedWeight = data?.recipe?.cooked_weight_g ?? null;
@@ -401,7 +402,22 @@ export function RecipeDetailPage() {
                       <p className="text-[10px] text-muted-foreground">from ingredients</p>
                     </div>
                     <div>
-                      <p className="text-[11px] uppercase text-muted-foreground">Cooked Weight</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[11px] uppercase text-muted-foreground">Cooked Weight</p>
+                        {editable && !editingCooked && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCookedInput(recipe.cooked_weight_g != null ? String(recipe.cooked_weight_g) : "");
+                              setEditingCooked(true);
+                            }}
+                            className="text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                            aria-label="Edit cooked weight"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
                       <p className="font-semibold">{formatWeight(recipe.cooked_weight_g)}</p>
                       {cookingLossPct != null && (
                         <p className="text-[10px] text-muted-foreground">
@@ -413,7 +429,7 @@ export function RecipeDetailPage() {
                     </div>
                   </div>
 
-                  {editable && (
+                  {editable && editingCooked && (
                     <div>
                       <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         Final weight after cooking
@@ -428,6 +444,7 @@ export function RecipeDetailPage() {
                             value={cookedInput}
                             onChange={(e) => setCookedInput(e.target.value)}
                             placeholder="e.g. 850"
+                            autoFocus
                           />
                           <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">g</span>
                         </div>
@@ -442,10 +459,19 @@ export function RecipeDetailPage() {
                               return;
                             }
                             await cookedMut.mutateAsync({ id: recipe.id, grams: v });
+                            setEditingCooked(false);
                             toast.success("Cooked weight updated");
                           }}
                         >
                           Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={cookedMut.isPending}
+                          onClick={() => setEditingCooked(false)}
+                        >
+                          Cancel
                         </Button>
                       </div>
                       <p className="mt-1 text-[11px] text-muted-foreground">
