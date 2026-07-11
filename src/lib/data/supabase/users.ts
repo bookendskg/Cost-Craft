@@ -80,7 +80,21 @@ export const supabaseUsersRepo = {
       .select("*")
       .single<ProfileRow>();
     if (error) fail("Update user", error.message);
-    return profileToUser(data as ProfileRow);
+    let profile = data as ProfileRow;
+
+    // Data-Import grant is applied as a separate, best-effort update so the main
+    // save never breaks if the can_import column hasn't been migrated yet
+    // (db/migrations/0030). Once migrated, it persists normally.
+    if (patch.can_import !== undefined) {
+      const r = await client()
+        .from("user_profiles")
+        .update({ can_import: patch.can_import })
+        .eq("id", id)
+        .select("*")
+        .single<ProfileRow>();
+      if (!r.error && r.data) profile = r.data;
+    }
+    return profileToUser(profile);
   },
 
   /**

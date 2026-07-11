@@ -216,9 +216,11 @@ export function UserEditorPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Role *</Label>
-              <Select value={role} onValueChange={(v) => setValue("role", v as UserValues["role"])}>
+              {/* key remounts the trigger once roles finish loading, so a pre-filled
+                  value (e.g. an existing user's role) always shows its label. */}
+              <Select key={`role-${roles.length}`} value={role} onValueChange={(v) => setValue("role", v as UserValues["role"])}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
                   {roles

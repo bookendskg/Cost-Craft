@@ -20,6 +20,7 @@ export interface ProfileRow {
   selected_outlet_ids: string[] | null;
   show_cost: boolean | null;
   dashboard_access: boolean;
+  can_import: boolean | null;
   theme_pref: string | null; // 'light' | 'dark' | 'capiche' | 'aiko'
   last_login: string | null;
   last_role_update: string | null;
@@ -53,6 +54,7 @@ export function profileToUser(p: ProfileRow): User {
     selected_outlet_ids: p.selected_outlet_ids ?? undefined,
     show_cost: p.show_cost ?? undefined,
     dashboard_access: p.dashboard_access,
+    can_import: p.can_import ?? false,
     theme_pref: p.theme_pref,
     last_login: p.last_login,
     last_role_update: p.last_role_update,

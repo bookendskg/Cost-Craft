@@ -4149,4 +4149,8 @@ grant execute on function public.wipe_catalog() to authenticated;
 alter table public.recipes
   add column if not exists cooked_weight_g numeric;
 
+-- ── 0030_user_can_import.sql — per-user Data Import access grant ─────────────
+alter table public.user_profiles
+  add column if not exists can_import boolean not null default false;
+
 commit;
