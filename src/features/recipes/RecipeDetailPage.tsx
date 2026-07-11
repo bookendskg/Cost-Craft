@@ -350,7 +350,7 @@ export function RecipeDetailPage() {
           {/* Hero card */}
           <Card className="overflow-hidden">
             <div className="grid sm:grid-cols-[3fr_7fr]">
-              <div className="relative flex h-44 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-700 to-teal-900 text-6xl">
+              <div className="group relative flex h-44 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-700 to-teal-900 text-6xl">
                 {recipe.image_url ? (
                   <img
                     src={recipe.image_url}
@@ -364,7 +364,7 @@ export function RecipeDetailPage() {
                   {recipe.status === "approved" ? "Active Recipe" : recipe.status}
                 </span>
                 {editable && (
-                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5 opacity-0 transition-opacity duration-200 focus-within:opacity-100 group-hover:opacity-100">
                     <label className="inline-flex cursor-pointer items-center gap-1 rounded bg-black/50 px-2 py-1 text-[11px] font-medium text-white hover:bg-black/70">
                       <ImageUp className="h-3.5 w-3.5" />
                       {recipe.image_url ? "Change" : "Add Image"}
