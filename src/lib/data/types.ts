@@ -344,8 +344,12 @@ export interface Recipe {
   total_cost: number | null;
   cost_per_portion: number | null;
   /** Finished dish weight in grams — sum of ingredient quantities (weight + volume,
-   *  count excluded), converted to grams. App-maintained (recompute), never entered. */
+   *  count excluded), converted to grams. App-maintained (recompute), never entered.
+   *  This is the RAW weight (before cooking). */
   total_weight_g?: number | null;
+  /** Final weight after cooking (grams), manually measured and entered. Null until
+   *  recorded. Compared against total_weight_g to derive the cooking-loss %. */
+  cooked_weight_g?: number | null;
   /** Manually-typed creator label (e.g. "Chef Rahul", "Central Kitchen"). Distinct
    *  from created_by (the system user id). Blank for legacy recipes until edited. */
   created_by_name?: string | null;

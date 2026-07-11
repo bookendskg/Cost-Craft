@@ -4145,4 +4145,8 @@ $$;
 revoke all on function public.wipe_catalog() from public, anon;
 grant execute on function public.wipe_catalog() to authenticated;
 
+-- ── 0029_recipe_cooked_weight.sql — final weight after cooking (manual) ──────
+alter table public.recipes
+  add column if not exists cooked_weight_g numeric;
+
 commit;

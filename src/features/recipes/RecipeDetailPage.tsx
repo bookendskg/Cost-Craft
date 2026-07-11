@@ -65,6 +65,7 @@ import {
   useRejectRecipe,
   useSetRecipeImage,
   useSetSellingPrice,
+  useSetCookedWeight,
   useSubmitRecipe,
 } from "./hooks";
 
@@ -126,6 +127,7 @@ export function RecipeDetailPage() {
   const rejectMut = useRejectRecipe();
   const sellingMut = useSetSellingPrice();
   const imageMut = useSetRecipeImage();
+  const cookedMut = useSetCookedWeight();
 
   const onImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -144,13 +146,16 @@ export function RecipeDetailPage() {
 
   const [removePhotoOpen, setRemovePhotoOpen] = useState(false);
   const [sellingInput, setSellingInput] = useState("");
+  const [cookedInput, setCookedInput] = useState("");
   const recipeId = data?.recipe?.id;
   const recipeSellingPrice = data?.recipe?.selling_price ?? null;
+  const recipeCookedWeight = data?.recipe?.cooked_weight_g ?? null;
   useEffect(() => {
     if (recipeId) {
       setSellingInput(recipeSellingPrice != null ? String(recipeSellingPrice) : "");
+      setCookedInput(recipeCookedWeight != null ? String(recipeCookedWeight) : "");
     }
-  }, [recipeId, recipeSellingPrice]);
+  }, [recipeId, recipeSellingPrice, recipeCookedWeight]);
 
   const scale = 1;
   const [submitOpen, setSubmitOpen] = useState(false);
@@ -191,6 +196,13 @@ export function RecipeDetailPage() {
   const editable = canEditRecipe(user, recipe);
   const isAdmin = can(user.role, "recipe.approve");
   const showFinancials = vis.totalCost;
+
+  // Cooking loss = how much weight the dish sheds while cooking (raw → cooked).
+  const rawWeight = recipe.total_weight_g ?? null;
+  const cookingLossPct =
+    rawWeight && rawWeight > 0 && recipe.cooked_weight_g != null
+      ? Math.round(((rawWeight - recipe.cooked_weight_g) / rawWeight) * 100)
+      : null;
 
   const batchCost = round2((recipe.total_cost ?? 0) * scale);
   // Raw ingredient cost (before wastage) = total ÷ (1 + wastage%).
@@ -377,11 +389,70 @@ export function RecipeDetailPage() {
                   <Stat icon={<UtensilsCrossed className="mx-auto h-4 w-4" />} label="Portions" value={String(recipe.serving_size)} />
                   <Stat label="Status" value={<StatusBadge status={recipe.status} />} />
                 </div>
-                <div className="mt-4 flex items-center justify-between border-t pt-3">
-                  <div className="text-sm">
-                    <p className="text-xs uppercase text-muted-foreground">Recipe Yield</p>
-                    <p className="font-semibold">{recipe.serving_size} Portion{recipe.serving_size > 1 ? "s" : ""}</p>
+                <div className="mt-4 space-y-3 border-t pt-3">
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <p className="text-[11px] uppercase text-muted-foreground">Recipe Yield</p>
+                      <p className="font-semibold">{recipe.serving_size} Portion{recipe.serving_size > 1 ? "s" : ""}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase text-muted-foreground">Raw Weight</p>
+                      <p className="font-semibold">{formatWeight(recipe.total_weight_g)}</p>
+                      <p className="text-[10px] text-muted-foreground">from ingredients</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase text-muted-foreground">Cooked Weight</p>
+                      <p className="font-semibold">{formatWeight(recipe.cooked_weight_g)}</p>
+                      {cookingLossPct != null && (
+                        <p className="text-[10px] text-muted-foreground">
+                          {cookingLossPct >= 0
+                            ? `${cookingLossPct}% cooking loss`
+                            : `${-cookingLossPct}% weight gain`}
+                        </p>
+                      )}
+                    </div>
                   </div>
+
+                  {editable && (
+                    <div>
+                      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Final weight after cooking
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            type="number"
+                            step="1"
+                            min="0"
+                            className="pr-8"
+                            value={cookedInput}
+                            onChange={(e) => setCookedInput(e.target.value)}
+                            placeholder="e.g. 850"
+                          />
+                          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">g</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="accent"
+                          disabled={cookedMut.isPending}
+                          onClick={async () => {
+                            const v = cookedInput.trim() === "" ? null : Number(cookedInput);
+                            if (v !== null && !(v >= 0)) {
+                              toast.error("Enter a valid weight in grams");
+                              return;
+                            }
+                            await cookedMut.mutateAsync({ id: recipe.id, grams: v });
+                            toast.success("Cooked weight updated");
+                          }}
+                        >
+                          Save
+                        </Button>
+                      </div>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        Weigh the finished dish and enter grams. Leave blank to clear.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -559,7 +630,16 @@ export function RecipeDetailPage() {
               {showFinancials && (
                 <TabsContent value="financials">
                   <div className="space-y-1 py-2 text-sm">
-                    <FinRow label="Total Dish Weight" value={formatWeight(recipe.total_weight_g)} />
+                    <FinRow label="Raw Dish Weight (from ingredients)" value={formatWeight(recipe.total_weight_g)} />
+                    {recipe.cooked_weight_g != null && (
+                      <FinRow label="Cooked Weight (after cooking)" value={formatWeight(recipe.cooked_weight_g)} />
+                    )}
+                    {cookingLossPct != null && (
+                      <FinRow
+                        label="Cooking Loss"
+                        value={cookingLossPct >= 0 ? `${cookingLossPct}%` : `${-cookingLossPct}% gain`}
+                      />
+                    )}
                     <FinRow label="Total Recipe Cost" value={formatINR(recipe.total_cost)} />
                     {recipe.serving_size > 1 && (
                       <FinRow label={`Cost Per Portion (÷${recipe.serving_size})`} value={formatINR(portionCost)} />

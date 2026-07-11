@@ -661,6 +661,28 @@ export const recipesRepo = {
     );
   },
 
+  /** Record the final weight after cooking (grams). A measured attribute — it does
+   *  NOT bump the version or revert an approved recipe to draft. */
+  async setCookedWeight(id: string, grams: number | null, actorId: string): Promise<Recipe> {
+    return delay(
+      mutate((db) => {
+        const recipe = db.recipes.find((r) => r.id === id);
+        if (!recipe) throw new Error("Recipe not found");
+        recipe.cooked_weight_g = grams;
+        recipe.updated_at = nowISO();
+        recipe.updated_by = actorId;
+        recordAudit(db, {
+          entity_type: "recipe",
+          entity_id: id,
+          action: "update",
+          performed_by: actorId,
+          notes: `Set cooked weight for "${recipe.recipe_name}" to ${grams != null ? `${grams} g` : "—"}`,
+        });
+        return recipe;
+      }),
+    );
+  },
+
   async costHistory(id: string): Promise<RecipeCostHistory[]> {
     return delay(
       getDb()

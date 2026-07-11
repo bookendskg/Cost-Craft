@@ -122,6 +122,16 @@ export function useSetSellingPrice() {
   });
 }
 
+export function useSetCookedWeight() {
+  const qc = useQueryClient();
+  const actorId = useActorId();
+  return useMutation({
+    mutationFn: ({ id, grams }: { id: string; grams: number | null }) =>
+      recipesRepo.setCookedWeight(id, grams, actorId),
+    onSuccess: () => invalidate(qc),
+  });
+}
+
 export function useSubmitRecipe() {
   const qc = useQueryClient();
   const actorId = useActorId();

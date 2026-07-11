@@ -820,6 +820,27 @@ export const supabaseRecipesRepo = {
     return recipe;
   },
 
+  /** Record the final weight after cooking (grams). A measured attribute — it does
+   *  NOT bump the version or revert an approved recipe to draft. */
+  async setCookedWeight(id: string, grams: number | null, actorId: string): Promise<Recipe> {
+    const { data, error } = await sb()
+      .from("recipes")
+      .update({ cooked_weight_g: grams, updated_at: nowISO(), updated_by: actorId })
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) fail("Set cooked weight", error.message);
+    const recipe = data as Recipe;
+    await audit({
+      entity_type: "recipe",
+      entity_id: id,
+      action: "update",
+      performed_by: actorId,
+      notes: `Set cooked weight for "${recipe.recipe_name}" to ${grams != null ? `${grams} g` : "—"}`,
+    });
+    return recipe;
+  },
+
   async costHistory(id: string): Promise<RecipeCostHistory[]> {
     const { data, error } = await sb()
       .from("recipe_cost_history")
