@@ -360,8 +360,16 @@ export function RecipeDetailPage() {
                 ) : (
                   emojiFor(recipe.category)
                 )}
-                <span className="absolute left-3 top-3 rounded bg-black/40 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
-                  {recipe.status === "approved" ? "Active Recipe" : recipe.status}
+                <span
+                  className={cn(
+                    "absolute left-3 top-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm",
+                    recipe.status === "approved" ? "bg-emerald-500" : "bg-black/50",
+                  )}
+                >
+                  {recipe.status === "approved" && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  )}
+                  {recipe.status === "approved" ? "Active" : recipe.status}
                 </span>
                 {editable && (
                   <div className="absolute bottom-3 right-3 flex items-center gap-1.5 opacity-0 transition-opacity duration-200 focus-within:opacity-100 group-hover:opacity-100">
