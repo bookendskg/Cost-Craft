@@ -349,7 +349,7 @@ export function RecipeDetailPage() {
         <div className="space-y-6 lg:col-span-2">
           {/* Hero card */}
           <Card className="overflow-hidden">
-            <div className="grid sm:grid-cols-2">
+            <div className="grid sm:grid-cols-[3fr_7fr]">
               <div className="relative flex h-44 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-700 to-teal-900 text-6xl">
                 {recipe.image_url ? (
                   <img
