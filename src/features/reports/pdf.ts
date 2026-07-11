@@ -181,6 +181,10 @@ export async function generateRecipePdf(
     // Content flows INSIDE the white card (see background); big top margin leaves
     // room for the logo band, bottom margin for the footer band.
     pageMargins: [46, 142, 46, 86],
+    // Register the logo here so pdfmake PRELOADS it. Images used only inside the
+    // background() function are NOT discovered during preload, so referencing the
+    // data URI inline there renders nothing — it must be a named `images` entry.
+    ...(logoDataUri ? { images: { brandLogo: logoDataUri } } : {}),
     background: (currentPage, pageSize): Content => {
       const W = pageSize.width;
       const H = pageSize.height;
@@ -203,7 +207,7 @@ export async function generateRecipePdf(
         const chipX = (W - chipW) / 2;
         const chipY = 28;
         bg.push({ canvas: [{ type: "rect", x: chipX, y: chipY, w: chipW, h: chipH, r: 12, color: "#ffffff" }] });
-        bg.push({ image: logoDataUri, fit: [chipW - 30, chipH - 18], absolutePosition: { x: chipX + 15, y: chipY + 9 } });
+        bg.push({ image: "brandLogo", fit: [chipW - 30, chipH - 18], absolutePosition: { x: chipX + 15, y: chipY + 9 } });
         bg.push({ text: brandLabel, absolutePosition: { x: 0, y: chipY + chipH + 6 }, width: W, alignment: "center", color: "#ffffff", fontSize: 10, bold: true } as Content);
       }
       return bg;
