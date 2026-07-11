@@ -54,9 +54,17 @@ async function loadPdfMake() {
 // /brands/*.png is unreliable behind the SPA rewrite / service worker.
 const BRAND_ACCENTS: Record<string, string> = { capiche: "#ed1c24", aiko: "#b8860b", bookends: "#1b35a8" };
 function brandStyle(brand: string): { accent: string; logo: string | null } {
-  const key = String(brand || "").toLowerCase();
-  const accent = BRAND_ACCENTS[key] ?? brandAccentHex(brand) ?? "#1b35a8";
-  return { accent, logo: BRAND_LOGOS[key] ?? null };
+  // `brand` may be a slug ("capiche", mock mode) OR a brand id (Supabase). The
+  // logos/accents are keyed by slug, so also try the resolved brand LABEL.
+  const raw = String(brand || "").toLowerCase();
+  const label = String(resolveBrandLabel(brand) || "").toLowerCase();
+  const candidates = [raw, label, label.replace(/[^a-z0-9]/g, "")];
+  let logo: string | null = null;
+  for (const k of candidates) {
+    if (k && BRAND_LOGOS[k]) { logo = BRAND_LOGOS[k]; break; }
+  }
+  const accent = BRAND_ACCENTS[raw] ?? BRAND_ACCENTS[label] ?? brandAccentHex(brand) ?? "#1b35a8";
+  return { accent, logo };
 }
 
 /** Blend a #hex toward white (amt 0→1) for zebra row fills. */
