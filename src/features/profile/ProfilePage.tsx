@@ -17,12 +17,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
-import { formatDateTime } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
 import { roleLabel } from "@/lib/auth/roleCache";
 import { Avatar } from "@/layouts/HeaderControls";
 import { useUpdateUser } from "@/features/users/hooks";
 import { useWipeCatalog } from "./adminHooks";
+import { AVATAR_PRESETS, initialsOf, presetAvatarDataUri } from "./presetAvatars";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { updateOwnProfile } from "@/lib/supabase/profile";
 
@@ -168,6 +169,32 @@ export function ProfilePage() {
                     <Trash2 className="h-4 w-4" /> Remove
                   </Button>
                 )}
+              </div>
+
+              {/* Preset avatars — pick a gradient disc instead of uploading a photo. */}
+              <div className="mb-5">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Or pick a preset</p>
+                <div className="flex flex-wrap gap-2">
+                  {AVATAR_PRESETS.map((p) => {
+                    const uri = presetAvatarDataUri(initialsOf(name || user.name), p.from, p.to);
+                    const selected = avatar === uri;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setAvatar(uri)}
+                        aria-label={`Use ${p.id} preset avatar`}
+                        aria-pressed={selected}
+                        className={cn(
+                          "h-10 w-10 overflow-hidden rounded-full ring-offset-2 ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          selected ? "ring-2 ring-primary" : "hover:ring-2 hover:ring-muted-foreground/30",
+                        )}
+                      >
+                        <img src={uri} alt="" className="h-full w-full object-cover" />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
