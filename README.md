@@ -40,20 +40,7 @@ npm run dev          # http://localhost:3005
 ```
 
 With no Supabase env vars set, the app runs on the **local mock layer** (in-memory, persisted to
-`localStorage`) with seed data and demo accounts.
-
-### Demo accounts (mock mode — password: `password123`)
-
-| Role        | Email                      |
-|-------------|----------------------------|
-| Super Admin | `mspatel05831@gmail.com`   |
-| Admin       | `rahul@brand.com`          |
-| Editor      | `priya@brand.com`          |
-| Head Chef   | `marco@brand.com`          |
-| Chef        | `sara@brand.com`           |
-| Viewer      | `amit@brand.com`           |
-
-The sign-in screen has one-click buttons to fill each demo account.
+`localStorage`) with seed data. The sign-in screen has one-click buttons to fill each demo account.
 
 ## Data backends
 
