@@ -23,7 +23,7 @@ import { roleLabel } from "@/lib/auth/roleCache";
 import { Avatar } from "@/layouts/HeaderControls";
 import { useUpdateUser } from "@/features/users/hooks";
 import { useWipeCatalog } from "./adminHooks";
-import { AVATAR_PRESETS, initialsOf, presetAvatarDataUri } from "./presetAvatars";
+import { CHARACTER_AVATARS } from "./presetAvatars";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { updateOwnProfile } from "@/lib/supabase/profile";
 
@@ -171,26 +171,25 @@ export function ProfilePage() {
                 )}
               </div>
 
-              {/* Preset avatars — pick a gradient disc instead of uploading a photo. */}
+              {/* Preset character avatars — pick one instead of uploading a photo. */}
               <div className="mb-5">
-                <p className="mb-2 text-xs font-medium text-muted-foreground">Or pick a preset</p>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Or pick an avatar</p>
                 <div className="flex flex-wrap gap-2">
-                  {AVATAR_PRESETS.map((p) => {
-                    const uri = presetAvatarDataUri(initialsOf(name || user.name), p.from, p.to);
-                    const selected = avatar === uri;
+                  {CHARACTER_AVATARS.map((a) => {
+                    const selected = avatar === a.uri;
                     return (
                       <button
-                        key={p.id}
+                        key={a.id}
                         type="button"
-                        onClick={() => setAvatar(uri)}
-                        aria-label={`Use ${p.id} preset avatar`}
+                        onClick={() => setAvatar(a.uri)}
+                        aria-label={`Use avatar ${a.id}`}
                         aria-pressed={selected}
                         className={cn(
-                          "h-10 w-10 overflow-hidden rounded-full ring-offset-2 ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          "h-11 w-11 overflow-hidden rounded-full ring-offset-2 ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                           selected ? "ring-2 ring-primary" : "hover:ring-2 hover:ring-muted-foreground/30",
                         )}
                       >
-                        <img src={uri} alt="" className="h-full w-full object-cover" />
+                        <img src={a.uri} alt="" className="h-full w-full object-cover" />
                       </button>
                     );
                   })}
