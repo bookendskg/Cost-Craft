@@ -594,22 +594,6 @@ export function RecipeDetailPage() {
                             {formatINR(batchCost)}
                           </TableCell>
                         </TableRow>
-                        {!recipe.is_prep && packaging > 0 && (
-                          <>
-                            <TableRow>
-                              <TableCell colSpan={vis.quantities ? 3 : 1} className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                Packaging / Portion
-                              </TableCell>
-                              <TableCell className="text-right font-mono text-muted-foreground">+{formatINR(packaging)}</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell colSpan={vis.quantities ? 3 : 1} className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                Full Cost / Portion
-                              </TableCell>
-                              <TableCell className="text-right font-mono text-base font-bold text-emerald-700">{formatINR(fullCpp)}</TableCell>
-                            </TableRow>
-                          </>
-                        )}
                       </>
                     )}
                   </TableBody>
@@ -638,6 +622,17 @@ export function RecipeDetailPage() {
                         ))}
                       </TableBody>
                     </Table>
+                  </div>
+                )}
+
+                {showFinancials && !recipe.is_prep && packaging > 0 && (
+                  <div className="mt-5 border-t pt-4">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Summary</p>
+                    <div className="space-y-1 text-sm">
+                      <FinRow label="Total Recipe Cost" value={formatINR(batchCost)} />
+                      <FinRow label="Packaging / Portion" value={`+${formatINR(packaging)}`} />
+                      <FinRow label="Full Cost / Portion" value={formatINR(fullCpp)} strong accent />
+                    </div>
                   </div>
                 )}
               </TabsContent>
