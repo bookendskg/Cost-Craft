@@ -73,6 +73,8 @@ export interface ResolvedLink {
   brand?: string;
   recipe?: Recipe;
   ingredients?: RecipeIngredientWithMaterial[];
+  /** Each direct sub-recipe with its own (financial-free) ingredients, for the breakdown. */
+  subRecipes?: { recipe: Recipe; ingredients: RecipeIngredientWithMaterial[] }[];
 }
 
 export const accessLinksRepo = {
@@ -124,15 +126,27 @@ export const accessLinksRepo = {
         if (!recipe) return { status: "REVOKED" as AccessLinkStatus };
         link.access_count += 1;
         link.last_accessed_at = nowISO();
-        const raw = db.recipe_ingredients
-          .filter((ri) => ri.recipe_id === recipe.id)
-          .sort((a, b) => a.sort_order - b.sort_order)
-          .map((ri) => ({
-            ...ri,
-            material: ri.component_type === "recipe" ? null : findMaterial(db, ri.ingredient_id) ?? null,
-            subRecipe: ri.component_type === "recipe" ? db.recipes.find((r) => r.id === ri.ingredient_id) ?? null : null,
-          })) as RecipeIngredientWithMaterial[];
+        const linesFor = (rid: string): RecipeIngredientWithMaterial[] =>
+          db.recipe_ingredients
+            .filter((ri) => ri.recipe_id === rid)
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map((ri) => ({
+              ...ri,
+              material: ri.component_type === "recipe" ? null : findMaterial(db, ri.ingredient_id) ?? null,
+              subRecipe: ri.component_type === "recipe" ? db.recipes.find((r) => r.id === ri.ingredient_id) ?? null : null,
+            })) as RecipeIngredientWithMaterial[];
+        const raw = linesFor(recipe.id);
         const stripped = stripFinancials(recipe, raw);
+        // Each direct sub-recipe with its own (financial-free) ingredients.
+        const subIds = [...new Set(raw.filter((r) => r.component_type === "recipe").map((r) => r.ingredient_id))];
+        const subRecipes = subIds
+          .map((id) => {
+            const sub = db.recipes.find((r) => r.id === id);
+            if (!sub) return null;
+            const s = stripFinancials(sub, linesFor(sub.id));
+            return { recipe: s.recipe, ingredients: s.ingredients as RecipeIngredientWithMaterial[] };
+          })
+          .filter((x) => x !== null) as { recipe: Recipe; ingredients: RecipeIngredientWithMaterial[] }[];
         return {
           status,
           access_type: link.access_type,
@@ -140,6 +154,7 @@ export const accessLinksRepo = {
           brand: db.brands.find((b) => b.id === recipe.brand)?.name ?? recipe.brand,
           recipe: stripped.recipe,
           ingredients: stripped.ingredients,
+          subRecipes,
         };
       }),
     );

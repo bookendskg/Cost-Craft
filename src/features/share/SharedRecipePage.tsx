@@ -56,6 +56,7 @@ export function SharedRecipePage() {
 
   const recipe = data.recipe;
   const ingredients = data.ingredients ?? [];
+  const subRecipes = data.subRecipes ?? [];
   const brandKey = String(data.brand || recipe.brand || "").toLowerCase();
   const bc = SHARE_BRANDS[brandKey] ?? SHARE_BRANDS.bookends;
   const canDownload = data.access_type === "DOWNLOAD_PDF" || data.access_type === "VIEW_AND_DOWNLOAD";
@@ -139,6 +140,47 @@ export function SharedRecipePage() {
             </Table>
           </section>
 
+          {subRecipes.length > 0 && (
+            <section className="mt-6">
+              <h2 className="mb-2 text-sm font-semibold">Sub-Recipe Breakdown</h2>
+              <div className="space-y-4">
+                {subRecipes.map((sr) => (
+                  <div key={sr.recipe.id}>
+                    <p className="text-sm font-semibold" style={{ color: bc.accent }}>{sr.recipe.recipe_name}</p>
+                    {sr.recipe.yield_quantity ? (
+                      <p className="mb-1 text-xs text-muted-foreground">
+                        Yield: {sr.recipe.yield_quantity} {formatUnit(sr.recipe.yield_unit)}
+                      </p>
+                    ) : null}
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-8">#</TableHead>
+                          <TableHead>Ingredient</TableHead>
+                          <TableHead className="text-right">Qty</TableHead>
+                          <TableHead>Unit</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sr.ingredients.map((ing, idx) => (
+                          <TableRow key={ing.id}>
+                            <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
+                            <TableCell className="font-medium">
+                              {ing.component_type === "recipe" ? (ing.subRecipe?.recipe_name ?? "Sub-recipe") : ing.material?.ingredient_name ?? "—"}
+                              {ing.component_type === "recipe" && <span className="ml-1.5 text-[11px] text-muted-foreground">· sub-recipe</span>}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">{ing.quantity_used}</TableCell>
+                            <TableCell className="text-muted-foreground">{formatUnit(ing.unit_used)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
             <span>Yield: {recipe.yield_quantity} {formatUnit(recipe.yield_unit)}</span>
           </div>
@@ -154,6 +196,7 @@ export function SharedRecipePage() {
                   try {
                     await generateRecipePdf(recipe, ingredients, {
                       visibility: NO_FINANCIALS,
+                      subRecipes,
                       exporter: { name: `Shared by ${data.granted_by_name}`, role: "viewer" },
                       brandLabel: data.brand || undefined,
                     });

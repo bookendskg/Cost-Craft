@@ -21,6 +21,32 @@ interface RpcIngredient {
   ingredient_name: string | null;
 }
 
+interface RpcSubRecipe {
+  id: string;
+  recipe_name: string;
+  yield_quantity: number | null;
+  yield_unit: string | null;
+  ingredients: RpcIngredient[];
+}
+
+/** Map an RPC ingredient row to the RecipeIngredientWithMaterial shape (no financials). */
+function mapLine(i: RpcIngredient, recipeId: string): RecipeIngredientWithMaterial {
+  return {
+    id: i.id,
+    recipe_id: recipeId,
+    ingredient_id: "",
+    component_type: i.sub_recipe ? "recipe" : "material",
+    quantity_used: i.quantity_used,
+    unit_used: i.unit_used,
+    calculated_cost: null,
+    sort_order: 0,
+    wastage_override_pct: null,
+    cut_type: null,
+    material: i.sub_recipe ? null : ({ ingredient_name: i.ingredient_name } as RecipeIngredientWithMaterial["material"]),
+    subRecipe: i.sub_recipe ? ({ recipe_name: i.ingredient_name } as RecipeIngredientWithMaterial["subRecipe"]) : null,
+  };
+}
+
 export const supabaseAccessLinksRepo = {
   async create(input: CreateLinkInput): Promise<{ link: RecipeAccessLink; token: string }> {
     const token = generateToken();
@@ -61,25 +87,27 @@ export const supabaseAccessLinksRepo = {
       brand?: ResolvedLink["brand"];
       recipe?: Record<string, unknown>;
       ingredients?: RpcIngredient[];
+      sub_recipes?: RpcSubRecipe[];
     };
     if (r.status !== "ACTIVE" || !r.recipe) return { status: r.status };
     // Re-assert zeros for the stripped financial fields so the Recipe type is complete.
     const recipe = { ...r.recipe, total_cost: 0, cost_per_portion: 0, packaging_cost: 0, selling_price: null } as unknown as Recipe;
-    const ingredients: RecipeIngredientWithMaterial[] = (r.ingredients ?? []).map((i) => ({
-      id: i.id,
-      recipe_id: recipe.id,
-      ingredient_id: "",
-      component_type: i.sub_recipe ? "recipe" : "material",
-      quantity_used: i.quantity_used,
-      unit_used: i.unit_used,
-      calculated_cost: null,
-      sort_order: 0,
-      wastage_override_pct: null,
-      cut_type: null,
-      material: i.sub_recipe ? null : ({ ingredient_name: i.ingredient_name } as RecipeIngredientWithMaterial["material"]),
-      subRecipe: i.sub_recipe ? ({ recipe_name: i.ingredient_name } as RecipeIngredientWithMaterial["subRecipe"]) : null,
+    const ingredients: RecipeIngredientWithMaterial[] = (r.ingredients ?? []).map((i) => mapLine(i, recipe.id));
+    // Each direct sub-recipe with its own (financial-free) ingredients, for the breakdown.
+    const subRecipes = (r.sub_recipes ?? []).map((s) => ({
+      recipe: {
+        id: s.id,
+        recipe_name: s.recipe_name,
+        yield_quantity: s.yield_quantity ?? 0,
+        yield_unit: s.yield_unit ?? "",
+        total_cost: 0,
+        cost_per_portion: 0,
+        packaging_cost: 0,
+        selling_price: null,
+      } as unknown as Recipe,
+      ingredients: (s.ingredients ?? []).map((i) => mapLine(i, s.id)),
     }));
-    return { status: "ACTIVE", access_type: r.access_type, granted_by_name: r.granted_by_name, brand: r.brand, recipe, ingredients };
+    return { status: "ACTIVE", access_type: r.access_type, granted_by_name: r.granted_by_name, brand: r.brand, recipe, ingredients, subRecipes };
   },
 
   async revoke(id: string, byUserId: string | null): Promise<RecipeAccessLink> {
