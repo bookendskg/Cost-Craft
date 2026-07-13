@@ -6,13 +6,14 @@ import { calculateIngredientCost, round2 } from "@/lib/costing";
 import { canConvert } from "@/lib/units";
 import { formatINR, formatUnit, formatWeight } from "@/lib/utils";
 import { type Recipe, type RecipeIngredientWithMaterial } from "@/lib/data/types";
-import { brandLabel as resolveBrandLabel, brandAccentHex } from "@/lib/data/brandCache";
+import { brandLabel as resolveBrandLabel, brandAccentHex, cachedBrands } from "@/lib/data/brandCache";
 import { BRAND_LOGOS } from "./brandLogos";
 import { roleLabel as resolveRoleLabel } from "@/lib/auth/roleCache";
 import type { ViewVisibility } from "@/lib/auth/permissions";
 
 /** Who exported + when — stamped by the caller from the authenticated session. */
 export interface PdfExporter {
+  id?: string;
   name: string;
   role: string;
 }
@@ -55,14 +56,34 @@ async function loadPdfMake() {
 const BRAND_ACCENTS: Record<string, string> = { capiche: "#ed1c24", aiko: "#b8860b", bookends: "#1b35a8" };
 function brandStyle(brand: string): { accent: string; logo: string | null } {
   // `brand` may be a slug ("capiche", mock mode) OR a brand id (Supabase). The
-  // logos/accents are keyed by slug, so also try the resolved brand LABEL.
+  // bundled logos/accents are keyed by slug, so match against everything we know
+  // about the brand — display name, name, normalized name, code — not just the id.
   const raw = String(brand || "").toLowerCase();
+  const record = cachedBrands().find((b) => b.id === brand);
   const label = String(resolveBrandLabel(brand) || "").toLowerCase();
-  const candidates = [raw, label, label.replace(/[^a-z0-9]/g, "")];
+
   let logo: string | null = null;
-  for (const k of candidates) {
-    if (k && BRAND_LOGOS[k]) { logo = BRAND_LOGOS[k]; break; }
+  // Prefer the brand's own uploaded logo when it's an embeddable data URI.
+  if (record?.logo_url && record.logo_url.startsWith("data:")) {
+    logo = record.logo_url;
+  } else {
+    // Strip each candidate to [a-z0-9] so "Capiche Restaurant" → "capicherestaurant".
+    const strip = (s: string | null | undefined) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const candidates = [
+      raw,
+      strip(label),
+      strip(record?.display_name),
+      strip(record?.name),
+      strip(record?.normalized_name),
+      strip(record?.brand_code),
+    ].filter(Boolean);
+    // Exact match first, then substring — so "capicherestaurant" resolves to "capiche".
+    const keys = Object.keys(BRAND_LOGOS);
+    const exact = candidates.find((c) => BRAND_LOGOS[c]);
+    const key = exact ?? keys.find((k) => candidates.some((c) => c.includes(k)));
+    if (key) logo = BRAND_LOGOS[key];
   }
+
   const accent = BRAND_ACCENTS[raw] ?? BRAND_ACCENTS[label] ?? brandAccentHex(brand) ?? "#1b35a8";
   return { accent, logo };
 }
@@ -173,19 +194,39 @@ export async function generateRecipePdf(
   const subtitle = [recipe.category, recipe.is_prep ? "In-House Prep" : null, recipe.size_label ?? null]
     .filter(Boolean)
     .join("  ·  ");
+  // Only embeddable data URIs render synchronously in pdfmake — uploads always are.
+  const hasPhoto = !!recipe.image_url && recipe.image_url.startsWith("data:");
   const method = (recipe.method ?? []).filter((s) => s.trim());
-  const roleLabel = exporter ? resolveRoleLabel(exporter.role) : "";
+
+  // A4 page width (pt) — the logo band is placed with absolutePosition in content,
+  // so it needs the page width the background() callback otherwise supplies.
+  const PAGE_W = 595.28;
+  // Logo band (chip + logo + brand label), centered in the top brand-colour strip.
+  // This lives in `content`, NOT `background`: pdfmake's browser build does not
+  // preload images referenced only from background()/header()/footer(), and an
+  // unresolved image reference there silently drops the whole background block —
+  // so the logo (and even the white chip) never rendered. Content images are always
+  // preloaded, and absolutePosition still lets us paint into the top strip. It only
+  // renders on page 1 because content flows from the first page.
+  const logoBand: Content[] = logoDataUri
+    ? (() => {
+        const chipW = 158, chipH = 56, chipX = (PAGE_W - chipW) / 2, chipY = 28;
+        return [
+          { canvas: [{ type: "rect", x: chipX, y: chipY, w: chipW, h: chipH, r: 12, color: "#ffffff" }], absolutePosition: { x: 0, y: 0 } },
+          // Center the logo on the page (the chip is page-centered), so it sits centered in
+          // the chip regardless of the logo's aspect ratio. Wrap in a column because an image
+          // node's own `width` would override `fit`.
+          { columns: [{ width: PAGE_W, image: logoDataUri, fit: [chipW - 30, chipH - 18], alignment: "center" }], absolutePosition: { x: 0, y: chipY + 9 } },
+        ] as Content[];
+      })()
+    : [];
 
   const doc: TDocumentDefinitions = {
     pageSize: "A4",
     // Content flows INSIDE the white card (see background); big top margin leaves
     // room for the logo band, bottom margin for the footer band.
     pageMargins: [46, 142, 46, 86],
-    // Register the logo here so pdfmake PRELOADS it. Images used only inside the
-    // background() function are NOT discovered during preload, so referencing the
-    // data URI inline there renders nothing — it must be a named `images` entry.
-    ...(logoDataUri ? { images: { brandLogo: logoDataUri } } : {}),
-    background: (currentPage, pageSize): Content => {
+    background: (_currentPage, pageSize): Content => {
       const W = pageSize.width;
       const H = pageSize.height;
       const cardX = 22;
@@ -201,18 +242,17 @@ export async function generateRecipePdf(
         },
         { text: footerText, absolutePosition: { x: 0, y: H - 38 }, width: W, alignment: "center", color: "#ffffff", fontSize: 8 } as Content,
       ];
-      if (currentPage === 1 && logoDataUri) {
-        const chipW = 158;
-        const chipH = 56;
-        const chipX = (W - chipW) / 2;
-        const chipY = 28;
-        bg.push({ canvas: [{ type: "rect", x: chipX, y: chipY, w: chipW, h: chipH, r: 12, color: "#ffffff" }] });
-        bg.push({ image: "brandLogo", fit: [chipW - 30, chipH - 18], absolutePosition: { x: chipX + 15, y: chipY + 9 } });
-        bg.push({ text: brandLabel, absolutePosition: { x: 0, y: chipY + chipH + 6 }, width: W, alignment: "center", color: "#ffffff", fontSize: 10, bold: true } as Content);
+      // Audit line: who downloaded this file. Guarded by the id so it appears only for
+      // authenticated downloads (the public share page has no id), but shows the display
+      // name rather than the raw UUID.
+      if (exporter?.id) {
+        bg.push({ text: `Downloaded by: ${exporter.name}`, absolutePosition: { x: 0, y: H - 26 }, width: W, alignment: "center", color: "#ffffff", fontSize: 7 } as Content);
       }
       return bg;
     },
     content: [
+      // Logo band first so it lands on page 1 (absolutePosition keeps it out of flow).
+      ...logoBand,
       {
         columns: [
           { width: "*", stack: [{ text: "CostCraft", style: "brandMark" }, { text: "Bookends Hospitality", style: "org" }] },
@@ -224,23 +264,17 @@ export async function generateRecipePdf(
         ],
       },
       { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 503, y2: 0, lineWidth: 1, lineColor: "#e5e7eb" }], margin: [0, 8, 0, 12] as [number, number, number, number] },
-      { text: recipe.recipe_name, style: "title" },
-      { text: subtitle, style: "subtitle" },
-      {
-        style: "meta",
-        columns: [
-          [
-            `Generated: ${stamp.label}`,
-            recipe.created_by_name ? `Created by: ${recipe.created_by_name}` : "",
-            exporter ? `Exported by: ${exporter.name} (${roleLabel})` : "",
-          ],
-          [
-            `Type: ${recipe.is_prep ? "In-House Prep" : "Menu Recipe"}`,
-            `Yield: ${recipe.yield_quantity} ${formatUnit(recipe.yield_unit)}`,
-            recipe.serving_size > 1 ? `Serving Size: ${recipe.serving_size}` : "",
-          ],
-        ],
-      },
+      // Title + subtitle, with the dish photo as a thumbnail alongside when present.
+      // The photo is a base64 data URI (recipe upload), so pdfmake embeds it inline
+      // from content with no dict entry or fetch. External URLs are skipped.
+      hasPhoto
+        ? ({
+            columns: [
+              { width: "*", stack: [{ text: recipe.recipe_name, style: "title" }, { text: subtitle, style: "subtitle" }] },
+              { width: "auto", image: recipe.image_url as string, fit: [88, 88], margin: [8, 0, 0, 0] },
+            ],
+          } as Content)
+        : { stack: [{ text: recipe.recipe_name, style: "title" }, { text: subtitle, style: "subtitle" }] },
       ...(method.length
         ? [{ text: "Preparation", style: "section" }, { ol: method, style: "body" }]
         : recipe.description

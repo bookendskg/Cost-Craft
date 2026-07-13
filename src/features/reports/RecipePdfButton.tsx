@@ -31,7 +31,7 @@ export function RecipePdfButton({
           await generateRecipePdf(recipe, ingredients, {
             visibility,
             // Exporter identity is taken from the authenticated session — never typed.
-            exporter: user ? { name: user.name, role: user.role } : undefined,
+            exporter: user ? { id: user.id, name: user.name, role: user.role } : undefined,
           });
           // Audit only AFTER the file is generated — never for a failed export.
           // Awaited so the record is persisted; a failed audit doesn't fail the export.
