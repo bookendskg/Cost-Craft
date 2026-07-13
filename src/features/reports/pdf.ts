@@ -101,9 +101,15 @@ function tint(hex: string, amt: number): string {
 export async function generateRecipePdf(
   recipe: Recipe,
   ingredients: RecipeIngredientWithMaterial[],
-  opts: { visibility?: ViewVisibility; exporter?: PdfExporter; brandLabel?: string } = {},
+  opts: {
+    visibility?: ViewVisibility;
+    exporter?: PdfExporter;
+    brandLabel?: string;
+    /** Each direct sub-recipe with its own ingredients, for the appendix breakdown. */
+    subRecipes?: { recipe: Recipe; ingredients: RecipeIngredientWithMaterial[] }[];
+  } = {},
 ) {
-  const { visibility, exporter } = opts;
+  const { visibility, exporter, subRecipes } = opts;
   // Financial fields are dropped here (before generation), not merely hidden in UI —
   // a Viewer / restricted export never contains cost data in the file.
   const showCost = visibility ? visibility.totalCost : true;
@@ -127,31 +133,66 @@ export async function generateRecipePdf(
   if (showUnitCost) headRow.push("Unit Cost");
   if (showCost) headRow.push("Total");
 
-  const body: TableCell[][] = [
-    headRow.map((h) => ({ text: h, color: "#ffffff", bold: true, fontSize: 9 })),
-  ];
-  ingredients.forEach((ing, idx) => {
-    const isSub = ing.component_type === "recipe";
-    const m = ing.material;
-    const name = isSub
-      ? `${ing.subRecipe?.recipe_name ?? "Sub-recipe"}  ·  sub-recipe`
-      : m?.ingredient_name ?? "—";
-    const cost =
-      ing.calculated_cost != null
-        ? round2(ing.calculated_cost)
-        : !isSub && m && m.cost_per_base_unit !== null && canConvert(ing.unit_used, m.base_unit)
-          ? calculateIngredientCost(m.cost_per_base_unit, ing.quantity_used, ing.unit_used, m.base_unit)
-          : null;
-    const row: TableCell[] = [
-      { text: String(idx + 1), color: accent, bold: true },
-      { text: name },
-      { text: qtyStr(ing.quantity_used), alignment: "right" },
-      { text: formatUnit(ing.unit_used), color: "#6b7280" },
+  // Build an ingredients-table body (header + rows) for any ingredient list — reused
+  // for the main recipe and for each sub-recipe appendix table.
+  const buildBody = (list: RecipeIngredientWithMaterial[]): TableCell[][] => {
+    const rows: TableCell[][] = [
+      headRow.map((h) => ({ text: h, color: "#ffffff", bold: true, fontSize: 9 })),
     ];
-    if (showUnitCost) row.push({ text: isSub ? "—" : formatINR(m?.cost_per_base_unit ?? null), alignment: "right" });
-    if (showCost) row.push({ text: formatINR(cost), alignment: "right" });
-    body.push(row);
+    list.forEach((ing, idx) => {
+      const isSub = ing.component_type === "recipe";
+      const m = ing.material;
+      const name = isSub
+        ? `${ing.subRecipe?.recipe_name ?? "Sub-recipe"}  ·  sub-recipe`
+        : m?.ingredient_name ?? "—";
+      const cost =
+        ing.calculated_cost != null
+          ? round2(ing.calculated_cost)
+          : !isSub && m && m.cost_per_base_unit !== null && canConvert(ing.unit_used, m.base_unit)
+            ? calculateIngredientCost(m.cost_per_base_unit, ing.quantity_used, ing.unit_used, m.base_unit)
+            : null;
+      const row: TableCell[] = [
+        { text: String(idx + 1), color: accent, bold: true },
+        { text: name },
+        { text: qtyStr(ing.quantity_used), alignment: "right" },
+        { text: formatUnit(ing.unit_used), color: "#6b7280" },
+      ];
+      if (showUnitCost) row.push({ text: isSub ? "—" : formatINR(m?.cost_per_base_unit ?? null), alignment: "right" });
+      if (showCost) row.push({ text: formatINR(cost), alignment: "right" });
+      rows.push(row);
+    });
+    return rows;
+  };
+
+  const ingredientTable = (list: RecipeIngredientWithMaterial[]): Content => ({
+    table: { headerRows: 1, widths: tableWidths(headRow.length), body: buildBody(list) },
+    layout: {
+      fillColor: (rowIndex: number) => (rowIndex === 0 ? accent : rowIndex % 2 === 0 ? tint(accent, 0.93) : null),
+      hLineWidth: (i: number, node: { table: { body: unknown[] } }) =>
+        i === 0 || i === 1 || i === node.table.body.length ? 0.8 : 0.4,
+      hLineColor: () => "#e5e7eb",
+      vLineWidth: () => 0,
+      paddingTop: () => 5,
+      paddingBottom: () => 5,
+      paddingLeft: () => 7,
+      paddingRight: () => 7,
+    },
   });
+
+  // Appendix: each direct sub-recipe's own ingredients (a chef can see what's inside
+  // "Pizza Dough", "Pomodoro Sauce", …). Only shown when the caller supplies them.
+  const subBlocks: Content[] = (subRecipes ?? [])
+    .filter((sr) => sr.ingredients.length > 0)
+    .flatMap((sr) => {
+      const meta: string[] = [];
+      if (sr.recipe.yield_quantity) meta.push(`Batch ${qtyStr(sr.recipe.yield_quantity)} ${sr.recipe.yield_unit ?? ""}`.trim());
+      if (showCost && sr.recipe.total_cost != null) meta.push(`Batch cost ${formatINR(sr.recipe.total_cost)}`);
+      return [
+        { text: sr.recipe.recipe_name, bold: true, fontSize: 11, color: accent, margin: [0, 12, 0, 2] },
+        ...(meta.length ? [{ text: meta.join("  ·  "), fontSize: 8, color: "#64748b", margin: [0, 0, 0, 4] }] : []),
+        ingredientTable(sr.ingredients),
+      ] as Content[];
+    });
 
   const total = recipe.total_cost ?? 0;
   const perPortion = recipe.cost_per_portion ?? 0;
@@ -283,19 +324,7 @@ export async function generateRecipePdf(
           ? [{ text: "Preparation", style: "section" }, { text: recipe.description, style: "body" }]
           : []),
       { text: "Ingredients", style: "section" },
-      {
-        table: { headerRows: 1, widths: tableWidths(headRow.length), body },
-        layout: {
-          fillColor: (rowIndex) => (rowIndex === 0 ? accent : rowIndex % 2 === 0 ? tint(accent, 0.93) : null),
-          hLineWidth: (i, node) => (i === 0 || i === 1 || i === node.table.body.length ? 0.8 : 0.4),
-          hLineColor: () => "#e5e7eb",
-          vLineWidth: () => 0,
-          paddingTop: () => 5,
-          paddingBottom: () => 5,
-          paddingLeft: () => 7,
-          paddingRight: () => 7,
-        },
-      },
+      ingredientTable(ingredients),
       ...(summary.length
         ? [
             { text: "Cost Summary", style: "section" },
@@ -310,6 +339,9 @@ export async function generateRecipePdf(
               layout: "noBorders",
             },
           ]
+        : []),
+      ...(subBlocks.length
+        ? [{ text: "Sub-Recipe Breakdown", style: "section" } as Content, ...subBlocks]
         : []),
     ],
     styles: {

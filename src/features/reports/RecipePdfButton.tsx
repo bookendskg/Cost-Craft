@@ -3,6 +3,7 @@ import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Recipe, RecipeIngredientWithMaterial } from "@/lib/data/types";
 import type { ViewVisibility } from "@/lib/auth/permissions";
+import { recipesRepo } from "@/lib/data";
 import { useSession } from "@/lib/auth/session";
 import { useRecordExport } from "@/features/exports/hooks";
 import { generateRecipePdf } from "./pdf";
@@ -28,8 +29,20 @@ export function RecipePdfButton({
         if (busy) return; // block rapid double-clicks → no duplicate exports
         setBusy(true);
         try {
+          // Load each direct sub-recipe's own ingredients for the appendix breakdown.
+          const subIds = [
+            ...new Set(
+              ingredients
+                .filter((i) => i.component_type === "recipe" && i.subRecipe)
+                .map((i) => i.subRecipe!.id),
+            ),
+          ];
+          const subRecipes = (await Promise.all(subIds.map((id) => recipesRepo.getWithIngredients(id))))
+            .filter((d): d is NonNullable<typeof d> => !!d)
+            .map((d) => ({ recipe: d.recipe, ingredients: d.ingredients }));
           await generateRecipePdf(recipe, ingredients, {
             visibility,
+            subRecipes,
             // Exporter identity is taken from the authenticated session — never typed.
             exporter: user ? { id: user.id, name: user.name, role: user.role } : undefined,
           });
