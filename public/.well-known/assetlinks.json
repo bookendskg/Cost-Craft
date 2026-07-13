@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.bookends.costcraft",
+      "package_name": "com.onrender.recepie_costing.twa",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_PWABUILDER_SIGNING_KEY_SHA256_FINGERPRINT"
+        "B6:07:35:CD:AA:61:A8:6C:52:2E:DB:67:87:3C:15:30:CC:FE:EC:88:FF:AD:A5:49:6B:A9:8F:EF:A4:40:2E:E2"
       ]
     }
   }
