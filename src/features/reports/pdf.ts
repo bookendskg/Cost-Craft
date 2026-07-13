@@ -210,7 +210,7 @@ export async function generateRecipePdf(
   // renders on page 1 because content flows from the first page.
   const logoBand: Content[] = logoDataUri
     ? (() => {
-        const chipW = 158, chipH = 56, chipX = (PAGE_W - chipW) / 2, chipY = 28;
+        const chipW = 158, chipH = 54, chipX = (PAGE_W - chipW) / 2, chipY = 20;
         return [
           { canvas: [{ type: "rect", x: chipX, y: chipY, w: chipW, h: chipH, r: 12, color: "#ffffff" }], absolutePosition: { x: 0, y: 0 } },
           // Center the logo on the page (the chip is page-centered), so it sits centered in
@@ -223,15 +223,17 @@ export async function generateRecipePdf(
 
   const doc: TDocumentDefinitions = {
     pageSize: "A4",
-    // Content flows INSIDE the white card (see background); big top margin leaves
-    // room for the logo band, bottom margin for the footer band.
-    pageMargins: [46, 142, 46, 86],
-    background: (_currentPage, pageSize): Content => {
+    // Content flows INSIDE the white card (see background). The top margin leaves
+    // room for the logo badge on page 1; the bottom margin clears the footer band.
+    pageMargins: [46, 86, 46, 76],
+    background: (currentPage, pageSize): Content => {
       const W = pageSize.width;
       const H = pageSize.height;
       const cardX = 22;
-      const cardTop = 118;
-      const cardBottom = 60;
+      // Page 1 keeps a taller top band for the logo badge; continuation pages use a
+      // thin band so the white card fills the page — no big empty red header on p2+.
+      const cardTop = currentPage === 1 ? 74 : 30;
+      const cardBottom = 52;
       const bg: Content[] = [
         {
           canvas: [
