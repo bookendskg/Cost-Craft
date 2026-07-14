@@ -1,30 +1,21 @@
 /**
  * Full-screen branded splash on the app's dark brand background. Shown while the
  * initial auth check resolves (installed/standalone app), then the root routes to
- * login or dashboard. Colours match the manifest background so it blends with the
- * native splash on a cold launch.
+ * login or dashboard. The background matches the logo art + manifest background so
+ * it blends seamlessly with the native cold-launch splash.
  */
 export function Splash() {
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-7 px-6"
-      style={{ backgroundColor: "#0b1622" }}
+      className="fixed inset-0 z-50 flex items-center justify-center px-6"
+      style={{ backgroundColor: "#010c12" }}
     >
       <img
-        src="/brand/mark.svg"
-        alt=""
-        className="w-[300px] max-w-[72vw] animate-pulse"
-        style={{ animationDuration: "1.8s" }}
+        src="/brand/costcraft-logo.png"
+        alt="CostCraft"
+        className="w-[380px] max-w-[82vw] animate-pulse"
+        style={{ animationDuration: "1.9s" }}
       />
-      <div className="text-center">
-        <p className="text-2xl font-semibold tracking-[0.28em]">
-          <span className="text-white">COST</span>
-          <span style={{ color: "#2bb6c4" }}>CRAFT</span>
-        </p>
-        <p className="mt-2 text-[11px] tracking-wide" style={{ color: "#8fae5b" }}>
-          By Bookends Hospitality
-        </p>
-      </div>
     </div>
   );
 }

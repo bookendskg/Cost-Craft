@@ -4,5 +4,6 @@ import { defineConfig, minimal2023Preset } from "@vite-pwa/assets-generator/conf
 // one source at build time — wired into vite-plugin-pwa via `pwaAssets`.
 export default defineConfig({
   preset: minimal2023Preset,
-  images: ["public/app-icon.svg"],
+  // Composed from the official artwork (assets/) by scripts/gen-app-icon.mjs.
+  images: ["public/app-icon.png"],
 });

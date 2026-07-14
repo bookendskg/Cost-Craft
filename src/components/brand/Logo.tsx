@@ -30,7 +30,7 @@ export function BrandMark({
       aria-hidden="true"
       className={cn("inline-flex shrink-0 items-center justify-center overflow-hidden shadow-sm", s.box, className)}
     >
-      <img src="/app-icon.svg" alt="" className="h-full w-full object-cover" />
+      <img src="/app-icon.png" alt="" className="h-full w-full object-cover" />
     </span>
   );
 }
