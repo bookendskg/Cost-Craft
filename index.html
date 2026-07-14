@@ -7,6 +7,11 @@
     <!-- manifest link is injected by vite-plugin-pwa at build. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#010c12" />
+    <!-- iOS "Add to Home Screen": launch full-screen (not in Safari chrome) with
+         the right home-screen title/status bar. Icon comes from apple-touch-icon. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="CostCraft" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta property="og:site_name" content="CostCraft" />
     <title>CostCraft — Recipe Costing &amp; Operations for Bookends Hospitality</title>
     <meta
@@ -45,6 +50,7 @@
           var app =
             /[?&]app=1/.test(location.search) ||
             (window.matchMedia && matchMedia("(display-mode: standalone)").matches) ||
+            window.navigator.standalone === true ||
             localStorage.getItem("cc_app_mode") === "1" ||
             (document.referrer || "").indexOf("android-app://") === 0;
           if (!app) {
