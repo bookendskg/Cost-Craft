@@ -52,6 +52,28 @@
             if (b) b.remove();
             document.documentElement.style.background = "";
             document.body.style.background = "";
+          } else {
+            // Installed app: always render the MOBILE layout, never the desktop
+            // one. The app's responsive breakpoints are viewport-width based, so
+            // on large screens (tablet, foldable, landscape, desktop PWA) we cap
+            // the CSS viewport to a phone width — every md:/lg: layout then falls
+            // back to its mobile form and scales up to fill the screen. Real
+            // phones are already < 640 (mobile), so we leave them at device-width
+            // (pixel-perfect, no zoom).
+            var applyAppViewport = function () {
+              var vp = document.querySelector('meta[name="viewport"]');
+              if (!vp) return;
+              var shortSide = Math.min(screen.width || 9999, screen.height || 9999);
+              var isPhone = shortSide <= 540;
+              vp.setAttribute(
+                "content",
+                isPhone
+                  ? "width=device-width, initial-scale=1, viewport-fit=cover"
+                  : "width=430, viewport-fit=cover"
+              );
+            };
+            applyAppViewport();
+            window.addEventListener("orientationchange", applyAppViewport);
           }
         } catch (e) {}
       })();
