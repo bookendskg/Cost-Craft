@@ -9,6 +9,8 @@ import { LoginPage } from "@/features/auth/LoginPage";
 import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/features/auth/ResetPasswordPage";
 import { SignUpPage } from "@/features/auth/SignUpPage";
+import { Splash } from "@/components/Splash";
+import { useSession } from "@/lib/auth/session";
 
 // Code-split app pages — each becomes its own chunk, kept out of the initial bundle.
 const DashboardPage = lazy(() => import("@/features/dashboard/DashboardPage").then((m) => ({ default: m.DashboardPage })));
@@ -48,9 +50,35 @@ function PublicRoute({ children }: { children: ReactNode }) {
   );
 }
 
+/** True when running as the installed app (PWA / Android TWA), not a browser tab. */
+function isStandalone(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia?.("(display-mode: standalone)").matches ||
+    // iOS Safari
+    (window.navigator as { standalone?: boolean }).standalone === true ||
+    document.referrer.startsWith("android-app://")
+  );
+}
+
+/**
+ * Entry at "/". In a browser: the marketing landing page (unchanged). In the
+ * installed app: a branded splash until auth resolves, then straight to the
+ * dashboard (signed in) or login (signed out) — the landing page is skipped.
+ */
+function RootEntry() {
+  const user = useSession((s) => s.user);
+  const authReady = useSession((s) => s.authReady);
+  if (!isStandalone()) {
+    return <PublicRoute><LandingPage /></PublicRoute>;
+  }
+  if (!authReady) return <Splash />;
+  return <Navigate to={user ? "/dashboard" : "/login"} replace />;
+}
+
 export const router = createBrowserRouter([
-  // Public landing page — unauthenticated visitors to "/" see this.
-  { path: "/", element: <PublicRoute><LandingPage /></PublicRoute> },
+  // "/" → marketing landing (web) or splash→login/dashboard (installed app).
+  { path: "/", element: <RootEntry /> },
   { path: "/login", element: <LoginPage /> },
   { path: "/signup", element: <SignUpPage /> },
   { path: "/forgot-password", element: <ForgotPasswordPage /> },

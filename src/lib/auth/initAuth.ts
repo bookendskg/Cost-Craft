@@ -26,10 +26,18 @@ async function applyProfile(uid: string) {
  * sign-in, sign-out, password recovery).
  */
 export function initAuth() {
-  if (!isSupabaseConfigured || !supabase) return;
+  // Mock mode: nothing to hydrate — the app is ready to route immediately.
+  if (!isSupabaseConfigured || !supabase) {
+    useSession.getState().setAuthReady(true);
+    return;
+  }
 
-  supabase.auth.getSession().then(({ data }) => {
-    if (data.session?.user) void applyProfile(data.session.user.id);
+  // Resolve the initial session BEFORE marking auth ready, and await profile
+  // hydration when signed in — so `authReady` never flips with a stale null user
+  // (which would flash the login screen for an already-signed-in user).
+  supabase.auth.getSession().then(async ({ data }) => {
+    if (data.session?.user) await applyProfile(data.session.user.id);
+    useSession.getState().setAuthReady(true);
   });
 
   supabase.auth.onAuthStateChange((event, session) => {

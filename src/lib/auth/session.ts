@@ -9,9 +9,13 @@ interface SessionState {
   user: User | null;
   loading: boolean;
   error: string | null;
+  /** True once the initial auth check has resolved (Supabase session hydrated, or
+   *  immediately in mock mode) — lets the app splash until we know who's signed in. */
+  authReady: boolean;
   login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;
+  setAuthReady: (ready: boolean) => void;
 }
 
 export const useSession = create<SessionState>()(
@@ -20,6 +24,7 @@ export const useSession = create<SessionState>()(
       user: null,
       loading: false,
       error: null,
+      authReady: false,
       async login(email, password) {
         set({ loading: true, error: null });
         try {
@@ -47,6 +52,9 @@ export const useSession = create<SessionState>()(
       },
       setUser(user) {
         set({ user });
+      },
+      setAuthReady(ready) {
+        set({ authReady: ready });
       },
     }),
     {
