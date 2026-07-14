@@ -285,7 +285,8 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
           ) : (
             <>
               <div className="dash-table-scroll overflow-auto">
-                <table className="w-full min-w-[720px] border-collapse text-sm">
+                {/* Tablet / desktop: full 8-column table (md and up). */}
+                <table className="hidden w-full min-w-[720px] border-collapse text-sm md:table">
                   <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur">
                     <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                       <th className="w-8 px-2 py-2 text-right">#</th>
@@ -337,6 +338,51 @@ export function MasterCostingDashboard({ brand }: { brand: BrandSelection }) {
                     })}
                   </tbody>
                 </table>
+
+                {/* Mobile: stacked cards (no horizontal scroll). Same rows/pagination. */}
+                <ul className="divide-y md:hidden">
+                  {pageRows.map(({ row, category }, i) => {
+                    const n = pageStart + i + 1;
+                    const showHeader = i === 0 || pageRows[i - 1].category !== category;
+                    const tone = fcBand(row.fcWith);
+                    return (
+                      <Fragment key={row.id}>
+                        {showHeader && (
+                          <li className="bg-muted/40 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-foreground">
+                            {category}
+                          </li>
+                        )}
+                        <li
+                          onClick={() => navigate(`/recipes/${row.id}`)}
+                          className={cn(
+                            "cursor-pointer px-3 py-2.5 active:bg-muted/60",
+                            row.missing && "bg-red-500/5",
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="min-w-0 font-medium">
+                              <span className="mr-1.5 text-xs text-muted-foreground">{n}</span>
+                              {row.name}
+                            </p>
+                            <span className={cn("shrink-0 rounded px-2 py-0.5 text-xs font-mono font-semibold", TONE_CELL[tone])}>
+                              {row.fcWith != null ? `${row.fcWith.toFixed(2)}%` : "—"}
+                            </span>
+                          </div>
+                          <dl className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                            <Stat label="Making ₹" value={row.making > 0 ? formatINR(row.making) : "—"} />
+                            <Stat label="Selling ₹" value={row.selling > 0 ? formatINR(row.selling) : "—"} />
+                            <Stat label="Pkg ₹" value={row.pkg > 0 ? formatINR(row.pkg) : "—"} />
+                            <Stat label="Weight" value={row.weight > 0 ? `${Math.round(row.weight)}g` : "—"} />
+                            <Stat
+                              label="FC % w/o Pkg"
+                              value={row.fcWithout != null ? `${row.fcWithout.toFixed(2)}%` : "—"}
+                            />
+                          </dl>
+                        </li>
+                      </Fragment>
+                    );
+                  })}
+                </ul>
               </div>
 
               {/* Pagination — pinned below the table so it sits at the Notes level */}
@@ -468,6 +514,15 @@ function Kpi({ label, value, accent, tone, onClick }: { label: string; value: st
       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}{onClick && <span className="ml-1 text-muted-foreground/70">›</span>}</p>
       <p className={cn("mt-1 text-2xl font-bold", valueColor)}>{value}</p>
     </Card>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="font-mono font-medium tabular-nums">{value}</dd>
+    </div>
   );
 }
 
