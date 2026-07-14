@@ -276,4 +276,34 @@ export const supabaseYieldsRepo = {
     });
     await cascadeMaterial(ingredientId, actorId, "Yield removed");
   },
+
+  /** Delete several yield records at once; each affected ingredient re-costs once. */
+  async bulkRemove(ids: string[], actorId: string): Promise<number> {
+    const c = sb();
+    const affected = new Set<string>();
+    let deleted = 0;
+    for (const id of ids) {
+      const { data: existing } = await c
+        .from("ingredient_yields")
+        .select("ingredient_id")
+        .eq("id", id)
+        .maybeSingle();
+      if (!existing) continue;
+      const { error } = await c.from("ingredient_yields").delete().eq("id", id);
+      if (error) fail("Delete yields", error.message);
+      affected.add((existing as { ingredient_id: string }).ingredient_id);
+      deleted++;
+    }
+    if (deleted > 0) {
+      await audit({
+        entity_type: "ingredient",
+        entity_id: "bulk",
+        action: "delete",
+        performed_by: actorId,
+        notes: `Deleted ${deleted} yield record${deleted === 1 ? "" : "s"}`,
+      });
+    }
+    for (const ing of affected) await cascadeMaterial(ing, actorId, "Yield removed");
+    return deleted;
+  },
 };

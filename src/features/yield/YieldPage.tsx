@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowDown,
@@ -20,6 +20,7 @@ import { Pagination } from "@/components/Pagination";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -56,7 +57,7 @@ import type { IngredientYield, RawMaterial } from "@/lib/data/types";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useRecipes } from "@/features/recipes/hooks";
 import { useAllRecipeIngredients } from "@/features/reports/hooks";
-import { useYields, useDeleteYield } from "./hooks";
+import { useYields, useDeleteYield, useBulkDeleteYield } from "./hooks";
 import { useUsersMap } from "@/features/users/hooks";
 import { YieldForm } from "./YieldForm";
 import { YieldBreakdownDialog } from "./YieldBreakdownDialog";
@@ -74,6 +75,7 @@ export function YieldPage() {
   const { data: recipes = [] } = useRecipes();
   const { data: recipeIngredients = [] } = useAllRecipeIngredients();
   const deleteMut = useDeleteYield();
+  const bulkDelMut = useBulkDeleteYield();
 
   const matById = useMemo(() => new Map(materials.map((m) => [m.id, m])), [materials]);
   const categories = useMemo(
@@ -110,6 +112,8 @@ export function YieldPage() {
   const [breakdownFor, setBreakdownFor] = useState<IngredientYield | null>(null);
   const [deleting, setDeleting] = useState<IngredientYield | null>(null);
   const [recipesForYield, setRecipesForYield] = useState<(IngredientYield & { material: RawMaterial | null }) | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   type Row = IngredientYield & { material: RawMaterial | null };
   const rows = useMemo<Row[]>(
@@ -151,6 +155,38 @@ export function YieldPage() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, pageCount);
   const pageItems = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+
+  // Multi-select (like Raw Materials): clear when the visible set changes.
+  useEffect(() => {
+    setSelected(new Set());
+  }, [search, category, wastageBand, yieldBand, sort]);
+
+  const pageIds = pageItems.map((r) => r.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+  const toggleOne = (id: string) =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const toggleAllPage = () =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (allPageSelected) pageIds.forEach((id) => n.delete(id));
+      else pageIds.forEach((id) => n.add(id));
+      return n;
+    });
+  const runBulkDelete = async () => {
+    const ids = [...selected];
+    try {
+      const n = await bulkDelMut.mutateAsync(ids);
+      setSelected(new Set());
+      toast.success(`Deleted ${n} yield record${n === 1 ? "" : "s"}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Bulk delete failed");
+    }
+  };
 
   // Summary stats
   const stats = useMemo(() => {
@@ -274,6 +310,20 @@ export function YieldPage() {
         </div>
       </Card>
 
+      {/* Bulk action bar */}
+      {canEdit && selected.size > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border bg-muted/50 px-4 py-2.5 text-sm">
+          <span className="font-medium">{selected.size} selected</span>
+          <div className="flex-1" />
+          <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)}>
+            <Trash2 className="h-4 w-4" /> Delete
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+            Clear
+          </Button>
+        </div>
+      )}
+
       <Card>
         {isLoading ? (
           <TableSkeleton rows={6} cols={6} />
@@ -290,6 +340,11 @@ export function YieldPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {canEdit && (
+                      <TableHead className="w-10">
+                        <Checkbox checked={allPageSelected} onCheckedChange={toggleAllPage} aria-label="Select all on page" />
+                      </TableHead>
+                    )}
                     <SortHead label="Yield Name" k="name" />
                     <TableHead>Category</TableHead>
                     <SortHead label="Wastage %" k="wastage" className="text-right" />
@@ -303,7 +358,12 @@ export function YieldPage() {
                 </TableHeader>
                 <TableBody>
                   {pageItems.map((r) => (
-                    <TableRow key={r.id} className="cursor-pointer" onClick={() => setBreakdownFor(r)}>
+                    <TableRow key={r.id} className="cursor-pointer" data-state={selected.has(r.id) ? "selected" : undefined} onClick={() => setBreakdownFor(r)}>
+                      {canEdit && (
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleOne(r.id)} aria-label={`Select ${r.material?.ingredient_name ?? "yield"}`} />
+                        </TableCell>
+                      )}
                       <TableCell className="font-medium">
                         {r.name || `${r.material?.ingredient_name ?? "—"} Yield`}
                         {r.name && r.material?.ingredient_name && (
@@ -337,6 +397,9 @@ export function YieldPage() {
             <ul className="divide-y md:hidden">
               {pageItems.map((r) => (
                 <li key={r.id} className="flex items-start gap-3 p-4">
+                  {canEdit && (
+                    <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleOne(r.id)} className="mt-1" aria-label={`Select ${r.material?.ingredient_name ?? "yield"}`} />
+                  )}
                   <button className="min-w-0 flex-1 text-left" onClick={() => setBreakdownFor(r)}>
                     <p className="truncate font-medium">{r.name || `${r.material?.ingredient_name ?? "—"} Yield`}</p>
                     <p className="text-xs text-muted-foreground">{r.material?.ingredient_name ?? r.material?.category}</p>
@@ -410,6 +473,16 @@ export function YieldPage() {
             toast.error(e instanceof Error ? e.message : "Delete failed");
           }
         }}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title={`Delete ${selected.size} yield record${selected.size === 1 ? "" : "s"}?`}
+        description="The selected yield records will be removed. Recipes using them fall back to the standard purchase cost."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={runBulkDelete}
       />
 
       <Dialog open={!!recipesForYield} onOpenChange={(o) => !o && setRecipesForYield(null)}>

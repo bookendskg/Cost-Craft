@@ -39,3 +39,12 @@ export function useDeleteYield() {
     onSuccess: () => invalidate(qc),
   });
 }
+
+export function useBulkDeleteYield() {
+  const qc = useQueryClient();
+  const actorId = useActorId();
+  return useMutation({
+    mutationFn: (ids: string[]) => yieldsRepo.bulkRemove(ids, actorId),
+    onSuccess: () => invalidate(qc),
+  });
+}

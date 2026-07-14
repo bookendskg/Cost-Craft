@@ -242,4 +242,30 @@ export const yieldsRepo = {
       }),
     );
   },
+
+  /** Delete several yield records at once; each affected ingredient re-costs once. */
+  async bulkRemove(ids: string[], actorId: string): Promise<number> {
+    return delay(
+      mutate((db) => {
+        let deleted = 0;
+        const affected = new Set<string>();
+        for (const id of ids) {
+          const y = db.ingredient_yields.find((x) => x.id === id);
+          if (!y) continue;
+          db.ingredient_yields = db.ingredient_yields.filter((x) => x.id !== id);
+          recordAudit(db, {
+            entity_type: "ingredient",
+            entity_id: y.ingredient_id,
+            action: "delete",
+            performed_by: actorId,
+            notes: "Deleted yield record",
+          });
+          affected.add(y.ingredient_id);
+          deleted++;
+        }
+        for (const ing of affected) cascadeFromMaterial(db, ing, actorId, "Yield removed");
+        return deleted;
+      }),
+    );
+  },
 };
