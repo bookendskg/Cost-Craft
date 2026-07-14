@@ -251,6 +251,9 @@ export interface User {
   /** Whether this user may reach the Data Import hub. Super Admins always; any
    *  other user only when a Super Admin grants it. */
   can_import?: boolean;
+  /** Whether this user may open and use Wastage Management. Super Admins always;
+   *  any other user only when a Super Admin grants it. */
+  can_manage_wastage?: boolean;
   /** Self sign-ups start unapproved (false) and can't enter the app until an
    *  admin verifies them. Owners/admin-created/seed users are approved. A missing
    *  value means approved (legacy/seed users). */

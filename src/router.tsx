@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { AppLayout } from "@/layouts/AppLayout";
 import { RequireAuth, RequireRole } from "@/features/auth/guards";
-import { canImport } from "@/lib/auth/permissions";
+import { canImport, canManageWastage } from "@/lib/auth/permissions";
 // Auth shell stays eager (small, first paint); everything else is code-split.
 import { LoginPage } from "@/features/auth/LoginPage";
 import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
@@ -112,7 +112,7 @@ export const router = createBrowserRouter([
       {
         path: "wastage",
         element: (
-          <RequireRole roles={["admin", "editor", "head_chef"]} cap="wastage.create">
+          <RequireRole roles={["super_admin"]} allow={canManageWastage}>
             <WastagePage />
           </RequireRole>
         ),

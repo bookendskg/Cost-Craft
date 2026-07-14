@@ -4153,6 +4153,10 @@ alter table public.recipes
 alter table public.user_profiles
   add column if not exists can_import boolean not null default false;
 
+-- ── 0032_user_can_manage_wastage.sql — per-user Wastage Management access grant ─
+alter table public.user_profiles
+  add column if not exists can_manage_wastage boolean not null default false;
+
 -- ── 0031_share_link_sub_recipes.sql — sub-recipe breakdown in shared payload ─
 create or replace function public.resolve_share_link(p_token text)
 returns jsonb

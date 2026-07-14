@@ -33,7 +33,7 @@ import {
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatINR, formatDate } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session";
-import { accessibleOutlets, can, canAccessOutlet, userBrands } from "@/lib/auth/permissions";
+import { accessibleOutlets, canAccessOutlet, canManageWastage, userBrands } from "@/lib/auth/permissions";
 import { WASTAGE_TYPES, type WastageEntry } from "@/lib/data/types";
 import { useMaterials } from "@/features/raw-materials/hooks";
 import { useRecipes } from "@/features/recipes/hooks";
@@ -47,7 +47,7 @@ const PAGE_SIZE = 10;
 
 export function WastagePage() {
   const user = useSession((s) => s.user)!;
-  const canEdit = can(user.role, "wastage.create");
+  const canEdit = canManageWastage(user);
   const { data: brands = [] } = useBrands();
   const allBrandIds = brands.map((b) => b.id);
   const myBrands = userBrands(user, allBrandIds);

@@ -94,6 +94,16 @@ export const supabaseUsersRepo = {
         .single<ProfileRow>();
       if (!r.error && r.data) profile = r.data;
     }
+    // Wastage-access grant — same best-effort pattern (db/migrations/0032).
+    if (patch.can_manage_wastage !== undefined) {
+      const r = await client()
+        .from("user_profiles")
+        .update({ can_manage_wastage: patch.can_manage_wastage })
+        .eq("id", id)
+        .select("*")
+        .single<ProfileRow>();
+      if (!r.error && r.data) profile = r.data;
+    }
     return profileToUser(profile);
   },
 

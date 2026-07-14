@@ -59,8 +59,9 @@ export function UserEditorPage() {
   const [outletScope, setOutletScope] = useState<OutletScopeUi>("DEFAULT");
   const [selectedOutletIds, setSelectedOutletIds] = useState<string[]>([]);
   const [assignedOutlet, setAssignedOutlet] = useState<string>("");
-  // Per-user Data Import grant (Super Admin only). Non-RHF, like the scopes.
+  // Per-user Data Import & Wastage grants (Super Admin only). Non-RHF, like the scopes.
   const [canImportGrant, setCanImportGrant] = useState(false);
+  const [canManageWastageGrant, setCanManageWastageGrant] = useState(false);
 
   // Dirty tracking spans RHF fields AND all the access-scope state (extra).
   const scopeState = {
@@ -71,6 +72,7 @@ export function UserEditorPage() {
     so: [...selectedOutletIds].sort(),
     ao: assignedOutlet,
     ci: canImportGrant,
+    cw: canManageWastageGrant,
   };
   const { dirty, isDirtyNow, capture, markSaved } = useFormDirty(form, true, scopeState);
   const unsaved = useUnsavedChanges(dirty, isDirtyNow);
@@ -89,6 +91,7 @@ export function UserEditorPage() {
     setSelectedOutletIds(user?.selected_outlet_ids ?? []);
     setAssignedOutlet(user?.assigned_outlet ?? "");
     setCanImportGrant(user?.can_import === true);
+    setCanManageWastageGrant(user?.can_manage_wastage === true);
     capture({
       bs: user?.brand_scope ?? "DEFAULT",
       sb: [...(user?.selected_brand_ids ?? [])].sort(),
@@ -97,6 +100,7 @@ export function UserEditorPage() {
       so: [...(user?.selected_outlet_ids ?? [])].sort(),
       ao: user?.assigned_outlet ?? "",
       ci: user?.can_import === true,
+      cw: user?.can_manage_wastage === true,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isEdit]);
@@ -158,7 +162,7 @@ export function UserEditorPage() {
             status: values.status,
             password: values.password || undefined,
             ...scope,
-            ...(iAmSuper ? { can_import: canImportGrant } : {}),
+            ...(iAmSuper ? { can_import: canImportGrant, can_manage_wastage: canManageWastageGrant } : {}),
           },
         });
         toast.success("User updated");
@@ -174,7 +178,7 @@ export function UserEditorPage() {
           status: values.status,
           password: values.password,
           ...scope,
-          ...(iAmSuper ? { can_import: canImportGrant } : {}),
+          ...(iAmSuper ? { can_import: canImportGrant, can_manage_wastage: canManageWastageGrant } : {}),
         });
         toast.success("User created");
       }
@@ -338,8 +342,8 @@ export function UserEditorPage() {
             </div>
           )}
 
-          {/* Data Import grant — only a Super Admin may set it, and it's redundant
-              for a Super Admin target (they always have access). */}
+          {/* Data Import & Wastage grants — only a Super Admin may set them, and they're
+              redundant for a Super Admin target (they always have access). */}
           {iAmSuper && role !== "super_admin" && (
             <label className="flex cursor-pointer items-start gap-2.5 rounded-md border p-3 text-sm">
               <Checkbox className="mt-0.5" checked={canImportGrant} onCheckedChange={(c) => setCanImportGrant(!!c)} />
@@ -347,6 +351,18 @@ export function UserEditorPage() {
                 <span className="font-medium">Allow access to Data Import</span>
                 <span className="block text-[11px] text-muted-foreground">
                   Lets this user open the Import Data hub to bulk-import raw materials, recipes, prep and yields.
+                </span>
+              </span>
+            </label>
+          )}
+
+          {iAmSuper && role !== "super_admin" && (
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-md border p-3 text-sm">
+              <Checkbox className="mt-0.5" checked={canManageWastageGrant} onCheckedChange={(c) => setCanManageWastageGrant(!!c)} />
+              <span>
+                <span className="font-medium">Allow access to Wastage Management</span>
+                <span className="block text-[11px] text-muted-foreground">
+                  Lets this user open and use the Wastage Management page (record and edit wastage).
                 </span>
               </span>
             </label>

@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Role, User } from "@/lib/data/types";
-import { can, canImport, type Capability } from "@/lib/auth/permissions";
+import { can, canImport, canManageWastage, type Capability } from "@/lib/auth/permissions";
 
 /** Sidebar section a nav item belongs to (rendered as a labelled group). */
 export type NavGroup = "Overview" | "Catalog" | "Operations" | "Admin";
@@ -46,7 +46,8 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/recipes", label: "Recipes", icon: BookOpen, group: "Catalog", roles: ["admin", "editor", "head_chef", "chef", "viewer"], cap: "recipe.viewAll" },
   { to: "/prep", label: "In-House Prep", icon: ChefHat, group: "Catalog", roles: ["admin", "editor", "head_chef"], cap: "recipe.editAll" },
   { to: "/yield", label: "Yield Management", icon: Sprout, group: "Catalog", roles: ["admin", "editor", "head_chef"], cap: "yield.manage" },
-  { to: "/wastage", label: "Wastage Management", icon: Trash2, group: "Operations", roles: ["admin", "editor", "head_chef"], cap: "wastage.create" },
+  // Wastage Management — Super Admins, plus any user a Super Admin grants can_manage_wastage.
+  { to: "/wastage", label: "Wastage Management", icon: Trash2, group: "Operations", roles: ["super_admin"], grant: canManageWastage },
   { to: "/approvals", label: "Approvals", icon: CheckCircle2, group: "Operations", roles: ["admin"], cap: "recipe.approve" },
   // Reports now hosts its own tabs: Reports + (Admin-only) Export History &
   // Access History — so those two no longer have their own nav items.

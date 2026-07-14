@@ -21,6 +21,7 @@ export interface ProfileRow {
   show_cost: boolean | null;
   dashboard_access: boolean;
   can_import: boolean | null;
+  can_manage_wastage: boolean | null;
   theme_pref: string | null; // 'light' | 'dark' | 'capiche' | 'aiko'
   last_login: string | null;
   last_role_update: string | null;
@@ -55,6 +56,7 @@ export function profileToUser(p: ProfileRow): User {
     show_cost: p.show_cost ?? undefined,
     dashboard_access: p.dashboard_access,
     can_import: p.can_import ?? false,
+    can_manage_wastage: p.can_manage_wastage ?? false,
     theme_pref: p.theme_pref,
     last_login: p.last_login,
     last_role_update: p.last_role_update,
