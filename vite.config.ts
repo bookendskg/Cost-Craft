@@ -21,7 +21,9 @@ export default defineConfig({
         background_color: "#010c12",
         display: "standalone",
         orientation: "any",
-        start_url: "/",
+        // `?app=1` marks installed-app launches so "/" skips the marketing landing
+        // and shows the splash → login/dashboard (see RootEntry in router.tsx).
+        start_url: "/?app=1",
         scope: "/",
         categories: ["business", "productivity", "food"],
       },

@@ -50,15 +50,31 @@ function PublicRoute({ children }: { children: ReactNode }) {
   );
 }
 
-/** True when running as the installed app (PWA / Android TWA), not a browser tab. */
-function isStandalone(): boolean {
+/**
+ * True when running as the installed app (PWA / Android TWA), not a browser tab.
+ * TWAs don't reliably report a single signal, so we OR several — the launch-URL
+ * marker (`?app=1`, set on the manifest start_url), display-mode variants, the iOS
+ * flag, and the TWA referrer — and remember the result (a TWA's referrer only marks
+ * the FIRST launch, so we persist it for later cold starts).
+ */
+function isInstalledApp(): boolean {
   if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia?.("(display-mode: standalone)").matches ||
-    // iOS Safari
-    (window.navigator as { standalone?: boolean }).standalone === true ||
-    document.referrer.startsWith("android-app://")
-  );
+  try {
+    const KEY = "cc_app_mode";
+    if (localStorage.getItem(KEY) === "1") return true;
+    const mm = (q: string) => window.matchMedia?.(q).matches === true;
+    const installed =
+      new URLSearchParams(window.location.search).get("app") === "1" ||
+      mm("(display-mode: standalone)") ||
+      mm("(display-mode: fullscreen)") ||
+      mm("(display-mode: minimal-ui)") ||
+      (window.navigator as { standalone?: boolean }).standalone === true ||
+      document.referrer.startsWith("android-app://");
+    if (installed) localStorage.setItem(KEY, "1");
+    return installed;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -69,7 +85,7 @@ function isStandalone(): boolean {
 function RootEntry() {
   const user = useSession((s) => s.user);
   const authReady = useSession((s) => s.authReady);
-  if (!isStandalone()) {
+  if (!isInstalledApp()) {
     return <PublicRoute><LandingPage /></PublicRoute>;
   }
   if (!authReady) return <Splash />;
