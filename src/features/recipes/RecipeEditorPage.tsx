@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { recipeHeaderSchema, type RecipeHeaderValues } from "@/lib/validation/schemas";
 import { compatibleUnits, canConvert } from "@/lib/units";
-import { calculateIngredientCost, prepUnitCostFrom, round2 } from "@/lib/costing";
+import { calculateIngredientCost, prepUnitCostFrom, prepYieldForPricing, round2 } from "@/lib/costing";
 import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "@/lib/yield";
 import { cutsForName, cutYieldPct, resolveParentAndCut } from "@/lib/data/ingredientCuts";
 import { formatINR } from "@/lib/utils";
@@ -504,7 +504,7 @@ export function RecipeEditorPage() {
                   const yieldRec = material ? activeYield(yields, material.id) : null;
                   let lineCost: number | null = null;
                   if (prep && line.quantity_used > 0) {
-                    const perUnit = prepUnitCostFrom(prep.total_cost ?? 0, prep.yield_quantity, prep.wastage_pct ?? 0);
+                    const perUnit = prepUnitCostFrom(prep.total_cost ?? 0, prepYieldForPricing(prep), prep.wastage_pct ?? 0);
                     lineCost = round2(perUnit * line.quantity_used);
                   } else if (material && line.quantity_used > 0 && canConvert(line.unit_used, material.base_unit)) {
                     // Cut yield takes priority; else §9/§10 yield-adjusted rate.

@@ -21,6 +21,7 @@ import type { ImportSummary } from "../../import/importTypes";
 import { nowISO, uid } from "../mock/db";
 import {
   audit,
+  cascadePrep,
   fail,
   loadCostingDb,
   recomputeRecipes,
@@ -831,6 +832,9 @@ export const supabaseRecipesRepo = {
       .single();
     if (error) fail("Set cooked weight", error.message);
     const recipe = data as Recipe;
+    // Cooked weight is a prep's pricing basis — recompute every recipe that uses it
+    // (the DB now holds the new cooked weight that loadCostingDb reads).
+    await cascadePrep(id, actorId, "Cooked weight updated");
     await audit({
       entity_type: "recipe",
       entity_id: id,

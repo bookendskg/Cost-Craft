@@ -44,7 +44,7 @@ import {
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ShareLinkDialog } from "@/features/share/ShareLinkDialog";
 import { cn, formatDate, formatINR, formatUnit, formatWeight } from "@/lib/utils";
-import { prepUnitCostFrom, round2 } from "@/lib/costing";
+import { prepUnitCostFrom, prepYieldForPricing, round2 } from "@/lib/costing";
 
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
 import { useBrands } from "@/features/brands/hooks";
@@ -434,6 +434,11 @@ export function RecipeDetailPage() {
                             : `${-cookingLossPct}% weight gain`}
                         </p>
                       )}
+                      {recipe.is_prep && showFinancials && recipe.cooked_weight_g != null && recipe.cooked_weight_g > 0 && (recipe.total_cost ?? 0) > 0 && (
+                        <p className="text-[10px] font-medium text-emerald-700">
+                          {formatINR(prepUnitCostFrom(recipe.total_cost ?? 0, prepYieldForPricing(recipe), recipe.wastage_pct ?? 0))} / g
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -518,7 +523,7 @@ export function RecipeDetailPage() {
                       const m = ing.material;
                       if (ing.component_type === "recipe" && sub) {
                         // Sub-recipe (in-house prep) component — double-click to open it.
-                        const perUnit = prepUnitCostFrom(sub.total_cost ?? 0, sub.yield_quantity, sub.wastage_pct ?? 0);
+                        const perUnit = prepUnitCostFrom(sub.total_cost ?? 0, prepYieldForPricing(sub), sub.wastage_pct ?? 0);
                         const cost = round2(perUnit * ing.quantity_used * scale);
                         const openSub = () =>
                           navigate(`/recipes/${sub.id}`, {

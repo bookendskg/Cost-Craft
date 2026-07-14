@@ -126,6 +126,17 @@ export function prepUnitCostFrom(
   return raw / y;
 }
 
+/**
+ * The quantity (grams) a prep's total cost is spread over when pricing it as a
+ * component: the COOKED (finished) weight when the chef recorded one, else the raw
+ * yield. A prep loses weight when cooked, so 1 g of the finished prep is dearer.
+ * `yield_unit` for preps is always "Gram", so `cooked_weight_g` (grams) is a valid
+ * divisor with no unit conversion.
+ */
+export function prepYieldForPricing(r: { yield_quantity: number; cooked_weight_g?: number | null }): number {
+  return r.cooked_weight_g != null && r.cooked_weight_g > 0 ? r.cooked_weight_g : r.yield_quantity;
+}
+
 /** Percentage change between two cost values (used by the price cascade). */
 export function percentChange(oldValue: number, newValue: number): number {
   if (oldValue === 0) return newValue === 0 ? 0 : 100;

@@ -7,6 +7,8 @@ import {
   calculateProfitMetrics,
   calculateRecipeCosting,
   percentChange,
+  prepUnitCostFrom,
+  prepYieldForPricing,
 } from "./costing";
 import { getConversionFactor, canConvert } from "./units";
 
@@ -56,6 +58,23 @@ describe("calculateIngredientCost (PRD §4.4)", () => {
   });
   it("500ml Milk @ ₹0.08/ml = ₹40.00", () => {
     expect(calculateIngredientCost(0.08, 500, "ML", "ML")).toBe(40);
+  });
+});
+
+describe("prep pricing on cooked weight", () => {
+  it("prefers cooked weight over raw yield", () => {
+    expect(prepYieldForPricing({ yield_quantity: 5840, cooked_weight_g: 1700 })).toBe(1700);
+  });
+  it("falls back to raw yield when no cooked weight (null / 0)", () => {
+    expect(prepYieldForPricing({ yield_quantity: 5840, cooked_weight_g: null })).toBe(5840);
+    expect(prepYieldForPricing({ yield_quantity: 5840, cooked_weight_g: 0 })).toBe(5840);
+    expect(prepYieldForPricing({ yield_quantity: 5840 })).toBe(5840);
+  });
+  it("Ricotta: ₹512.58 over cooked 1.7kg → 10g costs ≈ ₹3.02 (vs ≈ ₹0.88 on raw)", () => {
+    const cookedRate = prepUnitCostFrom(512.58, prepYieldForPricing({ yield_quantity: 5840, cooked_weight_g: 1700 }), 0);
+    const rawRate = prepUnitCostFrom(512.58, prepYieldForPricing({ yield_quantity: 5840 }), 0);
+    expect(cookedRate * 10).toBeCloseTo(3.02, 1);
+    expect(rawRate * 10).toBeCloseTo(0.88, 1);
   });
 });
 

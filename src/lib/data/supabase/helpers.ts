@@ -5,7 +5,7 @@
 
 import { supabase } from "@/lib/supabase/client";
 import type { MockDb } from "../mock/db";
-import { cascadeFromMaterial, recomputeAndPropagate } from "../mock/recompute";
+import { cascadeFromMaterial, cascadeFromPrep, recomputeAndPropagate } from "../mock/recompute";
 
 /** Non-null Supabase client (Phase 2 repos are only selected when configured). */
 export function sb() {
@@ -82,6 +82,14 @@ export async function cascadeMaterial(ingredientId: string, actorId: string, rea
   const db = await loadCostingDb();
   const before = snapshotBefore(db);
   cascadeFromMaterial(db, ingredientId, actorId, reason);
+  await persistCostChanges(before, db);
+}
+
+/** Recompute + persist every recipe that USES a prep (after its cooked weight changes). */
+export async function cascadePrep(prepId: string, actorId: string, reason: string): Promise<void> {
+  const db = await loadCostingDb();
+  const before = snapshotBefore(db);
+  cascadeFromPrep(db, prepId, actorId, reason);
   await persistCostChanges(before, db);
 }
 

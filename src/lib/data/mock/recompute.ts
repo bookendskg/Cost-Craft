@@ -2,7 +2,7 @@
 // Centralises the cost roll-up (PRD §4.5) including sub-recipe (in-house prep)
 // components, so ingredient price changes and recipe edits stay consistent.
 
-import { calculateIngredientCost, prepUnitCostFrom, round2 } from "../../costing";
+import { calculateIngredientCost, prepUnitCostFrom, prepYieldForPricing, round2 } from "../../costing";
 import { canConvert, getConversionFactor, toWeightGrams } from "../../units";
 import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "../../yield";
 import { resolveParentAndCut, cutYieldPct } from "../ingredientCuts";
@@ -19,9 +19,9 @@ export function findMaterial(db: MockDb, id: string): RawMaterial | undefined {
   return db.raw_materials.find((m) => m.id === id);
 }
 
-/** A prep recipe's cost per unit of its yield (pre-wastage; ₹/gram). */
+/** A prep recipe's cost per gram of its FINISHED (cooked, else raw) yield (pre-wastage). */
 export function prepUnitCost(recipe: Recipe): number {
-  return prepUnitCostFrom(recipe.total_cost ?? 0, recipe.yield_quantity, recipe.wastage_pct ?? 0);
+  return prepUnitCostFrom(recipe.total_cost ?? 0, prepYieldForPricing(recipe), recipe.wastage_pct ?? 0);
 }
 
 /** Cost of one recipe line — a raw material or a sub-recipe (prep). */
@@ -168,6 +168,28 @@ export function cascadeFromMaterial(
     ),
   ];
   recomputeAndPropagate(db, affected, actorId, reason);
+}
+
+/**
+ * Recompute every recipe that USES a given prep as a sub-recipe component. Needed
+ * when a prep's cooked weight changes: its own total_cost is unchanged (so normal
+ * propagation wouldn't fire), but its per-gram rate — and therefore its consumers'
+ * costs — did change. Seeds the cascade with the prep's parents.
+ */
+export function cascadeFromPrep(
+  db: MockDb,
+  prepId: string,
+  actorId: string | null,
+  reason: string,
+): void {
+  const parents = [
+    ...new Set(
+      db.recipe_ingredients
+        .filter((ri) => ri.component_type === "recipe" && ri.ingredient_id === prepId)
+        .map((ri) => ri.recipe_id),
+    ),
+  ];
+  recomputeAndPropagate(db, parents, actorId, reason);
 }
 
 export function recordAudit(

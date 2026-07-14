@@ -10,7 +10,7 @@ import type {
 } from "../types";
 import type { ImportSummary } from "../../import/importTypes";
 import { delay, getDb, type MockDb, mutate, nowISO, uid } from "./db";
-import { findMaterial, recomputeAndPropagate, recordAudit } from "./recompute";
+import { cascadeFromPrep, findMaterial, recomputeAndPropagate, recordAudit } from "./recompute";
 
 /** One row of a recipe import (§37) — one ingredient line; many rows per recipe. */
 export interface ImportRecipeLine {
@@ -671,6 +671,8 @@ export const recipesRepo = {
         recipe.cooked_weight_g = grams;
         recipe.updated_at = nowISO();
         recipe.updated_by = actorId;
+        // Cooked weight is a prep's pricing basis — recompute every recipe that uses it.
+        cascadeFromPrep(db, id, actorId, "Cooked weight updated");
         recordAudit(db, {
           entity_type: "recipe",
           entity_id: id,

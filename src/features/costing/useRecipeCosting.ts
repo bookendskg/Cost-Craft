@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { calculateIngredientCost, prepUnitCostFrom, round2, type RecipeCostingResult } from "@/lib/costing";
+import { calculateIngredientCost, prepUnitCostFrom, prepYieldForPricing, round2, type RecipeCostingResult } from "@/lib/costing";
 import { canConvert, getConversionFactor, toWeightGrams } from "@/lib/units";
 import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "@/lib/yield";
 import { resolveParentAndCut, cutYieldPct } from "@/lib/data/ingredientCuts";
@@ -37,9 +37,9 @@ export interface RecipeCostingView extends RecipeCostingResult {
   totalWeightGrams: number;
 }
 
-/** A prep recipe's cost per unit of its yield (pre-wastage; ₹/gram). */
+/** A prep recipe's cost per gram of its FINISHED (cooked, else raw) yield (pre-wastage). */
 function prepUnitCost(r: Recipe): number {
-  return prepUnitCostFrom(r.total_cost ?? 0, r.yield_quantity, r.wastage_pct ?? 0);
+  return prepUnitCostFrom(r.total_cost ?? 0, prepYieldForPricing(r), r.wastage_pct ?? 0);
 }
 
 /**
