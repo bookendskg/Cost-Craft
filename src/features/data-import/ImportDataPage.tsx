@@ -97,10 +97,10 @@ export function ImportDataPage() {
           onImport={() => setOpen("recipes")}
           importDisabled={brandOptions.length === 0}
         >
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-muted-foreground">Brand</span>
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <span className="shrink-0 text-xs font-medium text-muted-foreground">Brand</span>
             <Select value={brand} onValueChange={(v) => setBrand(v as "capiche" | "aiko")}>
-              <SelectTrigger className="h-9 w-40">
+              <SelectTrigger className="h-9 w-full sm:w-40">
                 <SelectValue placeholder="Select brand" />
               </SelectTrigger>
               <SelectContent>
@@ -141,7 +141,7 @@ function SectionCard({
   children?: React.ReactNode;
 }) {
   return (
-    <Card className="flex flex-col gap-3 p-5">
+    <Card className="flex min-w-0 flex-col gap-3 p-4 sm:p-5">
       <div className="flex items-start gap-3">
         <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           {icon}
@@ -154,9 +154,9 @@ function SectionCard({
 
       <FormatPreview config={config} />
 
-      <div className="mt-auto flex items-center justify-between gap-3">
-        {children ?? <span />}
-        <Button size="sm" onClick={onImport} disabled={importDisabled}>
+      <div className="mt-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {children ?? <span className="hidden sm:block" />}
+        <Button size="sm" className="w-full sm:w-auto" onClick={onImport} disabled={importDisabled}>
           <Upload className="h-4 w-4" /> Import
         </Button>
       </div>
@@ -165,40 +165,66 @@ function SectionCard({
 }
 
 /** Compact preview of the expected columns + one sample row, so a Super Admin sees
- *  the exact format before uploading. Data comes straight from the ImportConfig. */
+ *  the exact format before uploading. Data comes straight from the ImportConfig.
+ *
+ *  Two presentations off the same rows: a stacked label→value list on phones (the
+ *  8-column table would otherwise force the whole page to scroll sideways), and the
+ *  spreadsheet-shaped table from `sm` up. */
 function FormatPreview({ config }: { config: PreviewConfig }) {
   const sample = config.sample as Record<string, unknown>;
+  const rows = config.columns.map((c) => {
+    const v = sample[c.label];
+    return {
+      label: c.label,
+      required: c.required,
+      value: v == null || v === "" ? "—" : String(v),
+    };
+  });
+
   return (
-    <div>
+    <div className="min-w-0">
       <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         Expected format · {config.columns.length} columns
       </p>
-      <div className="overflow-x-auto rounded-md border">
+
+      {/* Phones: one row per column, no horizontal scrolling. */}
+      <div className="divide-y rounded-md border text-xs sm:hidden">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-baseline justify-between gap-3 px-2.5 py-1.5">
+            <span className="shrink-0 font-semibold text-foreground">
+              {r.label}
+              {r.required && <span className="text-destructive"> *</span>}
+            </span>
+            <span className="truncate text-right text-muted-foreground">{r.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* sm and up: the real table shape, scrolling inside the card if needed. */}
+      <div className="hidden min-w-0 overflow-x-auto rounded-md border sm:block">
         <table className="w-full border-collapse text-xs">
           <thead>
             <tr className="bg-muted/50">
-              {config.columns.map((c) => (
-                <th key={c.label} className="whitespace-nowrap px-2.5 py-1.5 text-left font-semibold text-foreground">
-                  {c.label}
-                  {c.required && <span className="text-destructive"> *</span>}
+              {rows.map((r) => (
+                <th key={r.label} className="whitespace-nowrap px-2.5 py-1.5 text-left font-semibold text-foreground">
+                  {r.label}
+                  {r.required && <span className="text-destructive"> *</span>}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
             <tr>
-              {config.columns.map((c) => {
-                const v = sample[c.label];
-                return (
-                  <td key={c.label} className="whitespace-nowrap border-t px-2.5 py-1.5 text-muted-foreground">
-                    {v == null || v === "" ? "—" : String(v)}
-                  </td>
-                );
-              })}
+              {rows.map((r) => (
+                <td key={r.label} className="whitespace-nowrap border-t px-2.5 py-1.5 text-muted-foreground">
+                  {r.value}
+                </td>
+              ))}
             </tr>
           </tbody>
         </table>
       </div>
+
       <p className="mt-1.5 text-[11px] text-muted-foreground">
         <span className="text-destructive">*</span> required · one row per ingredient
       </p>

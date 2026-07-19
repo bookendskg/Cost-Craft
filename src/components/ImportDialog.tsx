@@ -101,7 +101,9 @@ export function ImportDialog<T>({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && close()}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      {/* dvh (not vh) so mobile browser chrome never clips the dialog; the calc()
+          width keeps a gutter on phones instead of sitting edge-to-edge. */}
+      <DialogContent className="max-h-[90dvh] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto sm:w-full">
         <DialogHeader>
           <DialogTitle>{config.title}</DialogTitle>
           <DialogDescription>
