@@ -1,4 +1,4 @@
-# CostCraft — Import Templates
+# Kost Kraft — Import Templates
 
 Where to import in the app (each page has an **Import** button that opens a dialog with
 a **Download template** option and Add / Update / Upsert modes):

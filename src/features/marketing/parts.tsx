@@ -220,7 +220,7 @@ export function CTASection() {
             size="lg"
             className="bg-[#c69a3e] text-[#1a1205] shadow-lg shadow-black/30 transition-transform hover:scale-[1.03] hover:bg-[#d8b45e]"
           >
-            <Link to="/login">Enter CostCraft</Link>
+            <Link to="/login">Enter Kost Kraft</Link>
           </Button>
         </div>
       </div>

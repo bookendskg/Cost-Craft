@@ -2,7 +2,7 @@ import { Calculator, Percent, Trash2, BarChart3 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 
 // The premium left-hand brand panel shown on the auth pages (desktop only).
-// Bookends-blue gradient, CostCraft logo, product statement, Capiche/Aiko
+// Bookends-blue gradient, Kost Kraft logo, product statement, Capiche/Aiko
 // references and a small set of capability chips (no fabricated metrics).
 
 const CAPABILITIES = [

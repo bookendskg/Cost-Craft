@@ -1,4 +1,4 @@
-# CostCraft — Supabase Auth Setup (required for deletion + OTP)
+# Kost Kraft — Supabase Auth Setup (required for deletion + OTP)
 
 The app code for user deletion, signup email OTP, and OTP-based password recovery
 is in place. These flows depend on **Supabase Dashboard / CLI configuration** that
@@ -39,13 +39,13 @@ to both templates so users can enter a **code** (the app's OTP flow), not just a
 
 **Confirm signup** (used by signup OTP):
 ```
-Your CostCraft verification code is: {{ .Token }}
+Your Kost Kraft verification code is: {{ .Token }}
 This code expires shortly. If you didn't sign up, ignore this email.
 ```
 
 **Reset Password** (used by recovery OTP):
 ```
-Your CostCraft password reset code is: {{ .Token }}
+Your Kost Kraft password reset code is: {{ .Token }}
 This code expires shortly. If you didn't request it, ignore this email.
 ```
 

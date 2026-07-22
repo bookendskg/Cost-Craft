@@ -38,7 +38,7 @@ function Screen({ icon, title, sub }: { icon: React.ReactNode; title: string; su
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500">{icon}</div>
         <h1 className="text-lg font-semibold">{title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{sub}</p>
-        <p className="mt-4 text-xs text-muted-foreground">Shared via CostCraft · Bookends Hospitality</p>
+        <p className="mt-4 text-xs text-muted-foreground">Shared via Kost Kraft · Bookends Hospitality</p>
       </Card>
     </div>
   );
@@ -83,7 +83,7 @@ export function SharedRecipePage() {
           <div className="p-6 sm:p-8">
           <div className="flex items-start justify-between gap-3 border-b pb-4">
             <div>
-              <p className="text-sm font-bold">CostCraft</p>
+              <p className="text-sm font-bold">Kost Kraft</p>
               <p className="text-xs text-muted-foreground">Bookends Hospitality</p>
             </div>
             <span
@@ -218,7 +218,7 @@ export function SharedRecipePage() {
         </Card>
 
         <p className="mt-5 text-center text-[11px] text-white/85 drop-shadow-sm">
-          Confidential · Financial data hidden · Shared via CostCraft · Bookends Hospitality
+          Confidential · Financial data hidden · Shared via Kost Kraft · Bookends Hospitality
         </p>
       </div>
     </div>

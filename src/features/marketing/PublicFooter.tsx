@@ -49,7 +49,7 @@ export function PublicFooter() {
         </div>
 
         <div className="mt-10 border-t pt-6 text-xs text-muted-foreground">
-          © {year} CostCraft · Bookends Hospitality. All rights reserved.
+          © {year} Kost Kraft · Bookends Hospitality. All rights reserved.
         </div>
       </div>
     </footer>

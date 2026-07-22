@@ -1,4 +1,4 @@
-// Generate the PWA icon set + brand assets from the official CostCraft artwork in
+// Generate the PWA icon set + brand assets from the official Kost Kraft artwork in
 // assets/. Two icon families on the brand background (#010c12):
 //   • "any" icons (pwa-64/192/512) = the FULL logo — used by the TWA native splash
 //     and browser/desktop, so the splash matches the in-app full-logo splash.
@@ -10,13 +10,23 @@
 import sharp from "sharp";
 import fs from "node:fs";
 
-const SRC_MARK = "assets/costcraftt.png"; // infinity mark
-const SRC_FULL = "assets/costcraft db.png"; // full logo + wordmark
+const SRC_MARK = "assets/kostkraft-mark.png"; // infinity mark (transparent)
+const SRC_FULL = "assets/kostkraft-full.png"; // full logo + wordmark (on dark bg)
 const BG = "#010c12"; // sampled from the artwork
 
 fs.mkdirSync("public/brand", { recursive: true });
-fs.copyFileSync(SRC_FULL, "public/brand/costcraft-logo.png");
-fs.copyFileSync(SRC_MARK, "public/brand/costcraft-mark.png");
+// The full logo is used as-is by the boot splash (index.html) + Splash.tsx.
+fs.copyFileSync(SRC_FULL, "public/brand/kostkraft-logo.png");
+// The mark is exposed as a brand asset but is NOT referenced by the app (the
+// in-app tile uses /app-icon.png). Everything under public/ is precached by the
+// service worker, so emit a trimmed, web-sized copy rather than the multi-MB
+// source — shipping the raw art added ~2 MB to every install.
+const markAsset = await sharp(SRC_MARK)
+  .trim()
+  .resize({ width: 512, fit: "inside", withoutEnlargement: true })
+  .png({ compressionLevel: 9 })
+  .toBuffer();
+fs.writeFileSync("public/brand/kostkraft-mark.png", markAsset);
 
 /** The full logo centered (contain) on a square brand-bg canvas at `size`. */
 async function fullSquare(size, widthPct = 0.92) {
@@ -57,4 +67,4 @@ fs.writeFileSync("public/app-icon.png", await markSquare(512, 0.72));
 fs.writeFileSync("public/favicon.png", await markSquare(64, 0.78));
 
 console.log("wrote pwa-{64,192,512} (full logo), maskable + apple-touch + app-icon + favicon (mark),");
-console.log("and public/brand/costcraft-{logo,mark}.png — background", BG);
+console.log("and public/brand/kostkraft-{logo,mark}.png — background", BG);

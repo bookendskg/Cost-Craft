@@ -77,9 +77,9 @@ const SECURITY = [
 
 export function LandingPage() {
   usePageMeta({
-    title: "CostCraft — Recipe Costing & Operations for Bookends Hospitality",
+    title: "Kost Kraft — Recipe Costing & Operations for Bookends Hospitality",
     description:
-      "CostCraft is the recipe costing, yield and wastage platform for Bookends Hospitality — Capiche and Aiko. Standardise recipes and control food cost across every brand and outlet.",
+      "Kost Kraft is the recipe costing, yield and wastage platform for Bookends Hospitality — Capiche and Aiko. Standardise recipes and control food cost across every brand and outlet.",
   });
 
   return (
@@ -115,14 +115,14 @@ export function LandingPage() {
                 Refined <span className="text-gradient-brand">recipe costing</span> for exceptional hospitality
               </h1>
               <p className="mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground">
-                CostCraft brings recipe management, ingredient costing, yield, wastage and brand-level
+                Kost Kraft brings recipe management, ingredient costing, yield, wastage and brand-level
                 operational visibility into one precise, beautifully organised platform — crafted for the
                 Bookends collective.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="h-11 shadow-lg shadow-primary/25">
                   <Link to="/login">
-                    Login to CostCraft
+                    Login to Kost Kraft
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -149,7 +149,7 @@ export function LandingPage() {
                 align="left"
                 eyebrow="Overview"
                 title="One platform for restaurant cost control"
-                description="CostCraft helps Bookends Hospitality teams standardise recipes and control food cost — replacing scattered spreadsheets with one consistent source of truth."
+                description="Kost Kraft helps Bookends Hospitality teams standardise recipes and control food cost — replacing scattered spreadsheets with one consistent source of truth."
               />
               <ul className="grid grid-cols-2 gap-3 sm:grid-cols-2">
                 {OVERVIEW.map((item) => (
@@ -227,7 +227,7 @@ export function LandingPage() {
             <SectionHeading
               eyebrow="Parent company · Two brands"
               title="One parent company, two distinct brands"
-              description="Bookends Hospitality is the parent company behind Capiche and Aiko. CostCraft keeps each brand's recipes, categories and operational data separate while sharing one consistent costing engine."
+              description="Bookends Hospitality is the parent company behind Capiche and Aiko. Kost Kraft keeps each brand's recipes, categories and operational data separate while sharing one consistent costing engine."
             />
             <div className="mt-12">
               {/* Parent company */}
@@ -267,7 +267,7 @@ export function LandingPage() {
             <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
               <SectionHeading
                 align="left"
-                eyebrow="Why CostCraft"
+                eyebrow="Why Kost Kraft"
                 title="Operational benefits that add up"
                 description="Practical improvements to how your kitchens and management teams work — no spreadsheets required."
               />
@@ -289,7 +289,7 @@ export function LandingPage() {
         {/* ── Modules preview ── */}
         <section>
           <div className="mx-auto max-w-[1728px] px-4 py-16 sm:px-6 sm:py-24">
-            <SectionHeading eyebrow="Inside CostCraft" title="The modules your team will use" />
+            <SectionHeading eyebrow="Inside Kost Kraft" title="The modules your team will use" />
             <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {MODULES.map((m) => (
                 <div
@@ -370,7 +370,7 @@ function HeroPreview() {
             <span className="h-3 w-3 rounded-full bg-[#28c840]" />
           </span>
           <span className="mx-auto inline-flex items-center gap-1.5 rounded-md bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground ring-1 ring-black/5">
-            <Lock className="h-3 w-3" /> app.costcraft — Master Costing
+            <Lock className="h-3 w-3" /> app.kostkraft — Master Costing
           </span>
         </div>
 
@@ -483,7 +483,7 @@ function DashboardShowcase() {
             <span className="h-3 w-3 rounded-full bg-[#28c840]" />
           </span>
           <span className="mx-auto inline-flex items-center gap-1.5 rounded-md bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground ring-1 ring-black/5">
-            <Lock className="h-3 w-3" /> app.costcraft — Dashboard
+            <Lock className="h-3 w-3" /> app.kostkraft — Dashboard
           </span>
         </div>
 

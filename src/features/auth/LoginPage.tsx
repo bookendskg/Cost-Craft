@@ -27,7 +27,7 @@ function safeDestination(path: unknown): string {
 }
 
 export function LoginPage() {
-  usePageMeta({ title: "Sign in · CostCraft", noindex: true });
+  usePageMeta({ title: "Sign in · Kost Kraft", noindex: true });
   const user = useSession((s) => s.user);
   const login = useSession((s) => s.login);
   const navigate = useNavigate();
@@ -80,7 +80,7 @@ export function LoginPage() {
           <div className="mb-6">
             <h2 className="text-2xl font-semibold tracking-tight text-foreground">Welcome back</h2>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Sign in to your CostCraft account to continue.
+              Sign in to your Kost Kraft account to continue.
             </p>
           </div>
 

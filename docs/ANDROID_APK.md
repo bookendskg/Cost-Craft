@@ -1,6 +1,6 @@
-# CostCraft — Android APK (installable app)
+# Kost Kraft — Android APK (installable app)
 
-CostCraft is a PWA, so the Android app is a thin **TWA** (Trusted Web Activity): a native shell that
+Kost Kraft is a PWA, so the Android app is a thin **TWA** (Trusted Web Activity): a native shell that
 opens the live site **https://recepie-costing.onrender.com** fullscreen. It always shows the latest
 deploy and works offline via the service worker — you never rebuild the APK just to ship app changes.
 
@@ -17,7 +17,7 @@ You generate the signed `.apk` on **PWABuilder** (no Android tools to install). 
    **Package For Stores → Android**.
 3. Set the options (open **All Settings / Advanced** if needed):
    - **Package ID**: `com.bookends.costcraft`  ← must match `assetlinks.json` in this repo.
-   - **App name**: `CostCraft`  ·  **Launcher / short name**: `CostCraft`.
+   - **App name**: `Kost Kraft`  ·  **Launcher / short name**: `Kost Kraft`.
    - **Signing key**: **Create new**.
    - Leave the rest at defaults (Fallback behavior: Custom Tabs; Display: standalone).
 4. **Download**. You get a zip containing:
@@ -58,7 +58,7 @@ links verify. Relaunch (or reinstall) after the redeploy to get the clean fullsc
 2. Tap the file. Android will ask to allow installing from this source →
    **Settings → "Install unknown apps"** → enable it for the app you're installing from (Files /
    Chrome / Drive) → back → **Install**.
-3. Open **CostCraft** from the app drawer. It launches fullscreen and logs in like the website.
+3. Open **Kost Kraft** from the app drawer. It launches fullscreen and logs in like the website.
 
 To distribute to the team: share the same `.apk` file; each person repeats step 2.
 

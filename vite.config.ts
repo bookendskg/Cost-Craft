@@ -14,8 +14,8 @@ export default defineConfig({
       // in-app splash), and "maskable" is the MARK padded (adaptive launcher, un-trimmed).
       manifest: {
         id: "/",
-        name: "CostCraft — Recipe Costing",
-        short_name: "CostCraft",
+        name: "Kost Kraft — Recipe Costing",
+        short_name: "Kost Kraft",
         description: "Recipe costing, yield and wastage for Bookends Hospitality — Capiche & Aiko.",
         theme_color: "#010c12",
         background_color: "#010c12",

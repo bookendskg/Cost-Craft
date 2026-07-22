@@ -59,7 +59,7 @@ export function IosInstallPrompt() {
   return (
     <div
       role="dialog"
-      aria-label="Install CostCraft"
+      aria-label="Install Kost Kraft"
       className="fixed inset-x-0 bottom-0 z-[120] flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+12px)]"
     >
       <div className="relative w-full max-w-sm rounded-2xl border bg-background p-4 shadow-2xl">
@@ -75,7 +75,7 @@ export function IosInstallPrompt() {
         <div className="flex items-center gap-3">
           <img src="/app-icon.png" alt="" className="h-11 w-11 shrink-0 rounded-xl" />
           <div className="min-w-0 pr-6">
-            <p className="font-semibold leading-tight">Install CostCraft</p>
+            <p className="font-semibold leading-tight">Install Kost Kraft</p>
             <p className="text-xs text-muted-foreground">
               Add it to your Home Screen for a full-screen app.
             </p>

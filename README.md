@@ -1,7 +1,7 @@
-# CostCraft — Recipe Costing & Operations
+# Kost Kraft — Recipe Costing & Operations
 
 Recipe costing, yield, wastage and food-cost control for **Bookends Hospitality** and its brands
-(**Capiche**, **Aiko**). CostCraft replaces manual spreadsheet costing with real-time cost
+(**Capiche**, **Aiko**). Kost Kraft replaces manual spreadsheet costing with real-time cost
 calculation, an approval workflow, role-based access, branded PDF/Excel exports, and shareable
 read-only recipe pages — across multiple brands and outlets.
 
@@ -44,7 +44,7 @@ With no Supabase env vars set, the app runs on the **local mock layer** (in-memo
 
 ## Data backends
 
-CostCraft has two interchangeable backends selected in `src/lib/supabase/client.ts`:
+Kost Kraft has two interchangeable backends selected in `src/lib/supabase/client.ts`:
 
 - **Mock** (default local dev) — repos in `src/lib/data/mock/*` over `localStorage`.
 - **Supabase** — real multi-user Auth + Postgres. Enabled automatically when both

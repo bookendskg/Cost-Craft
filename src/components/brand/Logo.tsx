@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 
-// The CostCraft brand mark + wordmark. The mark is the infinity logo (bowl +
+// The Kost Kraft brand mark + wordmark. The mark is the infinity logo (bowl +
 // bar-chart) on its dark tile — `public/app-icon.svg` — which reads on both light
-// and dark panels; the wordmark is "CostCraft" text alongside it.
+// and dark panels; the wordmark is "Kost Kraft" text alongside it.
 
 type Size = "sm" | "md" | "lg" | "xl";
 
@@ -35,7 +35,7 @@ export function BrandMark({
   );
 }
 
-/** Full logo: the mark tile + "CostCraft" wordmark (with an optional subtitle). */
+/** Full logo: the mark tile + "Kost Kraft" wordmark (with an optional subtitle). */
 export function Logo({
   size = "md",
   withSubtitle = false,
@@ -55,7 +55,10 @@ export function Logo({
       <BrandMark size={size} />
       <span className="flex flex-col leading-none">
         <span className={cn("font-semibold tracking-tight", s.title, invert ? "text-white" : "text-foreground")}>
-          Cost<span style={{ color: "#2bb6c4" }}>Craft</span>
+          {/* Matches the artwork lockup: white "Kost" + teal "Kraft". The artwork's
+              cyan is #01dadd, but that fails contrast on the light sidebar — #2bb6c4
+              is the tuned, legible equivalent. */}
+          Kost <span style={{ color: "#2bb6c4" }}>Kraft</span>
         </span>
         {withSubtitle && (
           <span className={cn("mt-1 font-medium", s.sub, invert ? "text-white/70" : "text-muted-foreground")}>

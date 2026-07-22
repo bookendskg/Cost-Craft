@@ -126,8 +126,8 @@ export async function generateRecipePdf(
   // confidential footer line (drops "Financial data hidden" for authorised exports).
   const { accent, logo: logoDataUri } = brandStyle(recipe.brand);
   const footerText = showCost
-    ? "Confidential · Shared via CostCraft · Bookends Hospitality"
-    : "Confidential · Financial data hidden · Shared via CostCraft · Bookends Hospitality";
+    ? "Confidential · Shared via Kost Kraft · Bookends Hospitality"
+    : "Confidential · Financial data hidden · Shared via Kost Kraft · Bookends Hospitality";
 
   const headRow = ["#", "Ingredient", "Qty", "Unit"];
   if (showUnitCost) headRow.push("Unit Cost");
@@ -298,7 +298,7 @@ export async function generateRecipePdf(
       ...logoBand,
       {
         columns: [
-          { width: "*", stack: [{ text: "CostCraft", style: "brandMark" }, { text: "Bookends Hospitality", style: "org" }] },
+          { width: "*", stack: [{ text: "Kost Kraft", style: "brandMark" }, { text: "Bookends Hospitality", style: "org" }] },
           {
             width: "auto",
             table: { body: [[{ text: brandLabel.toUpperCase(), color: "#ffffff", bold: true, fontSize: 9 }]] },
@@ -423,7 +423,7 @@ export async function generateReportPdf(opts: {
     footer: (currentPage: number, pageCount: number) => ({
       margin: [40, 14, 40, 0] as [number, number, number, number],
       columns: [
-        { text: `${brandLabel} · Generated from CostCraft`, fontSize: 8, color: "#94a3b8" },
+        { text: `${brandLabel} · Generated from Kost Kraft`, fontSize: 8, color: "#94a3b8" },
         { text: `Page ${currentPage} of ${pageCount}`, alignment: "center" as const, fontSize: 8, color: "#94a3b8" },
         { text: "Confidential", alignment: "right" as const, fontSize: 8, color: "#94a3b8" },
       ],
@@ -432,7 +432,7 @@ export async function generateReportPdf(opts: {
       {
         columns: [
           [
-            { text: "CostCraft", style: "brandMark" },
+            { text: "Kost Kraft", style: "brandMark" },
             { text: "Bookends Hospitality", style: "org" },
           ],
           { text: brandLabel.toUpperCase(), style: "brandName", alignment: "right" as const },

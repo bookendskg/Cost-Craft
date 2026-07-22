@@ -64,7 +64,7 @@ XLSX.utils.book_append_sheet(wb, sheet(prepRecipes), "Sub-Recipes With Gaps");
 XLSX.utils.book_append_sheet(wb, sheet(needPrice), "Need Price (raw)");
 XLSX.utils.book_append_sheet(wb, sheet(composites), "Make Sub-Recipe");
 XLSX.utils.book_append_sheet(wb, sheet(yieldsMissing), "Yields Missing Price");
-writeFileSync("reports/CostCraft_Missing_Price_Report.xlsx", XLSX.write(wb, { type: "buffer", bookType: "xlsx" }));
+writeFileSync("reports/Kost Kraft_Missing_Price_Report.xlsx", XLSX.write(wb, { type: "buffer", bookType: "xlsx" }));
 writeFileSync("reports/menu_recipes_with_gaps.csv", XLSX.utils.sheet_to_csv(sheet(menuRecipes)));
 writeFileSync("reports/sub_recipes_with_gaps.csv", XLSX.utils.sheet_to_csv(sheet(prepRecipes)));
 writeFileSync("reports/need_price.csv", XLSX.utils.sheet_to_csv(sheet(needPrice)));
@@ -72,7 +72,7 @@ writeFileSync("reports/make_sub_recipe.csv", XLSX.utils.sheet_to_csv(sheet(compo
 writeFileSync("reports/yields_missing_price.csv", XLSX.utils.sheet_to_csv(sheet(yieldsMissing)));
 
 const list = (rows: { Recipe: string; "# Missing": number }[]) => rows.map((r) => `- **${r.Recipe}** — ${r["# Missing"]} missing`).join("\n") || "- (none)";
-const md = `# CostCraft — Missing Price Report
+const md = `# Kost Kraft — Missing Price Report
 
 Generated from the current catalogue. Master recipes/preps only (11" size children excluded — fixing a price fixes both sizes).
 
@@ -102,4 +102,4 @@ ${yieldsMissing.map((r) => `- **${r.Ingredient}** (yield ${r["Yield %"]}%)`).joi
 writeFileSync("reports/MISSING_DATA_SUMMARY.md", md);
 
 console.log(JSON.stringify({ menuRecipes: menuRecipes.length, prepRecipes: prepRecipes.length, needPrice: needPrice.length, composites: composites.length, compositesExist: composites.filter((c) => c["Already a recipe?"].startsWith("YES")).length, yieldsMissing: yieldsMissing.length }));
-console.log("Wrote reports/CostCraft_Missing_Price_Report.xlsx (5 sheets) + 5 CSVs + MISSING_DATA_SUMMARY.md");
+console.log("Wrote reports/Kost Kraft_Missing_Price_Report.xlsx (5 sheets) + 5 CSVs + MISSING_DATA_SUMMARY.md");

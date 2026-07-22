@@ -30,7 +30,7 @@ export function PublicHeader() {
       <div className="mx-auto flex h-16 max-w-[1728px] items-center justify-between px-4 sm:px-6">
         <Link
           to="/"
-          aria-label="CostCraft home"
+          aria-label="Kost Kraft home"
           className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Logo size="md" />
