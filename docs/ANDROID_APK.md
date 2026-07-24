@@ -16,7 +16,7 @@ You generate the signed `.apk` on **PWABuilder** (no Android tools to install). 
 2. It analyses the PWA (manifest + icons + service worker are already in place). Click
    **Package For Stores → Android**.
 3. Set the options (open **All Settings / Advanced** if needed):
-   - **Package ID**: `com.bookends.costcraft`  ← must match `assetlinks.json` in this repo.
+   - **Package ID**: `com.onrender.recepie_costing.twa`  ← must match `assetlinks.json` in this repo.
    - **App name**: `Kost Kraft`  ·  **Launcher / short name**: `Kost Kraft`.
    - **Signing key**: **Create new**.
    - Leave the rest at defaults (Fallback behavior: Custom Tabs; Display: standalone).
@@ -26,7 +26,7 @@ You generate the signed `.apk` on **PWABuilder** (no Android tools to install). 
    - `signing.keystore` (+ a readme with the passwords) — **keep these safe** (see below).
 
 > ⚠️ **Save the keystore + passwords forever** (password manager / secure storage). Every future
-> update must be signed with the *same* keystore under `com.bookends.costcraft`. Lose it and you
+> update must be signed with the *same* keystore under `com.onrender.recepie_costing.twa`. Lose it and you
 > can't update the installed app — you'd have to ship a new package id and users must reinstall.
 
 ---
@@ -39,7 +39,7 @@ it with the real one:
 1. Open the `assetlinks.json` from the PWABuilder zip (or the "SHA-256 fingerprint" it shows).
 2. Copy its value into `public/.well-known/assetlinks.json` — set `sha256_cert_fingerprints` to the
    real fingerprint (a colon-separated hex string like `AA:BB:CC:…`). Keep
-   `package_name: "com.bookends.costcraft"`.
+   `package_name: "com.onrender.recepie_costing.twa"`.
 3. Commit + push to `main`. Render auto-deploys.
 4. Verify it's live and served as JSON (not the app's HTML):
    ```bash

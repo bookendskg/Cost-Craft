@@ -20,3 +20,9 @@ assets/*.ai
 
 # Supabase CLI local link state
 supabase/.temp/
+
+# Android TWA signing key + PWABuilder secrets — NEVER commit
+signing.keystore
+*.keystore
+*.jks
+signing-key-info.txt
