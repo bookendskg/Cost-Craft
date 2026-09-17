@@ -5,7 +5,7 @@
 import { calculateIngredientCost, prepUnitCostFrom, prepYieldForPricing, round2 } from "../../costing";
 import { canConvert, getConversionFactor, toWeightGrams } from "../../units";
 import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "../../yield";
-import { resolveParentAndCut, cutYieldPct } from "../ingredientCuts";
+import { cutYieldFor } from "../ingredientCuts";
 import type {
   AuditAction,
   AuditEntityType,
@@ -51,11 +51,8 @@ function rateForLine(
   line: { wastage_override_pct?: number | null; cut_type?: string | null },
   db: MockDb,
 ): number | null {
-  if (line.cut_type) {
-    const { parent } = resolveParentAndCut(m.ingredient_name);
-    const y = parent ? cutYieldPct(parent, line.cut_type) : null;
-    if (y != null) return costForCutYield(m.cost_per_base_unit, y);
-  }
+  const y = cutYieldFor(m, line.cut_type, db.ingredient_yields);
+  if (y != null) return costForCutYield(m.cost_per_base_unit, y);
   // §9: yield-adjusted rate when yield data exists, else the purchase rate.
   const yieldRec = activeYield(db.ingredient_yields, m.id);
   return effectiveCostPerBaseUnit(m.cost_per_base_unit, yieldRec, line.wastage_override_pct);

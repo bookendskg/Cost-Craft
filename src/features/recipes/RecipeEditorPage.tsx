@@ -30,7 +30,7 @@ import { recipeHeaderSchema, type RecipeHeaderValues } from "@/lib/validation/sc
 import { compatibleUnits, canConvert } from "@/lib/units";
 import { calculateIngredientCost, prepUnitCostFrom, prepYieldForPricing, round2 } from "@/lib/costing";
 import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "@/lib/yield";
-import { cutsForName, cutYieldPct, resolveParentAndCut } from "@/lib/data/ingredientCuts";
+import { cutOptionsFor, cutYieldFor } from "@/lib/data/ingredientCuts";
 import { formatINR } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { type RawMaterial } from "@/lib/data/types";
@@ -508,9 +508,7 @@ export function RecipeEditorPage() {
                     lineCost = round2(perUnit * line.quantity_used);
                   } else if (material && line.quantity_used > 0 && canConvert(line.unit_used, material.base_unit)) {
                     // Cut yield takes priority; else §9/§10 yield-adjusted rate.
-                    const cutY = line.cut_type
-                      ? cutYieldPct(resolveParentAndCut(material.ingredient_name).parent ?? "", line.cut_type)
-                      : null;
+                    const cutY = cutYieldFor(material, line.cut_type, yields);
                     const rate =
                       cutY != null
                         ? costForCutYield(material.cost_per_base_unit, cutY)
@@ -519,7 +517,7 @@ export function RecipeEditorPage() {
                       lineCost = calculateIngredientCost(rate, line.quantity_used, line.unit_used, material.base_unit);
                     }
                   }
-                  const cutOptions = material ? cutsForName(material.ingredient_name) : [];
+                  const cutOptions = material ? cutOptionsFor(material, yields) : [];
                   const stdWastage = yieldRec?.wastage_percentage ?? 0;
                   const effWastage = line.wastage_override_pct ?? stdWastage;
                   const hasOverride = line.wastage_override_pct != null;

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { calculateIngredientCost, prepUnitCostFrom, prepYieldForPricing, round2, type RecipeCostingResult } from "@/lib/costing";
 import { canConvert, getConversionFactor, toWeightGrams } from "@/lib/units";
 import { activeYield, effectiveCostPerBaseUnit, costForCutYield } from "@/lib/yield";
-import { resolveParentAndCut, cutYieldPct } from "@/lib/data/ingredientCuts";
+import { cutYieldFor } from "@/lib/data/ingredientCuts";
 import type { IngredientYield, RawMaterial, Recipe } from "@/lib/data/types";
 
 export interface EditorLine {
@@ -74,9 +74,7 @@ export function useRecipeCosting(
       // else §9 yield-adjusted rate when yield exists, else the purchase rate.
       let rate: number | null = null;
       if (material) {
-        const cutYield = l.cut_type
-          ? cutYieldPct(resolveParentAndCut(material.ingredient_name).parent ?? "", l.cut_type)
-          : null;
+        const cutYield = cutYieldFor(material, l.cut_type, yields);
         rate =
           cutYield != null
             ? costForCutYield(material.cost_per_base_unit, cutYield)

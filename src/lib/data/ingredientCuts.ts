@@ -4,6 +4,8 @@
 // drives the yield-adjusted cost (full purchase cost ÷ usable portion). Keyed by
 // the normalised parent-vegetable name.
 
+import type { IngredientYield, RawMaterial } from "./types";
+
 export interface IngredientCut {
   /** Display label for the cut/prep — "Sliced", "Chopped", "Diced", … */
   cut: string;
@@ -163,5 +165,53 @@ export function cutYieldPct(parent: string, cut: string): number | null {
   const list = INGREDIENT_CUTS[norm(parent)];
   if (!list) return null;
   const found = list.find((c) => norm(c.cut) === norm(cut));
+  return found ? found.yieldPct : null;
+}
+
+// --- Cuts from Yield Management -------------------------------------------------
+// A yield record saved for an ingredient ("Chopped Onion" — 66.67%) is also a cut
+// option. Its label is the record name without the ingredient name ("Chopped"); a
+// record with the same label as a built-in cut overrides that cut's yield.
+
+/** Cut label for a yield record: "Chopped Onion" on Onion → "Chopped". */
+export function yieldRecordCutLabel(recordName: string | null | undefined, ingredientName: string): string {
+  const name = (recordName ?? "").replace(/\s+/g, " ").trim();
+  const n = norm(name);
+  const ing = norm(ingredientName);
+  if (!n || n === ing || n === `${ing} yield`) return "Standard yield";
+  let rest: string | null = null;
+  if (n.startsWith(ing + " ")) rest = name.slice(ingredientName.trim().length).trim();
+  else if (n.endsWith(" " + ing)) rest = name.slice(0, name.length - ingredientName.trim().length).trim();
+  if (!rest) return name;
+  return rest.replace(/^[-–:\s]+|[-–:\s]+$/g, "").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** All cut options for a material: built-in cuts plus its Yield Management records (latest per label wins). */
+export function cutOptionsFor(
+  material: Pick<RawMaterial, "id" | "ingredient_name">,
+  yields: IngredientYield[],
+  asOf?: string,
+): IngredientCut[] {
+  const cutoff = asOf ?? new Date().toISOString().slice(0, 10);
+  const options = new Map<string, IngredientCut>();
+  for (const c of cutsForName(material.ingredient_name)) options.set(norm(c.cut), c);
+  const records = yields
+    .filter((y) => y.ingredient_id === material.id && y.effective_from <= cutoff)
+    .sort((a, b) => a.effective_from.localeCompare(b.effective_from) || a.created_at.localeCompare(b.created_at));
+  for (const y of records) {
+    const cut = yieldRecordCutLabel(y.name, material.ingredient_name);
+    options.set(norm(cut), { cut, yieldPct: Number(y.yield_percentage) });
+  }
+  return [...options.values()];
+}
+
+/** Yield % for a line's selected cut, from built-in cuts or Yield Management; null if unknown. */
+export function cutYieldFor(
+  material: Pick<RawMaterial, "id" | "ingredient_name">,
+  cutType: string | null | undefined,
+  yields: IngredientYield[],
+): number | null {
+  if (!cutType) return null;
+  const found = cutOptionsFor(material, yields).find((c) => norm(c.cut) === norm(cutType));
   return found ? found.yieldPct : null;
 }
