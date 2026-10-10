@@ -160,6 +160,7 @@ export function roleCapabilities(role: Role): Capability[] {
 export const CAPABILITY_GROUPS: { label: string; capabilities: Capability[] }[] = [
   { label: "Recipes", capabilities: ["recipe.viewAll", "recipe.create", "recipe.editAll", "recipe.duplicate", "recipe.submit", "recipe.approve", "recipe.delete"] },
   { label: "Raw Materials & Yield", capabilities: ["material.view", "material.edit", "yield.manage"] },
+  { label: "Packaging", capabilities: ["packaging.view", "packaging.manage"] },
   { label: "Operations", capabilities: ["wastage.create", "report.excel", "viewer.assign", "audit.view"] },
   { label: "Settings", capabilities: ["settings.manage"] },
   { label: "Administration (reserved)", capabilities: ["user.manage", "role.manage"] },
