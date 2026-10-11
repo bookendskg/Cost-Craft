@@ -80,6 +80,7 @@ export function yieldImportConfig({ queryClient, userId }: Deps): ImportConfig<I
     title: "Import Yields",
     columns: [
       { label: "Ingredient", required: true },
+      { label: "Yield Name" },
       { label: "Purchase Cost", required: true },
       { label: "Purchase Quantity", required: true },
       { label: "Purchase Unit", required: true },
@@ -89,6 +90,7 @@ export function yieldImportConfig({ queryClient, userId }: Deps): ImportConfig<I
     ],
     sample: {
       Ingredient: "Onion",
+      "Yield Name": "Chopped Onion",
       "Purchase Cost": 125,
       "Purchase Quantity": 1,
       "Purchase Unit": "KG",
@@ -108,12 +110,14 @@ export function yieldImportConfig({ queryClient, userId }: Deps): ImportConfig<I
       const purchase_unit = toText(pick(row, ["Purchase Unit", "Unit"]));
       if (!PURCHASE_UNITS.includes(purchase_unit as (typeof PURCHASE_UNITS)[number]))
         return { error: `Row ${n}: invalid purchase unit "${purchase_unit}"` };
+      // Negative wastage = weight gained while cooking (boiled pasta/rice).
       const wastage_quantity = toNum(pick(row, ["Wastage Quantity", "Wastage"]));
-      if (wastage_quantity == null || Number.isNaN(wastage_quantity) || wastage_quantity < 0)
-        return { error: `Row ${n}: wastage quantity cannot be negative` };
+      if (wastage_quantity == null || Number.isNaN(wastage_quantity))
+        return { error: `Row ${n}: enter a valid wastage quantity` };
       return {
         value: {
           ingredient_name,
+          name: toText(pick(row, ["Yield Name", "Prep", "Name"])) || null,
           purchase_cost,
           purchase_quantity,
           purchase_unit,

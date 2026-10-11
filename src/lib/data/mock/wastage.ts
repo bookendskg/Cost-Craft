@@ -74,7 +74,7 @@ export function applicableUnitCost(
   }
   const m = materials.find((x) => x.id === id);
   if (!m) return 0;
-  return effectiveCostPerBaseUnit(m.cost_per_base_unit, activeYield(yields, id)) ?? 0;
+  return effectiveCostPerBaseUnit(m.cost_per_base_unit, activeYield(yields, m)) ?? 0;
 }
 
 export const wastageRepo = {

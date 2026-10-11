@@ -501,7 +501,7 @@ export function RecipeEditorPage() {
                   const prep = isPrep ? prepsById.get(line.ingredient_id) ?? null : null;
                   const material = !isPrep ? materialsById.get(line.ingredient_id) ?? null : null;
                   const units = prep ? [prep.yield_unit] : material ? compatibleUnits(material.base_unit) : [];
-                  const yieldRec = material ? activeYield(yields, material.id) : null;
+                  const yieldRec = material ? activeYield(yields, material) : null;
                   let lineCost: number | null = null;
                   if (prep && line.quantity_used > 0) {
                     const perUnit = prepUnitCostFrom(prep.total_cost ?? 0, prepYieldForPricing(prep), prep.wastage_pct ?? 0);

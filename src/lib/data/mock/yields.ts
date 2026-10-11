@@ -21,6 +21,8 @@ export interface YieldInput {
 /** One row of a yield import — ingredient resolved by name. */
 export interface ImportYieldRow {
   ingredient_name: string;
+  /** Prep label ("Chopped Green Garlic"); blank falls back to "<Ingredient> Yield". */
+  name?: string | null;
   purchase_cost: number;
   purchase_quantity: number;
   purchase_unit: string;
@@ -63,6 +65,29 @@ function derive(input: YieldInput): Omit<IngredientYield, "id" | "created_at" | 
   };
 }
 
+/** A yield record is identified by ingredient + prep name + effective date, so one
+ *  ingredient can hold several preps ("Chopped"/"Processed") on the same date. */
+export const DUPLICATE_MSG = "A yield record already exists for this prep on that effective date";
+
+export const normalizeYieldName = (name: string | null | undefined): string =>
+  (name ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+
+export function duplicateYield(
+  rows: IngredientYield[],
+  input: YieldInput,
+  eff: string,
+  ignoreId?: string,
+): IngredientYield | undefined {
+  const key = normalizeYieldName(input.name);
+  return rows.find(
+    (y) =>
+      y.id !== ignoreId &&
+      y.ingredient_id === input.ingredient_id &&
+      y.effective_from === eff &&
+      normalizeYieldName(y.name) === key,
+  );
+}
+
 export const yieldsRepo = {
   async list(): Promise<IngredientYield[]> {
     return delay([...getDb().ingredient_yields]);
@@ -84,12 +109,8 @@ export const yieldsRepo = {
     return delay(
       mutate((db) => {
         const eff = input.effective_from ?? todayISO();
-        if (
-          db.ingredient_yields.some(
-            (y) => y.ingredient_id === input.ingredient_id && y.effective_from === eff,
-          )
-        ) {
-          throw new Error("A yield record already exists for this ingredient on that effective date");
+        if (duplicateYield(db.ingredient_yields, input, eff)) {
+          throw new Error(DUPLICATE_MSG);
         }
         const row: IngredientYield = {
           id: uid(),
@@ -119,6 +140,9 @@ export const yieldsRepo = {
       mutate((db) => {
         const y = db.ingredient_yields.find((x) => x.id === id);
         if (!y) throw new Error("Yield record not found");
+        if (duplicateYield(db.ingredient_yields, input, input.effective_from ?? y.effective_from, id)) {
+          throw new Error(DUPLICATE_MSG);
+        }
         const before = { yield_pct: y.yield_percentage, adj_cost: y.yield_adjusted_unit_cost };
         const prevIngredient = y.ingredient_id;
         Object.assign(y, derive(input), { updated_at: nowISO() });
@@ -165,6 +189,7 @@ export const yieldsRepo = {
             }
             const eff = row.effective_from || todayISO();
             const input: YieldInput = {
+              name: row.name?.trim() || `${mat.ingredient_name} Yield`,
               ingredient_id: mat.id,
               purchase_cost: row.purchase_cost,
               purchase_quantity: row.purchase_quantity,
@@ -180,9 +205,7 @@ export const yieldsRepo = {
               S.errors.push({ row: i + 1, message: `${row.ingredient_name}: wastage exceeds the raw quantity` });
               return;
             }
-            const existing = db.ingredient_yields.find(
-              (y) => y.ingredient_id === mat.id && y.effective_from === eff,
-            );
+            const existing = duplicateYield(db.ingredient_yields, input, eff);
             if (existing) {
               if (mode === "add") {
                 S.skipped++;

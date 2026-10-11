@@ -7,6 +7,7 @@
 
 import { round2 } from "./costing";
 import { getConversionFactor, getUnitFamily } from "./units";
+import { isStandardYieldName } from "./data/ingredientCuts";
 import type { IngredientYield } from "./data/types";
 
 /** Convert a quantity in `unit` to its family base unit (Gram / ML / itself). */
@@ -91,17 +92,32 @@ function round3(value: number): number {
   return parseFloat(value.toFixed(3));
 }
 
-/** The yield record in effect for an ingredient as of a date (latest effective_from ≤ asOf). */
+/**
+ * The STANDARD yield record in effect for an ingredient as of a date (latest
+ * effective_from ≤ asOf). Named preps ("Chopped Onion") are deliberately ignored:
+ * they apply only to a recipe line that selects that cut/prep (see cutYieldFor),
+ * so adding one never silently re-rates every line using the ingredient.
+ */
 export function activeYield(
   yields: IngredientYield[],
-  ingredientId: string,
+  material: { id: string; ingredient_name: string },
   asOf?: string,
 ): IngredientYield | null {
   const cutoff = asOf ?? new Date().toISOString().slice(0, 10);
   return (
     yields
-      .filter((y) => y.ingredient_id === ingredientId && y.effective_from <= cutoff)
-      .sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0] ?? null
+      .filter(
+        (y) =>
+          y.ingredient_id === material.id &&
+          y.effective_from <= cutoff &&
+          isStandardYieldName(y.name, material.ingredient_name),
+      )
+      // Latest effective date wins; same date → the most recently created row.
+      .sort(
+        (a, b) =>
+          b.effective_from.localeCompare(a.effective_from) ||
+          (b.created_at ?? "").localeCompare(a.created_at ?? ""),
+      )[0] ?? null
   );
 }
 

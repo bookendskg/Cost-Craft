@@ -48,8 +48,11 @@ export function YieldBreakdownDialog({
             </Section>
             <p className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
               The full purchase cost of {formatINR(record.purchase_cost)} is distributed across the{" "}
-              {record.usable_quantity} {record.raw_unit} that remain usable — so each usable unit carries a
-              higher effective cost than the raw rate.
+              {record.usable_quantity} {record.raw_unit} that remain usable — so each usable unit carries a{" "}
+              {record.yield_percentage > 100
+                ? "lower effective cost than the raw rate (cooking added weight)"
+                : "higher effective cost than the raw rate"}
+              .
             </p>
             <Section title="Record">
               <Row label="Effective From" value={formatDate(record.effective_from)} />

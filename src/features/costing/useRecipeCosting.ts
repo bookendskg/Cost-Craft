@@ -78,7 +78,7 @@ export function useRecipeCosting(
         rate =
           cutYield != null
             ? costForCutYield(material.cost_per_base_unit, cutYield)
-            : effectiveCostPerBaseUnit(material.cost_per_base_unit, activeYield(yields, material.id), l.wastage_override_pct);
+            : effectiveCostPerBaseUnit(material.cost_per_base_unit, activeYield(yields, material), l.wastage_override_pct);
       }
       const missingPrice = !!material && rate === null;
       const unitMismatch = !!material && !canConvert(l.unit_used, material.base_unit);

@@ -129,7 +129,9 @@ export type RecipeHeaderValues = z.infer<typeof recipeHeaderSchema>;
 
 export const yieldSchema = z
   .object({
-    name: z.string().optional().or(z.literal("")),
+    // Named prep ("Chopped Green Garlic") — part of a yield record's identity, so
+    // the same ingredient can hold several preps on one effective date.
+    name: z.string().trim().min(1, "Yield name is required"),
     ingredient_id: z.string().min(1, "Select an ingredient"),
     purchase_cost: z
       .number({ invalid_type_error: "Enter a valid cost" })
@@ -141,15 +143,20 @@ export const yieldSchema = z
       .finite("Enter a valid quantity")
       .gt(0, "Purchase quantity must be greater than 0"),
     purchase_unit: z.enum(PURCHASE_UNITS),
+    // Negative = weight GAINED in cooking (boiled pasta/rice absorbs water), which
+    // is a valid yield above 100%. Bounds are enforced by the refines below.
     wastage_quantity: z
       .number({ invalid_type_error: "Enter a valid wastage" })
-      .finite("Enter a valid wastage")
-      .min(0, "Wastage cannot be negative"),
+      .finite("Enter a valid wastage"),
     effective_from: z.string().min(1, "Effective date is required"),
     notes: z.string().optional().or(z.literal("")),
   })
   .refine((v) => v.wastage_quantity < toBaseQuantity(v.purchase_quantity, v.purchase_unit), {
     message: "Wastage quantity cannot be greater than or equal to the raw quantity.",
+    path: ["wastage_quantity"],
+  })
+  .refine((v) => v.wastage_quantity > -9 * toBaseQuantity(v.purchase_quantity, v.purchase_unit), {
+    message: "Weight gain can't be more than 9× the raw quantity (yield under 1000%).",
     path: ["wastage_quantity"],
   });
 export type YieldValues = z.infer<typeof yieldSchema>;

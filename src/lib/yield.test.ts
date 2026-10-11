@@ -82,14 +82,75 @@ describe("effectiveCostPerBaseUnit (§9 cost-selection rule)", () => {
   });
 });
 
-describe("activeYield", () => {
-  const a = { ...onionYield, id: "a", effective_from: "2026-01-01" } as IngredientYield;
-  const b = { ...onionYield, id: "b", effective_from: "2026-06-01" } as IngredientYield;
+describe("activeYield — standard record only", () => {
+  const onion = { id: "m-onion", ingredient_name: "Onion" };
+  const std = (over: Partial<IngredientYield>) =>
+    ({ ...onionYield, name: "Onion Yield", created_at: "2026-01-01T00:00:00Z", ...over }) as IngredientYield;
+  const a = std({ id: "a", effective_from: "2026-01-01" });
+  const b = std({ id: "b", effective_from: "2026-06-01" });
+
   it("returns the latest record effective on/before the date", () => {
-    expect(activeYield([a, b], "m-onion", "2026-07-01")?.id).toBe("b");
-    expect(activeYield([a, b], "m-onion", "2026-03-01")?.id).toBe("a");
+    expect(activeYield([a, b], onion, "2026-07-01")?.id).toBe("b");
+    expect(activeYield([a, b], onion, "2026-03-01")?.id).toBe("a");
   });
   it("returns null when none are yet effective", () => {
-    expect(activeYield([a, b], "m-onion", "2025-12-01")).toBeNull();
+    expect(activeYield([a, b], onion, "2025-12-01")).toBeNull();
+  });
+  it("ignores named preps — they apply only to a line that selects that prep", () => {
+    const chopped = std({ id: "c", name: "Chopped Onion", effective_from: "2026-07-01" });
+    expect(activeYield([a, chopped], onion, "2026-08-01")?.id).toBe("a");
+    expect(activeYield([chopped], onion, "2026-08-01")).toBeNull();
+  });
+  it("treats a blank name or the bare ingredient name as the standard record", () => {
+    expect(activeYield([std({ id: "d", name: null })], onion, "2026-07-01")?.id).toBe("d");
+    expect(activeYield([std({ id: "e", name: "Onion" })], onion, "2026-07-01")?.id).toBe("e");
+  });
+  it("breaks a same-date tie with the most recently created row", () => {
+    const older = std({ id: "old", created_at: "2026-06-01T09:00:00Z" });
+    const newer = std({ id: "new", created_at: "2026-06-01T18:00:00Z" });
+    expect(activeYield([older, newer], onion, "2026-07-01")?.id).toBe("new");
+  });
+});
+
+describe("cooking weight gain — yield above 100% (boiled preps)", () => {
+  it("Boiled Arborio Rice: 1000 g raw, -400 g wastage → 1400 g usable, 140% yield", () => {
+    const r = computeYield({ purchaseCost: 100, purchaseQuantity: 1, purchaseUnit: "KG", wastageQty: -400 });
+    expect(r.rawQtyBase).toBe(1000);
+    expect(r.usableQty).toBe(1400);
+    expect(r.yieldPct).toBe(140);
+    expect(r.wastagePct).toBe(-40);
+    // ₹P per raw kg → ₹P ÷ 1.4 per cooked kg.
+    expect(r.yieldAdjustedCostPerKg).toBeCloseTo(100 / 1.4, 2);
+    expect(r.yieldAdjustedUnitCost * r.usableQty).toBeCloseTo(100, 6);
+  });
+
+  it("matches the Costing Master yields for all nine boiled preps", () => {
+    const boiled: [string, number, number][] = [
+      ["Boiled Spaghetti", 1850, 185],
+      ["Boiled Macaroni", 1610, 161],
+      ["Boiled Bucatini", 1810, 181],
+      ["Boiled Fettuccini", 1850, 185],
+      ["Boiled Linguini", 1950, 195],
+      ["Boiled Conchiglioni", 1800, 180],
+      ["Boiled Rigatoni", 1800, 180],
+      ["Boiled Penne", 1750, 175],
+      ["Boiled Arborio Rice", 1400, 140],
+    ];
+    for (const [name, usable, yieldPct] of boiled) {
+      const r = computeYield({ purchaseCost: 200, purchaseQuantity: 1, purchaseUnit: "KG", wastageQty: 1000 - usable });
+      expect(r.usableQty, name).toBe(usable);
+      expect(r.yieldPct, name).toBe(yieldPct);
+    }
+  });
+
+  it("a weight-gain yield makes the recipe rate CHEAPER per usable gram", () => {
+    const boiledPasta = {
+      ingredient_id: "m-pasta", raw_quantity: 1000, wastage_percentage: -95,
+      usable_quantity: 1950, purchase_cost: 200, yield_adjusted_unit_cost: 200 / 1950,
+      effective_from: "2026-06-01",
+    } as IngredientYield;
+    const rate = effectiveCostPerBaseUnit(0.2, boiledPasta)!;
+    expect(rate).toBeCloseTo(200 / 1950, 6);
+    expect(rate).toBeLessThan(0.2);
   });
 });

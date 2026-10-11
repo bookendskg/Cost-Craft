@@ -135,7 +135,8 @@ export function YieldPage() {
       if (wastageBand === "low" && r.wastage_percentage >= 10) return false;
       if (wastageBand === "med" && (r.wastage_percentage < 10 || r.wastage_percentage > 25)) return false;
       if (wastageBand === "high" && r.wastage_percentage <= 25) return false;
-      if (yieldBand === "high" && r.yield_percentage < 90) return false;
+      if (yieldBand === "gain" && r.yield_percentage <= 100) return false;
+      if (yieldBand === "high" && (r.yield_percentage < 90 || r.yield_percentage > 100)) return false;
       if (yieldBand === "med" && (r.yield_percentage < 75 || r.yield_percentage >= 90)) return false;
       if (yieldBand === "low" && r.yield_percentage >= 75) return false;
       return true;
@@ -194,7 +195,11 @@ export function YieldPage() {
     const avgYield = n ? yields.reduce((s, y) => s + y.yield_percentage, 0) / n : 0;
     const avgWastage = n ? yields.reduce((s, y) => s + y.wastage_percentage, 0) / n : 0;
     // Estimated wastage cost = wastage_quantity × original cost per base unit, summed.
-    const wastageCost = yields.reduce((s, y) => s + y.wastage_quantity * y.original_unit_cost, 0);
+    // Weight-gain preps (negative wastage) have no wastage cost — don't net them off.
+    const wastageCost = yields.reduce(
+      (s, y) => s + Math.max(0, y.wastage_quantity) * y.original_unit_cost,
+      0,
+    );
     // A yield can be created before its purchase price is known. Flag only those
     // (NOT every raw material that lacks a yield — that was ~795 rows of noise).
     const missingItems = yields.filter((y) => {
@@ -286,7 +291,8 @@ export function YieldPage() {
             <SelectTrigger><SelectValue placeholder="Yield" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Any Yield</SelectItem>
-              <SelectItem value="high">High (≥ 90%)</SelectItem>
+              <SelectItem value="gain">Weight gain (&gt; 100%)</SelectItem>
+              <SelectItem value="high">High (90–100%)</SelectItem>
               <SelectItem value="med">Medium (75–90%)</SelectItem>
               <SelectItem value="low">Low (&lt; 75%)</SelectItem>
             </SelectContent>

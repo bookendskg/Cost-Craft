@@ -778,7 +778,7 @@ const masterYieldRows: IngredientYield[] = [];
   const matIdByName = new Map(raw_materials.map((m) => [ynorm(m.ingredient_name), m.id] as const));
   const seenYieldNames = new Set<string>();
   for (const y of MASTER_YIELDS) {
-    if (seenYieldNames.has(ynorm(y.name))) continue; // one yield row per ingredient
+    if (seenYieldNames.has(ynorm(y.name))) continue; // one row per prep name
     seenYieldNames.add(ynorm(y.name));
     const perGram = basePrice(y.name); // ₹/g of the base ingredient
     const existingId = matIdByName.get(ynorm(y.name));
@@ -808,7 +808,8 @@ const masterYieldRows: IngredientYield[] = [];
     }
     const raw = y.raw;
     const usable = y.usable;
-    const wastage = Math.max(0, raw - usable); // boiled/absorption preps: 0 trim loss
+    // Negative for boiled/absorption preps (usable > raw): cooking ADDS weight.
+    const wastage = round2(raw - usable);
     const yieldPct = round2((usable / raw) * 100);
     const wastagePct = round2((wastage / raw) * 100);
     const purchaseCost = perGram != null ? round2(perGram * raw) : 0;

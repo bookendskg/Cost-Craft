@@ -118,24 +118,31 @@ export function YieldForm({
           ? round2(m.cost_per_base_unit * c.baseUnitsPerCanonical)
           : m.purchase_price;
       if (perUnit != null) setValue("purchase_cost", perUnit, { shouldValidate: true });
+      // Prefill the standard name; the user overwrites it for a named prep.
+      if (!watch("name")?.trim()) setValue("name", `${m.ingredient_name} Yield`);
       setValue("purchase_quantity", 1);
       setValue("purchase_unit", c.purchase_unit as YieldValues["purchase_unit"]);
     }
   };
 
+  // Negative wastage = weight GAINED in cooking (boiled pasta/rice absorbs water),
+  // so the preview only needs usable > 0 and a sane upper bound on the gain.
+  const rawBase = toBaseQuantity(1, canon.purchase_unit);
   const preview =
     ingredientId &&
     cost > 0 &&
     wastage != null &&
-    wastage >= 0 &&
-    wastage < toBaseQuantity(1, canon.purchase_unit)
+    Number.isFinite(wastage) &&
+    wastage < rawBase &&
+    wastage > -9 * rawBase
       ? computeYield({ purchaseCost: cost, purchaseQuantity: 1, purchaseUnit: canon.purchase_unit, wastageQty: wastage })
       : null;
+  const gainsWeight = !!preview && preview.wastagePct < 0;
 
   const onSubmit = async (values: YieldValues) => {
     const c = canonicalPurchase(measurementTypeFromBaseUnit(values.purchase_unit));
     const input = {
-      name: values.name?.trim() || null,
+      name: values.name.trim(),
       ingredient_id: values.ingredient_id,
       purchase_cost: values.purchase_cost,
       purchase_quantity: 1,
@@ -175,11 +182,18 @@ export function YieldForm({
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Yield Name</Label>
+            <Label>Yield Name *</Label>
             <Input
               {...register("name")}
-              placeholder={selectedMaterial ? `${selectedMaterial.ingredient_name} Yield` : "e.g. Onion Yield (optional)"}
+              placeholder={selectedMaterial ? `${selectedMaterial.ingredient_name} Yield` : "e.g. Chopped Green Garlic"}
             />
+            <p className="text-xs text-muted-foreground">
+              Names the preparation — one ingredient can have several preps (Chopped, Sliced, Boiled…)
+              on the same date.
+            </p>
+            {formState.errors.name && (
+              <p className="text-xs text-destructive">{formState.errors.name.message}</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>Ingredient *</Label>
@@ -233,7 +247,9 @@ export function YieldForm({
                   {...register("wastage_quantity", { valueAsNumber: true })}
                 />
                 <p className="text-xs text-muted-foreground">
-                  How much of one {canon.displayUnit} is lost in prep, measured in {baseUnit}.
+                  How much of one {canon.displayUnit} is lost in prep, measured in {baseUnit}. Use a
+                  negative value when cooking ADDS weight — boiled pasta/rice absorbs water (1 kg rice
+                  → 1.4 kg cooked is −400).
                 </p>
                 {formState.errors.wastage_quantity && (
                   <p className="text-xs text-destructive">{formState.errors.wastage_quantity.message}</p>
@@ -246,7 +262,10 @@ export function YieldForm({
           <div className="grid grid-cols-2 gap-2 rounded-md bg-muted/50 p-3 text-sm">
             <Derived label={`Raw Quantity (${baseUnit})`} value={preview ? String(preview.rawQtyBase) : "—"} />
             <Derived label={`Usable Quantity (${baseUnit})`} value={preview ? String(preview.usableQty) : "—"} />
-            <Derived label="Wastage %" value={preview ? `${preview.wastagePct}%` : "—"} />
+            <Derived
+              label={gainsWeight ? "Weight Gain %" : "Wastage %"}
+              value={preview ? `${gainsWeight ? -preview.wastagePct : preview.wastagePct}%` : "—"}
+            />
             <Derived label="Yield %" value={preview ? `${preview.yieldPct}%` : "—"} />
             <Derived label="Original Unit Cost" value={preview ? `${formatINR(preview.originalUnitCost)}/${baseUnit}` : "—"} />
             <Derived

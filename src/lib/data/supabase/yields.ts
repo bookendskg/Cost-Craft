@@ -12,7 +12,7 @@ import type { IngredientYield } from "../types";
 import type { ImportSummary } from "../../import/importTypes";
 import { computeYield } from "../../yield";
 import { getUnitFamily } from "../../units";
-import type { YieldInput, ImportYieldRow } from "../mock/yields";
+import { DUPLICATE_MSG, normalizeYieldName, type YieldInput, type ImportYieldRow } from "../mock/yields";
 import { sb, fail, cascadeMaterial, audit } from "./helpers";
 
 /** Today as an ISO date (YYYY-MM-DD) — matches the mock's todayISO(). */
@@ -54,6 +54,26 @@ function derive(input: YieldInput): Omit<IngredientYield, "id" | "created_at" | 
   };
 }
 
+/** Existing record with the same ingredient + prep name + effective date, if any.
+ *  Names are compared case/space-insensitively, matching the DB's unique index. */
+async function findDuplicate(
+  input: YieldInput,
+  eff: string,
+  ignoreId?: string,
+): Promise<{ id: string } | null> {
+  const { data, error } = await sb()
+    .from("ingredient_yields")
+    .select("id, name")
+    .eq("ingredient_id", input.ingredient_id)
+    .eq("effective_from", eff);
+  if (error) fail("Check yield", error.message);
+  const key = normalizeYieldName(input.name);
+  const hit = (data ?? []).find(
+    (r: { id: string; name: string | null }) => r.id !== ignoreId && normalizeYieldName(r.name) === key,
+  );
+  return hit ? { id: hit.id } : null;
+}
+
 export const supabaseYieldsRepo = {
   async list(): Promise<IngredientYield[]> {
     const { data, error } = await sb().from("ingredient_yields").select("*");
@@ -84,15 +104,9 @@ export const supabaseYieldsRepo = {
   async create(input: YieldInput, actorId: string): Promise<IngredientYield> {
     const c = sb();
     const eff = input.effective_from ?? todayISO();
-    // Mirror the mock's friendly duplicate guard (table also enforces unique).
-    const { data: existing, error: dupErr } = await c
-      .from("ingredient_yields")
-      .select("id")
-      .eq("ingredient_id", input.ingredient_id)
-      .eq("effective_from", eff)
-      .maybeSingle();
-    if (dupErr) fail("Create yield", dupErr.message);
-    if (existing) fail("Create yield", "A yield record already exists for this ingredient on that effective date");
+    // Mirror the mock's friendly duplicate guard (the table's unique index on
+    // ingredient + prep name + date is the real enforcement).
+    if (await findDuplicate(input, eff)) fail("Create yield", DUPLICATE_MSG);
 
     const { data, error } = await c
       .from("ingredient_yields")
@@ -124,6 +138,9 @@ export const supabaseYieldsRepo = {
     if (beforeErr) fail("Update yield", beforeErr.message);
     if (!before) fail("Update yield", "Yield record not found");
     const prev = before as IngredientYield;
+    if (await findDuplicate(input, input.effective_from ?? prev.effective_from, id)) {
+      fail("Update yield", DUPLICATE_MSG);
+    }
 
     const { data, error } = await c
       .from("ingredient_yields")
@@ -186,6 +203,7 @@ export const supabaseYieldsRepo = {
         }
         const eff = row.effective_from || todayISO();
         const input: YieldInput = {
+          name: row.name?.trim() || `${mat.ingredient_name} Yield`,
           ingredient_id: mat.id,
           purchase_cost: row.purchase_cost,
           purchase_quantity: row.purchase_quantity,
@@ -202,13 +220,7 @@ export const supabaseYieldsRepo = {
           continue;
         }
 
-        const { data: existing, error: exErr } = await c
-          .from("ingredient_yields")
-          .select("id")
-          .eq("ingredient_id", mat.id)
-          .eq("effective_from", eff)
-          .maybeSingle();
-        if (exErr) throw new Error(exErr.message);
+        const existing = await findDuplicate(input, eff);
 
         if (existing) {
           if (mode === "add") {
@@ -218,7 +230,7 @@ export const supabaseYieldsRepo = {
           const { error: upErr } = await c
             .from("ingredient_yields")
             .update({ ...derived, updated_at: new Date().toISOString() })
-            .eq("id", (existing as { id: string }).id);
+            .eq("id", existing.id);
           if (upErr) throw new Error(upErr.message);
           S.updated++;
         } else {

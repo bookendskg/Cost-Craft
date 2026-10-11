@@ -186,6 +186,11 @@ export function yieldRecordCutLabel(recordName: string | null | undefined, ingre
   return rest.replace(/^[-–:\s]+|[-–:\s]+$/g, "").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** True when a yield record is the ingredient's plain/standard yield, not a named prep. */
+export function isStandardYieldName(recordName: string | null | undefined, ingredientName: string): boolean {
+  return yieldRecordCutLabel(recordName, ingredientName) === "Standard yield";
+}
+
 /** All cut options for a material: built-in cuts plus its Yield Management records (latest per label wins). */
 export function cutOptionsFor(
   material: Pick<RawMaterial, "id" | "ingredient_name">,
