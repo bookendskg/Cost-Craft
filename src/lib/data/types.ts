@@ -476,8 +476,20 @@ export interface UserRecipeView {
   assigned_at: string;
 }
 
-export type AuditEntityType = "recipe" | "ingredient" | "user" | "brand" | "outlet" | "role" | "packaging";
-export type AuditAction = "create" | "update" | "delete" | "approve" | "reject" | "submit";
+export type AuditEntityType =
+  | "recipe" | "ingredient" | "yield" | "wastage" | "user" | "brand" | "outlet" | "role"
+  | "packaging" | "settings" | "export" | "accessLink" | "session" | "system";
+export type AuditAction =
+  | "create" | "update" | "delete" | "approve" | "reject" | "submit"
+  | "login" | "logout" | "export" | "grant" | "revoke" | "archive";
+
+/** Human labels for the Activity Log filters. */
+export const AUDIT_ENTITY_LABELS: Record<AuditEntityType, string> = {
+  recipe: "Recipe", ingredient: "Ingredient", yield: "Yield", wastage: "Wastage",
+  user: "User", brand: "Brand", outlet: "Outlet", role: "Role", packaging: "Packaging",
+  settings: "Settings", export: "Export", accessLink: "Share link", session: "Sign in/out",
+  system: "System",
+};
 
 export interface AuditLog {
   id: string;
@@ -487,8 +499,18 @@ export interface AuditLog {
   old_values: unknown | null;
   new_values: unknown | null;
   performed_by: string | null;
+  /** Actor snapshot taken when the row was written (0035) — survives user deletion. */
+  actor_name?: string | null;
+  actor_email?: string | null;
+  actor_role?: string | null;
   performed_at: string;
   notes: string | null;
+}
+
+/** One page of audit rows plus the total match count (server-side pagination). */
+export interface AuditPage {
+  rows: AuditLog[];
+  total: number;
 }
 
 export interface SystemSetting {

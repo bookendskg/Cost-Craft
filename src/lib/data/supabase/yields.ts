@@ -117,7 +117,7 @@ export const supabaseYieldsRepo = {
     const row = data as IngredientYield;
 
     await audit({
-      entity_type: "ingredient",
+      entity_type: "yield",
       entity_id: input.ingredient_id,
       action: "create",
       new_values: { yield_pct: row.yield_percentage, adj_cost: row.yield_adjusted_unit_cost },
@@ -152,7 +152,7 @@ export const supabaseYieldsRepo = {
     const row = data as IngredientYield;
 
     await audit({
-      entity_type: "ingredient",
+      entity_type: "yield",
       entity_id: row.ingredient_id,
       action: "update",
       old_values: { yield_pct: prev.yield_percentage, adj_cost: prev.yield_adjusted_unit_cost },
@@ -253,7 +253,7 @@ export const supabaseYieldsRepo = {
 
     for (const id of affected) await cascadeMaterial(id, actorId, "Yield import");
     await audit({
-      entity_type: "ingredient",
+      entity_type: "yield",
       entity_id: "import",
       action: "create",
       new_values: { added: S.imported, updated: S.updated },
@@ -280,7 +280,7 @@ export const supabaseYieldsRepo = {
     if (error) fail("Delete yield", error.message);
 
     await audit({
-      entity_type: "ingredient",
+      entity_type: "yield",
       entity_id: ingredientId,
       action: "delete",
       performed_by: actorId,
@@ -308,7 +308,7 @@ export const supabaseYieldsRepo = {
     }
     if (deleted > 0) {
       await audit({
-        entity_type: "ingredient",
+        entity_type: "yield",
         entity_id: "bulk",
         action: "delete",
         performed_by: actorId,

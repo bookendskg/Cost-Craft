@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase/client";
 import { profileToUser, type ProfileRow } from "@/lib/supabase/types";
 import type { User } from "../types";
 import type { CreateUserInput, UpdateUserInput } from "../mock/users";
+import { audit } from "./helpers";
 
 function fail(context: string, message?: string): never {
   throw new Error(message || `${context} failed`);
@@ -51,6 +52,8 @@ export const supabaseUsersRepo = {
     if (patch.password) {
       fail("Update user", "Passwords are managed by Supabase — use “Send Password Reset”.");
     }
+    // Snapshot the current values so the activity log can show before → after.
+    const existing = await this.getById(id);
     const row: Record<string, unknown> = {};
     if (patch.name !== undefined) row.name = patch.name;
     if (patch.email !== undefined) row.email = patch.email;
@@ -104,7 +107,39 @@ export const supabaseUsersRepo = {
         .single<ProfileRow>();
       if (!r.error && r.data) profile = r.data;
     }
-    return profileToUser(profile);
+    const user = profileToUser(profile);
+
+    // Activity log — role/status/permission changes were previously invisible in
+    // the Supabase path (the mock repo has always recorded them).
+    const tracked = [
+      "name", "email", "role", "status", "approved", "assigned_brand", "assigned_outlet",
+      "brand_scope", "outlet_scope", "show_cost", "dashboard_access", "can_import",
+      "can_manage_wastage",
+    ] as const;
+    const before: Record<string, unknown> = {};
+    const after: Record<string, unknown> = {};
+    for (const k of tracked) {
+      const next = (patch as Record<string, unknown>)[k];
+      const prev = (existing as unknown as Record<string, unknown> | null)?.[k];
+      if (next !== undefined && next !== prev) {
+        before[k] = prev ?? null;
+        after[k] = next;
+      }
+    }
+    if (Object.keys(after).length) {
+      const roleChange =
+        after.role !== undefined ? ` Role changed ${before.role ?? "—"} → ${after.role}.` : "";
+      await audit({
+        entity_type: "user",
+        entity_id: id,
+        action: "update",
+        old_values: before,
+        new_values: after,
+        performed_by: actorId,
+        notes: `Updated ${user.name || user.email} (${Object.keys(after).join(", ")}).${roleChange}`,
+      });
+    }
+    return user;
   },
 
   /**

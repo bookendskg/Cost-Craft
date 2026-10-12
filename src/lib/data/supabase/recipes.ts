@@ -799,7 +799,15 @@ export const supabaseRecipesRepo = {
       .select("*")
       .single();
     if (error) fail("Set recipe image", error.message);
-    return data as Recipe;
+    const recipe = data as Recipe;
+    await audit({
+      entity_type: "recipe",
+      entity_id: recipe.id,
+      action: "update",
+      performed_by: actorId,
+      notes: `${imageUrl ? "Updated" : "Removed"} photo for ${recipe.recipe_name}`,
+    });
+    return recipe;
   },
 
   async setSellingPrice(id: string, price: number | null, actorId: string): Promise<Recipe> {

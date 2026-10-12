@@ -118,8 +118,8 @@ export const supabaseWastageRepo = {
     const entry = data as WastageEntry;
     await replaceLines(entry.id, rows.map((r) => ({ ...r, wastage_id: entry.id })));
     await audit({
-      entity_type: first.item_type === "recipe" ? "recipe" : "ingredient",
-      entity_id: (first.recipe_id || first.ingredient_id) ?? entry.id,
+      entity_type: "wastage",
+      entity_id: entry.id,
       action: "create",
       new_values: { total_cost: entry.total_cost, outlet: entry.outlet_id },
       performed_by: actorId,
@@ -171,8 +171,8 @@ export const supabaseWastageRepo = {
     const entry = data as WastageEntry;
     await replaceLines(id, rows);
     await audit({
-      entity_type: first.item_type === "recipe" ? "recipe" : "ingredient",
-      entity_id: (first.recipe_id || first.ingredient_id) ?? entry.id,
+      entity_type: "wastage",
+      entity_id: entry.id,
       action: "update",
       old_values: before,
       new_values: { total_cost: entry.total_cost },
@@ -192,8 +192,8 @@ export const supabaseWastageRepo = {
     const { error } = await c.from("wastage_entries").delete().eq("id", id);
     if (error) fail("Delete wastage", error.message);
     await audit({
-      entity_type: w.item_type === "recipe" ? "recipe" : "ingredient",
-      entity_id: (w.recipe_id || w.ingredient_id) ?? w.id,
+      entity_type: "wastage",
+      entity_id: w.id,
       action: "delete",
       performed_by: actorId,
       notes: "Deleted wastage entry",

@@ -121,7 +121,7 @@ export const yieldsRepo = {
         };
         db.ingredient_yields.push(row);
         recordAudit(db, {
-          entity_type: "ingredient",
+          entity_type: "yield",
           entity_id: input.ingredient_id,
           action: "create",
           new_values: { yield_pct: row.yield_percentage, adj_cost: row.yield_adjusted_unit_cost },
@@ -147,7 +147,7 @@ export const yieldsRepo = {
         const prevIngredient = y.ingredient_id;
         Object.assign(y, derive(input), { updated_at: nowISO() });
         recordAudit(db, {
-          entity_type: "ingredient",
+          entity_type: "yield",
           entity_id: y.ingredient_id,
           action: "update",
           old_values: before,
@@ -235,7 +235,7 @@ export const yieldsRepo = {
         });
         for (const id of affected) cascadeFromMaterial(db, id, actorId, "Yield import");
         recordAudit(db, {
-          entity_type: "ingredient",
+          entity_type: "yield",
           entity_id: "import",
           action: "create",
           new_values: { added: S.imported, updated: S.updated },
@@ -254,7 +254,7 @@ export const yieldsRepo = {
         if (!y) return;
         db.ingredient_yields = db.ingredient_yields.filter((x) => x.id !== id);
         recordAudit(db, {
-          entity_type: "ingredient",
+          entity_type: "yield",
           entity_id: y.ingredient_id,
           action: "delete",
           performed_by: actorId,
@@ -277,7 +277,7 @@ export const yieldsRepo = {
           if (!y) continue;
           db.ingredient_yields = db.ingredient_yields.filter((x) => x.id !== id);
           recordAudit(db, {
-            entity_type: "ingredient",
+            entity_type: "yield",
             entity_id: y.ingredient_id,
             action: "delete",
             performed_by: actorId,

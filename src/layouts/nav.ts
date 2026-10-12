@@ -7,6 +7,7 @@ import {
   Users,
   Settings,
   ScrollText,
+  History,
   ChefHat,
   Sprout,
   Trash2,
@@ -62,6 +63,9 @@ export const NAV_ITEMS: NavItem[] = [
   // Import Data hub — Super Admins, plus any user a Super Admin grants can_import.
   { to: "/import-data", label: "Import Data", icon: Upload, group: "Admin", roles: ["super_admin"], grant: canImport },
   { to: "/audit", label: "Price Changes", icon: ScrollText, group: "Admin", roles: ["admin"], cap: "audit.view" },
+  // Activity Log — every recorded action, Super-Admin only (no cap, so no other
+  // role and no custom role can reach it; audit_read RLS enforces it server-side).
+  { to: "/activity-log", label: "Activity Log", icon: History, group: "Admin", roles: ["super_admin"] },
   { to: "/settings", label: "Settings", icon: Settings, group: "Admin", roles: ["admin"], cap: "settings.manage" },
 ];
 

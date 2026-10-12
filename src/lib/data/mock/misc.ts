@@ -1,6 +1,8 @@
 import type {
+  AuditAction,
   AuditEntityType,
   AuditLog,
+  AuditPage,
   SystemSetting,
   UserRecipeView,
   ViewType,
@@ -79,6 +81,18 @@ export const settingsRepo = {
     return delay(
       mutate((db) => {
         const row = db.system_settings.find((s) => s.key === key);
+        const previous = row?.value ?? null;
+        if (previous !== value) {
+          recordAudit(db, {
+            entity_type: "settings",
+            entity_id: key,
+            action: "update",
+            old_values: { [key]: previous },
+            new_values: { [key]: value },
+            performed_by: actorId,
+            notes: `Changed setting ${key}: ${previous ?? "—"} → ${value}`,
+          });
+        }
         if (row) {
           row.value = value;
           row.updated_by = actorId;
@@ -100,24 +114,47 @@ export const settingsRepo = {
 // --- Audit log -------------------------------------------------------------
 export interface AuditFilter {
   entityType?: AuditEntityType | "all";
+  /** Activity Log: filter by what happened (create/update/delete/login…). */
+  action?: AuditAction | "all";
   userId?: string | "all";
   from?: string;
   to?: string;
+  /** Matches the note, the actor's name/email and the entity id. */
+  search?: string;
+  /** Server-side paging (defaults: page 1, 50 rows). */
+  page?: number;
+  pageSize?: number;
+}
+
+/** Shared by both repos: does a row match the free-text search? */
+export function auditMatchesSearch(row: AuditLog, search: string): boolean {
+  const q = search.trim().toLowerCase();
+  if (!q) return true;
+  return [row.notes, row.actor_name, row.actor_email, row.entity_id, row.entity_type, row.action]
+    .some((v) => (v ?? "").toString().toLowerCase().includes(q));
 }
 
 export const auditRepo = {
-  async list(filter: AuditFilter = {}): Promise<AuditLog[]> {
+  /** One page of the activity log, newest first (see AuditFilter). */
+  async list(filter: AuditFilter = {}): Promise<AuditPage> {
     let rows = [...getDb().audit_logs];
     if (filter.entityType && filter.entityType !== "all") {
       rows = rows.filter((r) => r.entity_type === filter.entityType);
+    }
+    if (filter.action && filter.action !== "all") {
+      rows = rows.filter((r) => r.action === filter.action);
     }
     if (filter.userId && filter.userId !== "all") {
       rows = rows.filter((r) => r.performed_by === filter.userId);
     }
     if (filter.from) rows = rows.filter((r) => r.performed_at >= filter.from!);
     if (filter.to) rows = rows.filter((r) => r.performed_at <= filter.to! + "T23:59:59.999Z");
+    if (filter.search) rows = rows.filter((r) => auditMatchesSearch(r, filter.search!));
     rows.sort((a, b) => b.performed_at.localeCompare(a.performed_at));
-    return delay(rows);
+    const total = rows.length;
+    const size = filter.pageSize ?? 50;
+    const start = ((filter.page ?? 1) - 1) * size;
+    return delay({ rows: rows.slice(start, start + size), total });
   },
 
   /** Direct audit writer for events not covered by a specific repo. */

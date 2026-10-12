@@ -6,7 +6,7 @@ import type { AccessLinkStatus, Recipe, RecipeAccessLink, RecipeIngredientWithMa
 import type { CreateLinkInput, ResolvedLink } from "../mock/accessLinks";
 import { generateToken, hashToken } from "../mock/accessLinks";
 import { nowISO, uid } from "../mock/db";
-import { sb, fail } from "./helpers";
+import { sb, fail, audit } from "./helpers";
 
 export type { CreateLinkInput, ResolvedLink };
 
@@ -74,7 +74,20 @@ export const supabaseAccessLinksRepo = {
     };
     const { data, error } = await sb().from("recipe_access_links").insert(row).select("*").single();
     if (error) fail("Create share link", error.message);
-    return { link: data as RecipeAccessLink, token };
+    const link = data as RecipeAccessLink;
+    await audit({
+      entity_type: "accessLink",
+      entity_id: link.id,
+      action: "grant",
+      new_values: {
+        recipe_id: link.recipe_id,
+        to: link.granted_to_email ?? link.granted_to_user_id ?? link.granted_to_role ?? "link",
+        access_type: link.access_type,
+      },
+      performed_by: input.granted_by_user_id ?? null,
+      notes: `Shared recipe ${link.recipe_id} (${link.access_type})`,
+    });
+    return { link, token };
   },
 
   async resolve(token: string): Promise<ResolvedLink> {
@@ -118,7 +131,15 @@ export const supabaseAccessLinksRepo = {
       .select("*")
       .single();
     if (error) fail("Revoke share link", error.message);
-    return data as RecipeAccessLink;
+    const link = data as RecipeAccessLink;
+    await audit({
+      entity_type: "accessLink",
+      entity_id: link.id,
+      action: "revoke",
+      performed_by: byUserId,
+      notes: `Revoked share link for recipe ${link.recipe_id}`,
+    });
+    return link;
   },
 
   async list(): Promise<RecipeAccessLink[]> {

@@ -26,6 +26,7 @@ const ReportsPage = lazy(() => import("@/features/reports/ReportsPage").then((m)
 const UsersPage = lazy(() => import("@/features/users/UsersPage").then((m) => ({ default: m.UsersPage })));
 const UserEditorPage = lazy(() => import("@/features/users/UserEditorPage").then((m) => ({ default: m.UserEditorPage })));
 const AuditPage = lazy(() => import("@/features/audit/AuditPage").then((m) => ({ default: m.AuditPage })));
+const ActivityLogPage = lazy(() => import("@/features/audit/ActivityLogPage").then((m) => ({ default: m.ActivityLogPage })));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const BrandsOutletsPage = lazy(() => import("@/features/brands/BrandsOutletsPage").then((m) => ({ default: m.BrandsOutletsPage })));
 const BrandEditorPage = lazy(() => import("@/features/brands/BrandEditorPage").then((m) => ({ default: m.BrandEditorPage })));
@@ -231,6 +232,16 @@ export const router = createBrowserRouter([
         element: (
           <RequireRole roles={["admin"]} cap="audit.view">
             <AuditPage />
+          </RequireRole>
+        ),
+      },
+      {
+        // Activity Log — Super Admin only (no cap: RequireRole lets super_admin
+        // through any roles list, and no other role matches ["super_admin"]).
+        path: "activity-log",
+        element: (
+          <RequireRole roles={["super_admin"]}>
+            <ActivityLogPage />
           </RequireRole>
         ),
       },

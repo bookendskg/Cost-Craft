@@ -47,6 +47,22 @@ export const useSession = create<SessionState>()(
         }
       },
       async logout() {
+        // Record the sign-out BEFORE dropping the session — afterwards RLS would
+        // reject the insert. Sign-ins are logged server-side in on_sign_in() (0035).
+        const current = useSession.getState?.().user ?? null;
+        if (isSupabaseConfigured && supabase && current) {
+          try {
+            await supabase.from("audit_logs").insert({
+              entity_type: "session",
+              entity_id: current.id,
+              action: "logout",
+              performed_by: current.id,
+              notes: "Signed out",
+            });
+          } catch {
+            // never block sign-out on the activity log
+          }
+        }
         if (isSupabaseConfigured && supabase) await supabase.auth.signOut();
         set({ user: null, error: null });
       },

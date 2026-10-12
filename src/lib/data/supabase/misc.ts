@@ -4,7 +4,7 @@
 // errors. Viewer-access (user_recipe_views) stays on the mock layer for now — its
 // table FKs to a legacy `users` table and there are no Viewers yet.
 
-import type { AuditEntityType, AuditLog, SystemSetting } from "../types";
+import type { AuditEntityType, AuditLog, AuditPage, SystemSetting } from "../types";
 import type { AuditFilter } from "../mock/misc";
 import { sb, fail, audit as auditInsert } from "./helpers";
 
@@ -35,26 +35,58 @@ export const supabaseSettingsRepo = {
     return v ? Number(v) : 30;
   },
 
-  async set(key: string, value: string, _actorId: string): Promise<void> {
+  async set(key: string, value: string, actorId: string): Promise<void> {
+    const previous = await this.get(key);
     // updated_by left null to sidestep the legacy users(id) FK; RLS already gates
-    // writes to admins/super-admins (settings_write policy).
+    // writes to admins/super-admins (settings_write policy). The actor is recorded
+    // in the activity log instead.
     const { error } = await sb()
       .from("system_settings")
       .upsert({ key, value, updated_by: null, updated_at: new Date().toISOString() }, { onConflict: "key" });
     if (error) fail("Save setting", error.message);
+
+    if (previous !== value) {
+      await auditInsert({
+        entity_type: "settings",
+        entity_id: key,
+        action: "update",
+        old_values: { [key]: previous },
+        new_values: { [key]: value },
+        performed_by: actorId,
+        notes: `Changed setting ${key}: ${previous ?? "—"} → ${value}`,
+      });
+    }
   },
 };
 
 export const supabaseAuditRepo = {
-  async list(filter: AuditFilter = {}): Promise<AuditLog[]> {
-    let q = sb().from("audit_logs").select("*").order("performed_at", { ascending: false });
+  /**
+   * One page of the activity log, newest first. Only Super Admins can read the
+   * table (RLS audit_read, 0035) — for anyone else this returns an empty page.
+   */
+  async list(filter: AuditFilter = {}): Promise<AuditPage> {
+    const size = filter.pageSize ?? 50;
+    const page = filter.page ?? 1;
+    let q = sb()
+      .from("audit_logs")
+      .select("*", { count: "exact" })
+      .order("performed_at", { ascending: false });
     if (filter.entityType && filter.entityType !== "all") q = q.eq("entity_type", filter.entityType);
+    if (filter.action && filter.action !== "all") q = q.eq("action", filter.action);
     if (filter.userId && filter.userId !== "all") q = q.eq("performed_by", filter.userId);
     if (filter.from) q = q.gte("performed_at", filter.from);
     if (filter.to) q = q.lte("performed_at", filter.to + "T23:59:59.999Z");
-    const { data, error } = await q;
-    if (error) return [];
-    return (data ?? []) as AuditLog[];
+    // Free text spans a jsonb-free set of columns, so it's an OR over them.
+    if (filter.search?.trim()) {
+      const like = `%${filter.search.trim().replace(/[%,]/g, " ")}%`;
+      q = q.or(
+        [`notes.ilike.${like}`, `actor_name.ilike.${like}`, `actor_email.ilike.${like}`, `entity_id.ilike.${like}`].join(","),
+      );
+    }
+    const { data, error, count } = await q.range((page - 1) * size, page * size - 1);
+    if (error) fail("Load activity log", error.message);
+    const rows = (data ?? []) as AuditLog[];
+    return { rows, total: count ?? rows.length };
   },
 
   /** Direct audit writer (best-effort; the helper swallows errors so it never

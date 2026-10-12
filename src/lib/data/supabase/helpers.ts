@@ -101,7 +101,14 @@ export async function recomputeRecipes(seedRecipeIds: string[], actorId: string,
   await persistCostChanges(before, db);
 }
 
-/** Append an audit row (best-effort; never blocks the main mutation). */
+/**
+ * Append an audit row (best-effort; never blocks the main mutation). The DB trigger
+ * from 0035 overwrites performed_by with auth.uid() and fills the actor snapshot,
+ * so a row can't be attributed to someone else.
+ *
+ * supabase-js RESOLVES with { error } instead of throwing, so the error is checked
+ * explicitly — the old try/catch never fired and silently lost failed inserts.
+ */
 export async function audit(entry: {
   entity_type: string;
   entity_id: string;
@@ -112,7 +119,7 @@ export async function audit(entry: {
   notes?: string | null;
 }): Promise<void> {
   try {
-    await sb().from("audit_logs").insert({
+    const { error } = await sb().from("audit_logs").insert({
       entity_type: entry.entity_type,
       entity_id: entry.entity_id,
       action: entry.action,
@@ -121,6 +128,7 @@ export async function audit(entry: {
       performed_by: entry.performed_by,
       notes: entry.notes ?? null,
     });
+    if (error) console.error("Audit insert failed:", error.message);
   } catch (e) {
     console.error("Audit insert failed:", e);
   }

@@ -5,7 +5,7 @@
 import type { ExportHistory } from "../types";
 import type { ExportRecordInput } from "../mock/exports";
 import { nowISO, uid } from "../mock/db";
-import { sb, fail } from "./helpers";
+import { sb, fail, audit } from "./helpers";
 
 export type { ExportRecordInput };
 
@@ -46,6 +46,15 @@ export const supabaseExportsRepo = {
       .select("*")
       .maybeSingle();
     if (error) fail("Record export", error.message);
-    return (data as ExportHistory | null) ?? row;
+    const saved = (data as ExportHistory | null) ?? row;
+    await audit({
+      entity_type: "export",
+      entity_id: saved.id,
+      action: "export",
+      new_values: { type: saved.export_type, entity: saved.entity_type, format: saved.file_format },
+      performed_by: saved.exported_by_user_id,
+      notes: `Exported ${saved.recipe_name_snapshot ?? saved.report_name ?? saved.entity_type} (${saved.file_format})`,
+    });
+    return saved;
   },
 };
