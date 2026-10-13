@@ -78,6 +78,9 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    // Vitest loads .env, so without this the repos would pick the SUPABASE backend
+    // and tests would talk to the live project. Tests always use the mock layer.
+    env: { VITE_DATA_BACKEND: "mock" },
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     // mcp/ holds the MCP server's wire-protocol tests, which share src/ code.

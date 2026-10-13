@@ -41292,6 +41292,26 @@ var INGREDIENT_ALIASES = {
   "zucchini": "Green Zucchini"
 };
 
+// src/lib/data/types.ts
+var WASTAGE_TYPES = [
+  "Raw Material Wastage",
+  "Preparation Wastage",
+  "Cooking Wastage",
+  "Spoilage",
+  "Expired Stock",
+  "Overproduction",
+  "Returned Food",
+  "Incorrect Preparation",
+  "Damaged Stock",
+  "Quality Rejection",
+  "Other"
+];
+var DEPARTMENTS = [
+  "Kitchen Staff",
+  "Service Staff",
+  "Other"
+];
+
 // src/lib/auth/permissions.ts
 var MATRIX = {
   // Super Admin: everything, plus exclusive role/permission management.
@@ -49283,23 +49303,23 @@ for (const d of allDefs) {
   });
 }
 {
-  const norm5 = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
-  const matByName = new Map(raw_materials.map((m) => [norm5(m.ingredient_name), m.id]));
+  const norm9 = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const matByName = new Map(raw_materials.map((m) => [norm9(m.ingredient_name), m.id]));
   const cpbuById = new Map(raw_materials.map((m) => [m.id, m.cost_per_base_unit]));
-  const existingRecipeNames = new Set(recipes.map((r) => norm5(r.recipe_name)));
+  const existingRecipeNames = new Set(recipes.map((r) => norm9(r.recipe_name)));
   const usedMatIds = new Set(raw_materials.map((m) => m.id));
   const slugify = (s) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   const purchaseUnitFor = (base) => base === "Gram" ? "KG" : base === "ML" ? "Litre" : "Piece";
-  const prepByName = new Map(recipes.filter((r) => r.is_prep).map((r) => [norm5(r.recipe_name), r]));
+  const prepByName = new Map(recipes.filter((r) => r.is_prep).map((r) => [norm9(r.recipe_name), r]));
   for (const cb of COOKBOOK_RECIPES) {
-    if (existingRecipeNames.has(norm5(cb.name))) continue;
+    if (existingRecipeNames.has(norm9(cb.name))) continue;
     if (cb.category === "Pizza" && cb.brand === "capiche") continue;
-    existingRecipeNames.add(norm5(cb.name));
+    existingRecipeNames.add(norm9(cb.name));
     let totalGrams = 0;
     let rawCost = 0;
     let anyPriced = false;
     cb.ingredients.forEach((ing, idx) => {
-      const prep = prepByName.get(norm5(ing.name));
+      const prep = prepByName.get(norm9(ing.name));
       if (prep && prep.brand === cb.brand && prep.id !== cb.id && ing.unit === prep.yield_unit) {
         const perUnit = prepUnitCostFrom(prep.total_cost ?? 0, prep.yield_quantity, prep.wastage_pct ?? WASTAGE_PCT);
         const lineCost3 = round22(perUnit * ing.qty);
@@ -49318,13 +49338,13 @@ for (const d of allDefs) {
         if (ing.unit === "Gram") totalGrams += ing.qty;
         return;
       }
-      let matId = matByName.get(norm5(ing.name));
+      let matId = matByName.get(norm9(ing.name));
       if (!matId) {
         let id = "m-cb-" + slugify(ing.name);
         while (usedMatIds.has(id)) id += "-x";
         usedMatIds.add(id);
         matId = id;
-        matByName.set(norm5(ing.name), id);
+        matByName.set(norm9(ing.name), id);
         const pg = masterPerGram(ing.name);
         const cpbu2 = pg ?? null;
         cpbuById.set(id, cpbu2);
@@ -51482,6 +51502,363 @@ var supabaseYieldsRepo = {
   }
 };
 
+// src/lib/data/mock/wastage.ts
+function writeWastageLines(db, wastageId, lines) {
+  db.wastage_lines = db.wastage_lines.filter((l) => l.wastage_id !== wastageId);
+  let total = 0;
+  for (const l of lines) {
+    const lineTotal = round2((l.quantity || 0) * (l.unit_cost || 0));
+    total += lineTotal;
+    db.wastage_lines.push({
+      id: uid(),
+      wastage_id: wastageId,
+      item_type: l.item_type,
+      ingredient_id: l.item_type === "ingredient" ? l.ingredient_id : null,
+      recipe_id: l.item_type === "recipe" ? l.recipe_id : null,
+      quantity: l.quantity,
+      unit: l.unit,
+      unit_cost: l.unit_cost,
+      total_cost: lineTotal
+    });
+  }
+  return round2(total);
+}
+function applicableUnitCost(itemType, id, materials, recipes2, yields) {
+  if (!id) return 0;
+  if (itemType === "recipe") {
+    return recipes2.find((r) => r.id === id)?.cost_per_portion ?? 0;
+  }
+  const m = materials.find((x) => x.id === id);
+  if (!m) return 0;
+  return effectiveCostPerBaseUnit(m.cost_per_base_unit, activeYield(yields, m)) ?? 0;
+}
+var wastageRepo = {
+  async list() {
+    return delay([...getDb().wastage_entries].sort((a, b) => b.wastage_date.localeCompare(a.wastage_date)));
+  },
+  async getById(id) {
+    return delay(getDb().wastage_entries.find((w) => w.id === id) ?? null);
+  },
+  /** A wastage record with its itemised lines (joined to item names). */
+  async getWithLines(id) {
+    const db = getDb();
+    const entry = db.wastage_entries.find((w) => w.id === id) ?? null;
+    if (!entry) return delay(null);
+    const lines = db.wastage_lines.filter((l) => l.wastage_id === id).map((l) => ({
+      ...l,
+      name: l.item_type === "recipe" ? db.recipes.find((r) => r.id === l.recipe_id)?.recipe_name ?? "\u2014" : db.raw_materials.find((m) => m.id === l.ingredient_id)?.ingredient_name ?? "\u2014"
+    }));
+    return delay({ entry: { ...entry }, lines });
+  },
+  async create(input, actorId) {
+    return delay(
+      mutate((db) => {
+        const lines = input.lines ?? [];
+        if (lines.length === 0) throw new Error("Add at least one wasted item");
+        const first = lines[0];
+        const id = uid();
+        const entry = {
+          id,
+          name: input.name?.trim() || null,
+          wastage_date: input.wastage_date,
+          brand: input.brand,
+          outlet_id: input.outlet_id,
+          category: input.category ?? null,
+          wastage_type: input.wastage_type,
+          item_type: first.item_type,
+          ingredient_id: first.item_type === "ingredient" ? first.ingredient_id : null,
+          recipe_id: first.item_type === "recipe" ? first.recipe_id : null,
+          quantity: first.quantity,
+          unit: first.unit,
+          unit_cost: first.unit_cost,
+          packaging_cost: round2(input.packaging_cost ?? 0),
+          total_cost: 0,
+          description: input.description ?? null,
+          reason: input.reason ?? null,
+          department: input.department,
+          shift: input.shift ?? null,
+          done_by: input.done_by ?? null,
+          entered_by: actorId,
+          approved_by: input.approved_by || null,
+          status: input.status ?? "recorded",
+          notes: input.notes ?? null,
+          created_at: nowISO(),
+          updated_at: nowISO()
+        };
+        db.wastage_entries.push(entry);
+        const ingTotal = writeWastageLines(db, id, lines);
+        entry.total_cost = round2(ingTotal + (input.packaging_cost ?? 0));
+        recordAudit(db, {
+          entity_type: "wastage",
+          entity_id: entry.id,
+          action: "create",
+          new_values: { total_cost: entry.total_cost, outlet: entry.outlet_id },
+          performed_by: actorId,
+          notes: `Recorded wastage \u20B9${entry.total_cost} (${entry.wastage_type})`,
+          before_state: { type: "wastage", id: entry.id, row: null },
+          after_state: captureEntity(db, "wastage", entry.id)
+        });
+        return entry;
+      })
+    );
+  },
+  async update(id, input, actorId) {
+    return delay(
+      mutate((db) => {
+        const beforeSnap = captureEntity(db, "wastage", id);
+        const w = db.wastage_entries.find((x) => x.id === id);
+        if (!w) throw new Error("Wastage entry not found");
+        const lines = input.lines ?? [];
+        if (lines.length === 0) throw new Error("Add at least one wasted item");
+        const first = lines[0];
+        const before = { total_cost: w.total_cost };
+        const ingTotal = writeWastageLines(db, id, lines);
+        Object.assign(w, {
+          name: input.name?.trim() || null,
+          wastage_date: input.wastage_date,
+          brand: input.brand,
+          outlet_id: input.outlet_id,
+          category: input.category ?? null,
+          wastage_type: input.wastage_type,
+          item_type: first.item_type,
+          ingredient_id: first.item_type === "ingredient" ? first.ingredient_id : null,
+          recipe_id: first.item_type === "recipe" ? first.recipe_id : null,
+          quantity: first.quantity,
+          unit: first.unit,
+          unit_cost: first.unit_cost,
+          packaging_cost: round2(input.packaging_cost ?? 0),
+          total_cost: round2(ingTotal + (input.packaging_cost ?? 0)),
+          description: input.description ?? null,
+          reason: input.reason ?? null,
+          department: input.department,
+          shift: input.shift ?? null,
+          done_by: input.done_by ?? null,
+          approved_by: input.approved_by || null,
+          status: input.status ?? w.status ?? "recorded",
+          notes: input.notes ?? null,
+          updated_at: nowISO()
+        });
+        recordAudit(db, {
+          entity_type: "wastage",
+          entity_id: w.id,
+          action: "update",
+          old_values: before,
+          new_values: { total_cost: w.total_cost },
+          performed_by: actorId,
+          notes: `Updated wastage entry`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "wastage", w.id)
+        });
+        return w;
+      })
+    );
+  },
+  async remove(id, actorId) {
+    return delay(
+      mutate((db) => {
+        const beforeSnap = captureEntity(db, "wastage", id);
+        const w = db.wastage_entries.find((x) => x.id === id);
+        if (!w) return;
+        db.wastage_entries = db.wastage_entries.filter((x) => x.id !== id);
+        db.wastage_lines = db.wastage_lines.filter((l) => l.wastage_id !== id);
+        recordAudit(db, {
+          entity_type: "wastage",
+          entity_id: w.id,
+          action: "delete",
+          performed_by: actorId,
+          notes: "Deleted wastage entry",
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "wastage", w.id)
+        });
+      })
+    );
+  }
+};
+
+// src/lib/data/supabase/wastage.ts
+function lineRows(wastageId, lines) {
+  return lines.map((l) => ({
+    id: uid(),
+    wastage_id: wastageId,
+    item_type: l.item_type,
+    ingredient_id: l.item_type === "ingredient" ? l.ingredient_id : null,
+    recipe_id: l.item_type === "recipe" ? l.recipe_id : null,
+    quantity: l.quantity,
+    unit: l.unit,
+    unit_cost: l.unit_cost,
+    total_cost: round2((l.quantity || 0) * (l.unit_cost || 0))
+  }));
+}
+async function replaceLines(wastageId, rows) {
+  const c = sb();
+  const del = await c.from("wastage_lines").delete().eq("wastage_id", wastageId);
+  if (del.error) fail("Save wastage lines", del.error.message);
+  if (rows.length) {
+    const ins = await c.from("wastage_lines").insert(rows);
+    if (ins.error) fail("Save wastage lines", ins.error.message);
+  }
+}
+var supabaseWastageRepo = {
+  async list() {
+    const { data, error } = await sb().from("wastage_entries").select("*").order("wastage_date", { ascending: false });
+    if (error) fail("Load wastage", error.message);
+    return data ?? [];
+  },
+  async getById(id) {
+    const { data, error } = await sb().from("wastage_entries").select("*").eq("id", id).maybeSingle();
+    if (error) fail("Load wastage entry", error.message);
+    return data ?? null;
+  },
+  async getWithLines(id) {
+    const c = sb();
+    const entryRes = await c.from("wastage_entries").select("*").eq("id", id).maybeSingle();
+    if (entryRes.error) fail("Load wastage entry", entryRes.error.message);
+    if (!entryRes.data) return null;
+    const entry = entryRes.data;
+    const linesRes = await c.from("wastage_lines").select("*").eq("wastage_id", id);
+    if (linesRes.error) fail("Load wastage lines", linesRes.error.message);
+    const lines = linesRes.data ?? [];
+    const matIds = lines.filter((l) => l.item_type === "ingredient" && l.ingredient_id).map((l) => l.ingredient_id);
+    const recIds = lines.filter((l) => l.item_type === "recipe" && l.recipe_id).map((l) => l.recipe_id);
+    const [matsRes, recsRes] = await Promise.all([
+      matIds.length ? c.from("raw_materials").select("id,ingredient_name").in("id", matIds) : Promise.resolve({ data: [], error: null }),
+      recIds.length ? c.from("recipes").select("id,recipe_name").in("id", recIds) : Promise.resolve({ data: [], error: null })
+    ]);
+    const matName = new Map((matsRes.data ?? []).map((m) => [m.id, m.ingredient_name]));
+    const recName = new Map((recsRes.data ?? []).map((r) => [r.id, r.recipe_name]));
+    const withItem = lines.map((l) => ({
+      ...l,
+      name: l.item_type === "recipe" ? recName.get(l.recipe_id ?? "") ?? "\u2014" : matName.get(l.ingredient_id ?? "") ?? "\u2014"
+    }));
+    return { entry, lines: withItem };
+  },
+  async create(input, actorId) {
+    const lines = input.lines ?? [];
+    if (lines.length === 0) fail("Record wastage", "Add at least one wasted item");
+    const first = lines[0];
+    const rows = lineRows("", lines);
+    const ingTotal = round2(rows.reduce((s, r) => s + r.total_cost, 0));
+    const total_cost = round2(ingTotal + (input.packaging_cost ?? 0));
+    const id = uid();
+    const row = {
+      id,
+      name: input.name?.trim() || null,
+      wastage_date: input.wastage_date,
+      brand: input.brand,
+      outlet_id: input.outlet_id,
+      category: input.category ?? null,
+      wastage_type: input.wastage_type,
+      item_type: first.item_type,
+      ingredient_id: first.item_type === "ingredient" ? first.ingredient_id : null,
+      recipe_id: first.item_type === "recipe" ? first.recipe_id : null,
+      quantity: first.quantity,
+      unit: first.unit,
+      unit_cost: first.unit_cost,
+      packaging_cost: round2(input.packaging_cost ?? 0),
+      total_cost,
+      description: input.description ?? null,
+      reason: input.reason ?? null,
+      department: input.department,
+      shift: input.shift ?? null,
+      done_by: input.done_by ?? null,
+      entered_by: actorId,
+      approved_by: input.approved_by || null,
+      status: input.status ?? "recorded",
+      notes: input.notes ?? null
+    };
+    const { data, error } = await sb().from("wastage_entries").insert(row).select("*").single();
+    if (error) fail("Record wastage", error.message);
+    const entry = data;
+    await replaceLines(entry.id, rows.map((r) => ({ ...r, wastage_id: entry.id })));
+    await audit({
+      entity_type: "wastage",
+      entity_id: entry.id,
+      action: "create",
+      new_values: { total_cost: entry.total_cost, outlet: entry.outlet_id },
+      performed_by: actorId,
+      notes: `Recorded wastage \u20B9${entry.total_cost} (${entry.wastage_type})`,
+      before_state: { type: "wastage", id: entry.id, row: null },
+      after_state: await captureEntity2("wastage", entry.id)
+    });
+    return entry;
+  },
+  async update(id, input, actorId) {
+    const before = await captureEntity2("wastage", id);
+    const c = sb();
+    const priorRes = await c.from("wastage_entries").select("*").eq("id", id).maybeSingle();
+    if (priorRes.error) fail("Load wastage entry", priorRes.error.message);
+    if (!priorRes.data) fail("Update wastage", "Wastage entry not found");
+    const priorCost = { total_cost: priorRes.data.total_cost };
+    const lines = input.lines ?? [];
+    if (lines.length === 0) fail("Update wastage", "Add at least one wasted item");
+    const first = lines[0];
+    const rows = lineRows(id, lines);
+    const ingTotal = round2(rows.reduce((s, r) => s + r.total_cost, 0));
+    const total_cost = round2(ingTotal + (input.packaging_cost ?? 0));
+    const row = {
+      name: input.name?.trim() || null,
+      wastage_date: input.wastage_date,
+      brand: input.brand,
+      outlet_id: input.outlet_id,
+      category: input.category ?? null,
+      wastage_type: input.wastage_type,
+      item_type: first.item_type,
+      ingredient_id: first.item_type === "ingredient" ? first.ingredient_id : null,
+      recipe_id: first.item_type === "recipe" ? first.recipe_id : null,
+      quantity: first.quantity,
+      unit: first.unit,
+      unit_cost: first.unit_cost,
+      packaging_cost: round2(input.packaging_cost ?? 0),
+      total_cost,
+      description: input.description ?? null,
+      reason: input.reason ?? null,
+      department: input.department,
+      shift: input.shift ?? null,
+      done_by: input.done_by ?? null,
+      approved_by: input.approved_by || null,
+      status: input.status ?? null,
+      notes: input.notes ?? null,
+      updated_at: nowISO()
+    };
+    const { data, error } = await c.from("wastage_entries").update(row).eq("id", id).select("*").single();
+    if (error) fail("Update wastage", error.message);
+    const entry = data;
+    await replaceLines(id, rows);
+    await audit({
+      entity_type: "wastage",
+      entity_id: entry.id,
+      action: "update",
+      old_values: priorCost,
+      new_values: { total_cost: entry.total_cost },
+      performed_by: actorId,
+      notes: `Updated wastage entry`,
+      before_state: before,
+      after_state: await captureEntity2("wastage", entry.id)
+    });
+    return entry;
+  },
+  async remove(id, actorId) {
+    const before = await captureEntity2("wastage", id);
+    const c = sb();
+    const existing = await c.from("wastage_entries").select("*").eq("id", id).maybeSingle();
+    if (existing.error) fail("Load wastage entry", existing.error.message);
+    if (!existing.data) return;
+    const w = existing.data;
+    await c.from("wastage_lines").delete().eq("wastage_id", id);
+    const { error } = await c.from("wastage_entries").delete().eq("id", id);
+    if (error) fail("Delete wastage", error.message);
+    await audit({
+      entity_type: "wastage",
+      entity_id: w.id,
+      action: "delete",
+      performed_by: actorId,
+      notes: "Deleted wastage entry",
+      before_state: before,
+      after_state: { type: "wastage", id: w.id, row: null }
+    });
+  }
+};
+
 // src/lib/import/recipeGroups.ts
 function groupRecipeLines(rows) {
   const groups = /* @__PURE__ */ new Map();
@@ -52179,7 +52556,7 @@ function defaultYield2(lines) {
   const sum = lines.reduce((s, l) => s + (l.quantity_used || 0), 0);
   return sum > 0 ? sum : 1;
 }
-function lineRows(recipeId, lines) {
+function lineRows2(recipeId, lines) {
   return lines.map((line, idx) => ({
     id: uid(),
     recipe_id: recipeId,
@@ -52193,7 +52570,7 @@ function lineRows(recipeId, lines) {
     cut_type: line.cut_type ?? null
   }));
 }
-async function replaceLines(recipeId, rows) {
+async function replaceLines2(recipeId, rows) {
   const c = sb();
   const del = await c.from("recipe_ingredients").delete().eq("recipe_id", recipeId);
   if (del.error) fail("Save recipe ingredients", del.error.message);
@@ -52340,7 +52717,7 @@ var supabaseRecipesRepo = {
     };
     const insRecipe = await c.from("recipes").insert(recipe);
     if (insRecipe.error) fail("Create recipe", insRecipe.error.message);
-    await replaceLines(id, lineRows(id, lines));
+    await replaceLines2(id, lineRows2(id, lines));
     await replacePackaging(id, header.packaging);
     await recomputeRecipes([id], actorId, "Recipe created");
     const saved = await reloadRecipe(id, "Create recipe");
@@ -52398,7 +52775,7 @@ var supabaseRecipesRepo = {
     }
     const upd = await c.from("recipes").update(patch).eq("id", id);
     if (upd.error) fail("Update recipe", upd.error.message);
-    await replaceLines(id, lineRows(id, lines));
+    await replaceLines2(id, lineRows2(id, lines));
     await replacePackaging(id, header.packaging);
     await recomputeRecipes([id], actorId, "Recipe edited");
     const saved = await reloadRecipe(id, "Update recipe");
@@ -52568,7 +52945,7 @@ var supabaseRecipesRepo = {
       if (upd.error) fail("Import recipes", upd.error.message);
     }
     for (const w of lineWrites) {
-      await replaceLines(w.recipeId, w.rows);
+      await replaceLines2(w.recipeId, w.rows);
     }
     await recomputeRecipes([...new Set(recomputeIds)], actorId, "Recipe import");
     for (const rec of importedIds) {
@@ -52631,9 +53008,9 @@ var supabaseRecipesRepo = {
     const srcLines = (srcLinesRes.data ?? []).sort(
       (a, b) => a.sort_order - b.sort_order
     );
-    await replaceLines(
+    await replaceLines2(
       copyId,
-      lineRows(
+      lineRows2(
         copyId,
         srcLines.map((l) => ({
           ingredient_id: l.ingredient_id,
@@ -52904,6 +53281,583 @@ var LINK_TTL_MS = 7 * 24 * 60 * 60 * 1e3;
 // src/lib/data/supabase/accessLinks.ts
 var LINK_TTL_MS2 = 7 * 24 * 60 * 60 * 1e3;
 
+// src/lib/data/mock/brands.ts
+var norm2 = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
+var codeNorm = (s) => s.toUpperCase().replace(/\s+/g, "").trim();
+var brandsRepo = {
+  async list() {
+    return delay([...getDb().brands].sort((a, b) => a.name.localeCompare(b.name)));
+  },
+  async getById(id) {
+    return delay(getDb().brands.find((b) => b.id === id) ?? null);
+  },
+  async create(input, actorId) {
+    return delay(
+      mutate((db) => {
+        const nn = norm2(input.name);
+        if (!nn) throw new Error("Brand name is required");
+        if (db.brands.some((b) => b.normalized_name === nn)) {
+          throw new Error("A brand with this name already exists");
+        }
+        const code = codeNorm(input.brand_code || input.name.slice(0, 4));
+        if (!code) throw new Error("Brand code is required");
+        if (db.brands.some((b) => codeNorm(b.brand_code) === code)) {
+          throw new Error("A brand with this code already exists");
+        }
+        const brand = {
+          id: uid(),
+          name: input.name.trim(),
+          normalized_name: nn,
+          brand_code: code,
+          display_name: (input.display_name || input.name).trim(),
+          accent_color: input.accent_color ?? null,
+          logo_url: input.logo_url ?? null,
+          status: input.status ?? "active",
+          notes: input.notes ?? null,
+          created_by: actorId,
+          created_at: nowISO(),
+          updated_by: actorId,
+          updated_at: nowISO()
+        };
+        db.brands.push(brand);
+        recordAudit(db, {
+          entity_type: "brand",
+          entity_id: brand.id,
+          action: "create",
+          new_values: { name: brand.name, code: brand.brand_code },
+          performed_by: actorId,
+          notes: `Created brand "${brand.name}"`,
+          before_state: { type: "brand", id: brand.id, row: null },
+          after_state: captureEntity(db, "brand", brand.id)
+        });
+        return brand;
+      })
+    );
+  },
+  async update(id, input, actorId) {
+    return delay(
+      mutate((db) => {
+        const beforeSnap = captureEntity(db, "brand", id);
+        const brand = db.brands.find((b) => b.id === id);
+        if (!brand) throw new Error("Brand not found");
+        const nn = norm2(input.name);
+        if (!nn) throw new Error("Brand name is required");
+        if (db.brands.some((b) => b.id !== id && b.normalized_name === nn)) {
+          throw new Error("A brand with this name already exists");
+        }
+        const code = codeNorm(input.brand_code || input.name.slice(0, 4));
+        if (!code) throw new Error("Brand code is required");
+        if (db.brands.some((b) => b.id !== id && codeNorm(b.brand_code) === code)) {
+          throw new Error("A brand with this code already exists");
+        }
+        const before = { name: brand.name, code: brand.brand_code, status: brand.status };
+        brand.name = input.name.trim();
+        brand.normalized_name = nn;
+        brand.brand_code = code;
+        brand.display_name = (input.display_name || input.name).trim();
+        brand.accent_color = input.accent_color ?? null;
+        brand.logo_url = input.logo_url ?? null;
+        if (input.status) brand.status = input.status;
+        brand.notes = input.notes ?? null;
+        brand.updated_by = actorId;
+        brand.updated_at = nowISO();
+        recordAudit(db, {
+          entity_type: "brand",
+          entity_id: brand.id,
+          action: "update",
+          old_values: before,
+          new_values: { name: brand.name, code: brand.brand_code, status: brand.status },
+          performed_by: actorId,
+          notes: `Updated brand "${brand.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "brand", brand.id)
+        });
+        return brand;
+      })
+    );
+  },
+  async setStatus(id, status, actorId) {
+    return delay(
+      mutate((db) => {
+        const beforeSnap = captureEntity(db, "brand", id);
+        const brand = db.brands.find((b) => b.id === id);
+        if (!brand) throw new Error("Brand not found");
+        const before = brand.status;
+        brand.status = status;
+        brand.updated_by = actorId;
+        brand.updated_at = nowISO();
+        const verb = status === "archived" ? "Archived" : status === "inactive" ? "Deactivated" : "Activated";
+        recordAudit(db, {
+          entity_type: "brand",
+          entity_id: brand.id,
+          action: "update",
+          old_values: { status: before },
+          new_values: { status },
+          performed_by: actorId,
+          notes: `${verb} brand "${brand.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "brand", brand.id)
+        });
+        return brand;
+      })
+    );
+  },
+  /** Hard delete — blocked while any outlet or recipe still references the brand. */
+  async remove(id, actorId) {
+    return delay(
+      mutate((db) => {
+        const beforeSnap = captureEntity(db, "brand", id);
+        const brand = db.brands.find((b) => b.id === id);
+        if (!brand) throw new Error("Brand not found");
+        if (db.outlets.some((o) => o.brand_id === id)) {
+          throw new Error("Cannot delete a brand that still has outlets. Archive it instead.");
+        }
+        if (db.recipes.some((r) => r.brand === id)) {
+          throw new Error("Cannot delete a brand that still has recipes. Archive it instead.");
+        }
+        db.brands = db.brands.filter((b) => b.id !== id);
+        recordAudit(db, {
+          entity_type: "brand",
+          entity_id: id,
+          action: "delete",
+          performed_by: actorId,
+          notes: `Deleted brand "${brand.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "brand", id)
+        });
+      })
+    );
+  }
+};
+
+// src/lib/data/supabase/brands.ts
+var norm3 = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
+var codeNorm2 = (s) => s.toUpperCase().replace(/\s+/g, "").trim();
+var supabaseBrandsRepo = {
+  async list() {
+    const { data, error } = await sb().from("brands").select("*").order("name");
+    if (error) fail("Load brands", error.message);
+    return data ?? [];
+  },
+  async getById(id) {
+    const { data, error } = await sb().from("brands").select("*").eq("id", id).maybeSingle();
+    if (error) fail("Load brand", error.message);
+    return data ?? null;
+  },
+  async create(input, actorId) {
+    const name = input.name.trim();
+    const { data, error } = await sb().from("brands").insert({
+      name,
+      normalized_name: norm3(name),
+      brand_code: codeNorm2(input.brand_code || name.slice(0, 4)),
+      display_name: (input.display_name || name).trim(),
+      accent_color: input.accent_color ?? null,
+      logo_url: input.logo_url ?? null,
+      status: input.status ?? "active",
+      notes: input.notes ?? null,
+      created_by: actorId,
+      updated_by: actorId
+    }).select("*").single();
+    if (error) {
+      if (error.code === "23505") fail("Create brand", "A brand with this name or code already exists");
+      fail("Create brand", error.message);
+    }
+    const brand = data;
+    await audit({
+      entity_type: "brand",
+      entity_id: brand.id,
+      action: "create",
+      new_values: { name: brand.name, code: brand.brand_code },
+      performed_by: actorId,
+      notes: `Created brand "${brand.name}"`,
+      before_state: { type: "brand", id: brand.id, row: null },
+      after_state: await captureEntity2("brand", brand.id)
+    });
+    return brand;
+  },
+  async update(id, input, actorId) {
+    const before = await captureEntity2("brand", id);
+    const name = input.name.trim();
+    const patch = {
+      name,
+      normalized_name: norm3(name),
+      brand_code: codeNorm2(input.brand_code || name.slice(0, 4)),
+      display_name: (input.display_name || name).trim(),
+      accent_color: input.accent_color ?? null,
+      logo_url: input.logo_url ?? null,
+      notes: input.notes ?? null,
+      updated_by: actorId,
+      updated_at: nowISO()
+    };
+    if (input.status) patch.status = input.status;
+    const { data, error } = await sb().from("brands").update(patch).eq("id", id).select("*").single();
+    if (error) {
+      if (error.code === "23505") fail("Update brand", "A brand with this name or code already exists");
+      fail("Update brand", error.message);
+    }
+    const brand = data;
+    await audit({
+      entity_type: "brand",
+      entity_id: brand.id,
+      action: "update",
+      new_values: { name: brand.name, code: brand.brand_code, status: brand.status },
+      performed_by: actorId,
+      notes: `Updated brand "${brand.name}"`,
+      before_state: before,
+      after_state: await captureEntity2("brand", brand.id)
+    });
+    return brand;
+  },
+  async setStatus(id, status, actorId) {
+    const before = await captureEntity2("brand", id);
+    const { data, error } = await sb().from("brands").update({ status, updated_by: actorId, updated_at: nowISO() }).eq("id", id).select("*").single();
+    if (error) fail("Update brand status", error.message);
+    const brand = data;
+    const verb = status === "archived" ? "Archived" : status === "inactive" ? "Deactivated" : "Activated";
+    await audit({
+      entity_type: "brand",
+      entity_id: brand.id,
+      action: "update",
+      new_values: { status },
+      performed_by: actorId,
+      notes: `${verb} brand "${brand.name}"`,
+      before_state: before,
+      after_state: await captureEntity2("brand", brand.id)
+    });
+    return brand;
+  },
+  async remove(id, actorId) {
+    const before = await captureEntity2("brand", id);
+    const existing = await supabaseBrandsRepo.getById(id);
+    const { error } = await sb().from("brands").delete().eq("id", id);
+    if (error) {
+      if (error.code === "23503") {
+        fail("Delete brand", "Cannot delete a brand that still has outlets or recipes. Archive it instead.");
+      }
+      fail("Delete brand", error.message);
+    }
+    await audit({
+      entity_type: "brand",
+      entity_id: id,
+      action: "delete",
+      performed_by: actorId,
+      notes: existing ? `Deleted brand "${existing.name}"` : "Deleted brand",
+      before_state: before,
+      after_state: { type: "brand", id, row: null }
+    });
+  }
+};
+
+// src/lib/data/mock/outlets.ts
+var norm4 = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
+var codeNorm3 = (s) => s.toUpperCase().replace(/\s+/g, "").trim();
+var outletsRepo = {
+  async list() {
+    return delay([...getDb().outlets].sort((a, b) => a.name.localeCompare(b.name)));
+  },
+  async getById(id) {
+    return delay(getDb().outlets.find((o) => o.id === id) ?? null);
+  },
+  async listByBrand(brandId) {
+    return delay(
+      getDb().outlets.filter((o) => o.brand_id === brandId).sort((a, b) => a.name.localeCompare(b.name))
+    );
+  },
+  async create(input, actorId) {
+    return delay(
+      mutate((db) => {
+        if (!db.brands.some((b) => b.id === input.brand_id)) {
+          throw new Error("Select a valid brand for this outlet");
+        }
+        const nn = norm4(input.name);
+        if (!nn) throw new Error("Outlet name is required");
+        if (db.outlets.some((o) => o.brand_id === input.brand_id && o.normalized_name === nn)) {
+          throw new Error("An outlet with this name already exists for this brand");
+        }
+        const code = codeNorm3(input.outlet_code || input.name);
+        if (!code) throw new Error("Outlet code is required");
+        if (db.outlets.some((o) => codeNorm3(o.outlet_code) === code)) {
+          throw new Error("An outlet with this code already exists");
+        }
+        const outlet = {
+          id: uid(),
+          brand_id: input.brand_id,
+          name: input.name.trim(),
+          normalized_name: nn,
+          outlet_code: code,
+          city: input.city ?? null,
+          state: input.state ?? null,
+          address: input.address ?? null,
+          phone: input.phone ?? null,
+          email: input.email ?? null,
+          opening_date: input.opening_date || null,
+          timezone: input.timezone || "Asia/Kolkata",
+          status: input.status ?? "active",
+          manager_user_id: input.manager_user_id ?? null,
+          notes: input.notes ?? null,
+          created_by: actorId,
+          created_at: nowISO(),
+          updated_by: actorId,
+          updated_at: nowISO()
+        };
+        db.outlets.push(outlet);
+        recordAudit(db, {
+          entity_type: "outlet",
+          entity_id: outlet.id,
+          action: "create",
+          new_values: { name: outlet.name, brand_id: outlet.brand_id, code: outlet.outlet_code },
+          performed_by: actorId,
+          notes: `Created outlet "${outlet.name}"`,
+          before_state: { type: "outlet", id: outlet.id, row: null },
+          after_state: captureEntity(db, "outlet", outlet.id)
+        });
+        return outlet;
+      })
+    );
+  },
+  async update(id, input, actorId) {
+    return delay(
+      mutate((db) => {
+        const beforeSnap = captureEntity(db, "outlet", id);
+        const outlet = db.outlets.find((o) => o.id === id);
+        if (!outlet) throw new Error("Outlet not found");
+        if (!db.brands.some((b) => b.id === input.brand_id)) {
+          throw new Error("Select a valid brand for this outlet");
+        }
+        const nn = norm4(input.name);
+        if (!nn) throw new Error("Outlet name is required");
+        if (db.outlets.some(
+          (o) => o.id !== id && o.brand_id === input.brand_id && o.normalized_name === nn
+        )) {
+          throw new Error("An outlet with this name already exists for this brand");
+        }
+        const code = codeNorm3(input.outlet_code || input.name);
+        if (db.outlets.some((o) => o.id !== id && codeNorm3(o.outlet_code) === code)) {
+          throw new Error("An outlet with this code already exists");
+        }
+        const before = { name: outlet.name, brand_id: outlet.brand_id, status: outlet.status };
+        outlet.brand_id = input.brand_id;
+        outlet.name = input.name.trim();
+        outlet.normalized_name = nn;
+        outlet.outlet_code = code;
+        outlet.city = input.city ?? null;
+        outlet.state = input.state ?? null;
+        outlet.address = input.address ?? null;
+        outlet.phone = input.phone ?? null;
+        outlet.email = input.email ?? null;
+        outlet.opening_date = input.opening_date || null;
+        outlet.timezone = input.timezone || "Asia/Kolkata";
+        if (input.status) outlet.status = input.status;
+        outlet.manager_user_id = input.manager_user_id ?? null;
+        outlet.notes = input.notes ?? null;
+        outlet.updated_by = actorId;
+        outlet.updated_at = nowISO();
+        const brandChanged = before.brand_id !== outlet.brand_id;
+        recordAudit(db, {
+          entity_type: "outlet",
+          entity_id: outlet.id,
+          action: "update",
+          old_values: before,
+          new_values: { name: outlet.name, brand_id: outlet.brand_id, status: outlet.status },
+          performed_by: actorId,
+          notes: brandChanged ? `Moved outlet "${outlet.name}" to a different brand` : `Updated outlet "${outlet.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "outlet", outlet.id)
+        });
+        return outlet;
+      })
+    );
+  },
+  async setStatus(id, status, actorId) {
+    return delay(
+      mutate((db) => {
+        const beforeSnap = captureEntity(db, "outlet", id);
+        const outlet = db.outlets.find((o) => o.id === id);
+        if (!outlet) throw new Error("Outlet not found");
+        const before = outlet.status;
+        outlet.status = status;
+        outlet.updated_by = actorId;
+        outlet.updated_at = nowISO();
+        const verb = status === "archived" ? "Archived" : status === "inactive" ? "Deactivated" : "Activated";
+        recordAudit(db, {
+          entity_type: "outlet",
+          entity_id: outlet.id,
+          action: "update",
+          old_values: { status: before },
+          new_values: { status },
+          performed_by: actorId,
+          notes: `${verb} outlet "${outlet.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "outlet", outlet.id)
+        });
+        return outlet;
+      })
+    );
+  },
+  /** Hard delete — blocked while any wastage record still references the outlet. */
+  async remove(id, actorId) {
+    return delay(
+      mutate((db) => {
+        const beforeSnap = captureEntity(db, "outlet", id);
+        const outlet = db.outlets.find((o) => o.id === id);
+        if (!outlet) throw new Error("Outlet not found");
+        if (db.wastage_entries.some((w) => w.outlet_id === id)) {
+          throw new Error("Cannot delete an outlet with wastage records. Archive it instead.");
+        }
+        db.outlets = db.outlets.filter((o) => o.id !== id);
+        recordAudit(db, {
+          entity_type: "outlet",
+          entity_id: id,
+          action: "delete",
+          performed_by: actorId,
+          notes: `Deleted outlet "${outlet.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "outlet", id)
+        });
+      })
+    );
+  }
+};
+
+// src/lib/data/supabase/outlets.ts
+var norm5 = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
+var codeNorm4 = (s) => s.toUpperCase().replace(/\s+/g, "").trim();
+var supabaseOutletsRepo = {
+  async list() {
+    const { data, error } = await sb().from("outlets").select("*").order("name");
+    if (error) fail("Load outlets", error.message);
+    return data ?? [];
+  },
+  async getById(id) {
+    const { data, error } = await sb().from("outlets").select("*").eq("id", id).maybeSingle();
+    if (error) fail("Load outlet", error.message);
+    return data ?? null;
+  },
+  async listByBrand(brandId) {
+    const { data, error } = await sb().from("outlets").select("*").eq("brand_id", brandId).order("name");
+    if (error) fail("Load outlets", error.message);
+    return data ?? [];
+  },
+  async create(input, actorId) {
+    const name = input.name.trim();
+    const { data, error } = await sb().from("outlets").insert({
+      brand: input.brand_id,
+      brand_id: input.brand_id,
+      name,
+      normalized_name: norm5(name),
+      outlet_code: codeNorm4(input.outlet_code || name),
+      city: input.city ?? null,
+      state: input.state ?? null,
+      address: input.address ?? null,
+      phone: input.phone ?? null,
+      email: input.email ?? null,
+      opening_date: input.opening_date || null,
+      timezone: input.timezone || "Asia/Kolkata",
+      status: input.status ?? "active",
+      manager_user_id: input.manager_user_id ?? null,
+      notes: input.notes ?? null,
+      created_by: actorId,
+      updated_by: actorId
+    }).select("*").single();
+    if (error) {
+      if (error.code === "23505") fail("Create outlet", "An outlet with this name or code already exists");
+      if (error.code === "23503") fail("Create outlet", "Select a valid brand for this outlet");
+      fail("Create outlet", error.message);
+    }
+    const outlet = data;
+    await audit({
+      entity_type: "outlet",
+      entity_id: outlet.id,
+      action: "create",
+      new_values: { name: outlet.name, brand_id: outlet.brand_id, code: outlet.outlet_code },
+      performed_by: actorId,
+      notes: `Created outlet "${outlet.name}"`,
+      before_state: { type: "outlet", id: outlet.id, row: null },
+      after_state: await captureEntity2("outlet", outlet.id)
+    });
+    return outlet;
+  },
+  async update(id, input, actorId) {
+    const before = await captureEntity2("outlet", id);
+    const name = input.name.trim();
+    const patch = {
+      brand: input.brand_id,
+      brand_id: input.brand_id,
+      name,
+      normalized_name: norm5(name),
+      outlet_code: codeNorm4(input.outlet_code || name),
+      city: input.city ?? null,
+      state: input.state ?? null,
+      address: input.address ?? null,
+      phone: input.phone ?? null,
+      email: input.email ?? null,
+      opening_date: input.opening_date || null,
+      timezone: input.timezone || "Asia/Kolkata",
+      manager_user_id: input.manager_user_id ?? null,
+      notes: input.notes ?? null,
+      updated_by: actorId,
+      updated_at: nowISO()
+    };
+    if (input.status) patch.status = input.status;
+    const { data, error } = await sb().from("outlets").update(patch).eq("id", id).select("*").single();
+    if (error) {
+      if (error.code === "23505") fail("Update outlet", "An outlet with this name or code already exists");
+      if (error.code === "23503") fail("Update outlet", "Select a valid brand for this outlet");
+      fail("Update outlet", error.message);
+    }
+    const outlet = data;
+    await audit({
+      entity_type: "outlet",
+      entity_id: outlet.id,
+      action: "update",
+      new_values: { name: outlet.name, brand_id: outlet.brand_id, status: outlet.status },
+      performed_by: actorId,
+      notes: `Updated outlet "${outlet.name}"`,
+      before_state: before,
+      after_state: await captureEntity2("outlet", outlet.id)
+    });
+    return outlet;
+  },
+  async setStatus(id, status, actorId) {
+    const before = await captureEntity2("outlet", id);
+    const { data, error } = await sb().from("outlets").update({ status, updated_by: actorId, updated_at: nowISO() }).eq("id", id).select("*").single();
+    if (error) fail("Update outlet status", error.message);
+    const outlet = data;
+    const verb = status === "archived" ? "Archived" : status === "inactive" ? "Deactivated" : "Activated";
+    await audit({
+      entity_type: "outlet",
+      entity_id: outlet.id,
+      action: "update",
+      new_values: { status },
+      performed_by: actorId,
+      notes: `${verb} outlet "${outlet.name}"`,
+      before_state: before,
+      after_state: await captureEntity2("outlet", outlet.id)
+    });
+    return outlet;
+  },
+  async remove(id, actorId) {
+    const before = await captureEntity2("outlet", id);
+    const existing = await supabaseOutletsRepo.getById(id);
+    const { error } = await sb().from("outlets").delete().eq("id", id);
+    if (error) {
+      if (error.code === "23503") {
+        fail("Delete outlet", "Cannot delete an outlet with wastage records. Archive it instead.");
+      }
+      fail("Delete outlet", error.message);
+    }
+    await audit({
+      entity_type: "outlet",
+      entity_id: id,
+      action: "delete",
+      performed_by: actorId,
+      notes: existing ? `Deleted outlet "${existing.name}"` : "Deleted outlet",
+      before_state: before,
+      after_state: { type: "outlet", id, row: null }
+    });
+  }
+};
+
 // src/lib/data/mock/roles.ts
 var GRANTABLE = new Set(GRANTABLE_CAPABILITIES);
 
@@ -52911,7 +53865,7 @@ var GRANTABLE = new Set(GRANTABLE_CAPABILITIES);
 var GRANTABLE2 = new Set(GRANTABLE_CAPABILITIES);
 
 // src/lib/data/mock/packaging.ts
-var norm2 = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
+var norm6 = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
 var packagingRepo = {
   async list() {
     return delay([...getDb().packaging_items].sort((a, b) => a.name.localeCompare(b.name)));
@@ -52922,7 +53876,7 @@ var packagingRepo = {
   async create(input, actorId) {
     return delay(
       mutate((db) => {
-        const nn = norm2(input.name);
+        const nn = norm6(input.name);
         if (!nn) throw new Error("Packaging name is required");
         if (db.packaging_items.some((p) => p.normalized_name === nn)) {
           throw new Error("A packaging item with this name already exists");
@@ -52962,7 +53916,7 @@ var packagingRepo = {
         const beforeSnap = captureEntity(db, "packaging", id);
         const item = db.packaging_items.find((p) => p.id === id);
         if (!item) throw new Error("Packaging item not found");
-        const nn = norm2(input.name);
+        const nn = norm6(input.name);
         if (!nn) throw new Error("Packaging name is required");
         if (db.packaging_items.some((p) => p.id !== id && p.normalized_name === nn)) {
           throw new Error("A packaging item with this name already exists");
@@ -53048,7 +54002,7 @@ var packagingRepo = {
 };
 
 // src/lib/data/supabase/packaging.ts
-var norm3 = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
+var norm7 = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
 var supabasePackagingRepo = {
   async list() {
     const { data, error } = await sb().from("packaging_items").select("*").order("name");
@@ -53064,7 +54018,7 @@ var supabasePackagingRepo = {
     const name = input.name.trim();
     const { data, error } = await sb().from("packaging_items").insert({
       name,
-      normalized_name: norm3(name),
+      normalized_name: norm7(name),
       packaging_type: input.packaging_type || "primary",
       unit: input.unit || "Piece",
       unit_price: input.unit_price ?? null,
@@ -53095,7 +54049,7 @@ var supabasePackagingRepo = {
     const name = input.name.trim();
     const patch = {
       name,
-      normalized_name: norm3(name),
+      normalized_name: norm7(name),
       packaging_type: input.packaging_type || "primary",
       unit: input.unit || "Piece",
       unit_price: input.unit_price ?? null,
@@ -53525,7 +54479,10 @@ var mockRevertRepo = {
 // src/lib/data/index.ts
 var materialsRepo2 = isSupabaseDataBackend ? supabaseMaterialsRepo : materialsRepo;
 var yieldsRepo2 = isSupabaseDataBackend ? supabaseYieldsRepo : yieldsRepo;
+var wastageRepo2 = isSupabaseDataBackend ? supabaseWastageRepo : wastageRepo;
 var recipesRepo2 = isSupabaseDataBackend ? supabaseRecipesRepo : recipesRepo;
+var brandsRepo2 = isSupabaseDataBackend ? supabaseBrandsRepo : brandsRepo;
+var outletsRepo2 = isSupabaseDataBackend ? supabaseOutletsRepo : outletsRepo;
 var packagingRepo2 = isSupabaseDataBackend ? supabasePackagingRepo : packagingRepo;
 var auditRepo2 = isSupabaseDataBackend ? supabaseAuditRepo : auditRepo;
 var revertRepo = isSupabaseDataBackend ? supabaseRevertRepo : mockRevertRepo;
@@ -53639,7 +54596,7 @@ function previewYields(mode, parsed, materials, yields) {
   return { rows, counts: tally(rows), warnings };
 }
 
-// mcp/src/tools.ts
+// mcp/src/toolkit.ts
 function defineTool(name, meta, handler) {
   return { name, ...meta, handler };
 }
@@ -53654,14 +54611,14 @@ var fail2 = (message) => ({
   content: [{ type: "text", text: message }],
   isError: true
 });
-var norm4 = (s) => s.trim().toLowerCase();
+var norm8 = (s) => s.trim().toLowerCase();
 async function findMaterial2(nameOrId) {
   const all = await materialsRepo2.list();
-  return all.find((m) => m.id === nameOrId) ?? all.find((m) => norm4(m.ingredient_name) === norm4(nameOrId)) ?? all.find((m) => norm4(m.ingredient_name).includes(norm4(nameOrId))) ?? null;
+  return all.find((m) => m.id === nameOrId) ?? all.find((m) => norm8(m.ingredient_name) === norm8(nameOrId)) ?? all.find((m) => norm8(m.ingredient_name).includes(norm8(nameOrId))) ?? null;
 }
 async function findRecipe(nameOrId) {
   const all = await recipesRepo2.list();
-  return all.find((r) => r.id === nameOrId) ?? all.find((r) => norm4(r.recipe_name) === norm4(nameOrId)) ?? all.find((r) => norm4(r.recipe_name).includes(norm4(nameOrId))) ?? null;
+  return all.find((r) => r.id === nameOrId) ?? all.find((r) => norm8(r.recipe_name) === norm8(nameOrId)) ?? all.find((r) => norm8(r.recipe_name).includes(norm8(nameOrId))) ?? null;
 }
 var materialView = (m) => ({
   id: m.id,
@@ -53684,7 +54641,7 @@ var MEASUREMENT = {
   piece: "count"
 };
 function materialInput(name, category, type, price) {
-  const measurement = MEASUREMENT[norm4(type)] ?? "weight";
+  const measurement = MEASUREMENT[norm8(type)] ?? "weight";
   const canon = canonicalPurchase(measurement);
   return {
     ingredient_name: name.trim(),
@@ -53696,7 +54653,521 @@ function materialInput(name, category, type, price) {
     base_unit: canon.base_unit
   };
 }
-var TOOLS = [
+
+// mcp/src/catalogTools.ts
+var CATALOG_EDITORS = ["super_admin", "admin", "editor", "head_chef"];
+var PACKAGING_EDITORS = ["super_admin", "admin"];
+function requireRole(allowed, what) {
+  if (allowed.includes(actor.role)) return null;
+  return `Your role (${actor.role}) can't ${what}. Ask an Admin.`;
+}
+var lineSchema = external_exports.object({
+  ingredient: external_exports.string().describe("Ingredient or in-house prep name (or id)"),
+  quantity: external_exports.number().positive(),
+  unit: external_exports.string().describe("Gram, KG, ML, Litre, Piece\u2026"),
+  cut: external_exports.string().optional().describe('Named prep variant, e.g. "Chopped"')
+});
+async function resolveLines(specs) {
+  const lines = [];
+  for (const spec of specs) {
+    const material = await findMaterial2(spec.ingredient);
+    const prep = material ? null : await findRecipe(spec.ingredient);
+    if (!material && !prep) return { error: `No ingredient or prep matches "${spec.ingredient}".` };
+    const base = material ? material.base_unit : prep.yield_unit;
+    if (!canConvert(spec.unit, base)) {
+      return {
+        error: `"${spec.unit}" can't be converted to ${base} for ${spec.ingredient}. Use a compatible unit.`
+      };
+    }
+    lines.push({
+      ingredient_id: material ? material.id : prep.id,
+      component_type: material ? "material" : "recipe",
+      quantity_used: spec.quantity,
+      unit_used: spec.unit,
+      wastage_override_pct: null,
+      cut_type: spec.cut ?? null
+    });
+  }
+  return { lines };
+}
+var packagingSpecSchema = external_exports.object({
+  item: external_exports.string().describe("Packaging item name (or id)"),
+  quantity: external_exports.number().positive()
+});
+async function resolvePackaging(specs) {
+  const items = await packagingRepo2.list();
+  const lines = [];
+  let cost = 0;
+  for (const spec of specs) {
+    const item = items.find((p) => p.id === spec.item) ?? items.find((p) => norm8(p.name) === norm8(spec.item)) ?? items.find((p) => norm8(p.name).includes(norm8(spec.item)));
+    if (!item) return { error: `No packaging item matches "${spec.item}".` };
+    lines.push({ packaging_item_id: item.id, quantity_used: spec.quantity });
+    cost += (item.unit_price ?? 0) * spec.quantity;
+  }
+  return { lines, cost: Math.round(cost * 100) / 100 };
+}
+var recipeView = (r) => r && {
+  id: r.id,
+  name: r.recipe_name,
+  category: r.category,
+  is_prep: r.is_prep,
+  status: r.status,
+  serving_size: r.serving_size,
+  total_cost: r.total_cost,
+  cost_per_portion: r.cost_per_portion,
+  selling_price: r.selling_price,
+  packaging_cost: r.packaging_cost,
+  yield_quantity: r.yield_quantity,
+  yield_unit: r.yield_unit
+};
+var CATALOG_TOOLS = [
+  // ── Brands & outlets (lookups the write tools need) ───────────────────────
+  defineTool(
+    "list_brands_and_outlets",
+    {
+      title: "List brands and outlets",
+      description: "Brands and their outlets, with the ids that recipes and wastage entries need. Use this before creating a recipe or recording wastage.",
+      inputSchema: {}
+    },
+    async () => {
+      const [brands2, outlets2] = await Promise.all([brandsRepo2.list(), outletsRepo2.list()]);
+      return text({
+        brands: brands2.filter((b) => b.status === "active").map((b) => ({ id: b.id, name: b.name })),
+        outlets: outlets2.filter((o) => o.status === "active").map((o) => ({ id: o.id, name: o.name, brand_id: o.brand_id }))
+      });
+    }
+  ),
+  // ── Packaging ─────────────────────────────────────────────────────────────
+  defineTool(
+    "create_packaging",
+    {
+      title: "Create a packaging item",
+      description: "Add a packaging item (box, sleeve, container\u2026) with its unit price. Recipes then reference it to carry a packaging cost.",
+      inputSchema: {
+        name: external_exports.string().min(1),
+        type: external_exports.enum(["primary", "secondary", "tertiary"]).default("primary"),
+        unit: external_exports.string().default("Piece").describe("Piece, Packet, Roll, Box\u2026"),
+        unit_price: external_exports.number().min(0),
+        notes: external_exports.string().optional()
+      }
+    },
+    async ({ name, type, unit, unit_price, notes }) => {
+      const denied = requireRole(PACKAGING_EDITORS, "manage packaging");
+      if (denied) return fail2(denied);
+      const item = await packagingRepo2.create(
+        { name: name.trim(), packaging_type: type, unit: unit || "Piece", unit_price, notes: notes ?? null },
+        actor.userId
+      );
+      return text({ created: { id: item.id, name: item.name, type: item.packaging_type, unit: item.unit, price: item.unit_price } });
+    }
+  ),
+  defineTool(
+    "update_packaging",
+    {
+      title: "Update a packaging item",
+      description: "Change a packaging item's price, unit, type or status. Note: recipes keep the price they captured until they're saved again.",
+      inputSchema: {
+        item: external_exports.string().describe("Packaging item name or id"),
+        unit_price: external_exports.number().min(0).optional(),
+        unit: external_exports.string().optional(),
+        type: external_exports.enum(["primary", "secondary", "tertiary"]).optional(),
+        name: external_exports.string().optional(),
+        status: external_exports.enum(["active", "inactive"]).optional(),
+        notes: external_exports.string().optional()
+      }
+    },
+    async ({ item, unit_price, unit, type, name, status, notes }) => {
+      const denied = requireRole(PACKAGING_EDITORS, "manage packaging");
+      if (denied) return fail2(denied);
+      const all = await packagingRepo2.list();
+      const existing = all.find((p) => p.id === item) ?? all.find((p) => norm8(p.name) === norm8(item)) ?? all.find((p) => norm8(p.name).includes(norm8(item)));
+      if (!existing) return fail2(`No packaging item matches "${item}".`);
+      const saved = await packagingRepo2.update(
+        existing.id,
+        {
+          name: name?.trim() || existing.name,
+          packaging_type: type ?? existing.packaging_type,
+          unit: unit ?? existing.unit,
+          unit_price: unit_price ?? existing.unit_price,
+          status: status ?? existing.status,
+          notes: notes ?? existing.notes
+        },
+        actor.userId
+      );
+      return text({
+        updated: { id: saved.id, name: saved.name, type: saved.packaging_type, unit: saved.unit, price: saved.unit_price, status: saved.status },
+        was: { price: existing.unit_price, status: existing.status }
+      });
+    }
+  ),
+  // ── Recipes & in-house prep ───────────────────────────────────────────────
+  defineTool(
+    "create_recipe",
+    {
+      title: "Create a recipe or in-house prep",
+      description: "Create a menu recipe (or an in-house prep with is_prep) and its ingredient lines. It starts as a draft; a person approves it in the app. Ingredients must already exist \u2014 create them first if needed.",
+      inputSchema: {
+        name: external_exports.string().min(1),
+        category: external_exports.string().min(1),
+        brand: external_exports.string().describe("Brand name or id \u2014 see list_brands_and_outlets"),
+        is_prep: external_exports.boolean().default(false),
+        serving_size: external_exports.number().int().min(1).default(1).describe("Portions the batch yields"),
+        ingredients: external_exports.array(lineSchema).min(1),
+        packaging: external_exports.array(packagingSpecSchema).optional(),
+        selling_price: external_exports.number().min(0).nullable().optional(),
+        wastage_pct: external_exports.number().min(0).max(100).optional(),
+        yield_quantity: external_exports.number().positive().optional().describe("Prep batch output, in yield_unit"),
+        yield_unit: external_exports.string().optional().describe("Prep output unit (default Gram)"),
+        method: external_exports.array(external_exports.string()).optional().describe("Preparation steps, one per line"),
+        description: external_exports.string().optional()
+      }
+    },
+    async (args) => {
+      const denied = requireRole(CATALOG_EDITORS, "create recipes");
+      if (denied) return fail2(denied);
+      const brands2 = await brandsRepo2.list();
+      const brand = brands2.find((b) => b.id === args.brand) ?? brands2.find((b) => norm8(b.name) === norm8(args.brand));
+      if (!brand) return fail2(`No brand matches "${args.brand}". Call list_brands_and_outlets first.`);
+      const resolved = await resolveLines(args.ingredients);
+      if ("error" in resolved) return fail2(resolved.error);
+      let packagingLines;
+      let packagingCost = 0;
+      if (args.packaging?.length) {
+        const pack = await resolvePackaging(args.packaging);
+        if ("error" in pack) return fail2(pack.error);
+        packagingLines = pack.lines;
+        packagingCost = pack.cost;
+      }
+      const header = {
+        recipe_name: args.name.trim(),
+        created_by_name: actor.name,
+        category: args.category.trim(),
+        brand: brand.id,
+        description: args.description ?? null,
+        method: args.method ?? [],
+        preparation_time: null,
+        serving_size: args.serving_size,
+        selling_price: args.is_prep ? null : args.selling_price ?? null,
+        packaging_cost: args.is_prep ? 0 : packagingCost,
+        wastage_pct: args.wastage_pct ?? 0,
+        is_prep: args.is_prep,
+        yield_quantity: args.yield_quantity,
+        yield_unit: args.yield_unit,
+        packaging: packagingLines
+      };
+      const recipe = await recipesRepo2.create(header, resolved.lines, actor.userId);
+      return text({
+        created: recipeView(recipe),
+        note: "Saved as a draft. Costs were calculated from the ingredient prices; a Super Admin can revert this from the Activity Log."
+      });
+    }
+  ),
+  defineTool(
+    "update_recipe",
+    {
+      title: "Update a recipe or prep",
+      description: "Change a recipe's details and/or its ingredient list. Anything you don't pass is kept as it is. Passing `ingredients` REPLACES the whole list \u2014 use add_recipe_ingredients to add to it. An approved recipe goes back to draft when edited.",
+      inputSchema: {
+        recipe: external_exports.string().describe("Recipe name or id"),
+        name: external_exports.string().optional(),
+        category: external_exports.string().optional(),
+        serving_size: external_exports.number().int().min(1).optional(),
+        ingredients: external_exports.array(lineSchema).min(1).optional().describe("Replaces every existing line"),
+        packaging: external_exports.array(packagingSpecSchema).optional().describe("Replaces the packaging lines"),
+        selling_price: external_exports.number().min(0).nullable().optional(),
+        wastage_pct: external_exports.number().min(0).max(100).optional(),
+        yield_quantity: external_exports.number().positive().optional(),
+        method: external_exports.array(external_exports.string()).optional(),
+        description: external_exports.string().optional()
+      }
+    },
+    async (args) => {
+      const denied = requireRole(CATALOG_EDITORS, "edit recipes");
+      if (denied) return fail2(denied);
+      const found = await findRecipe(args.recipe);
+      if (!found) return fail2(`No recipe matches "${args.recipe}".`);
+      const full = await recipesRepo2.getWithIngredients(found.id);
+      if (!full) return fail2("That recipe could not be loaded.");
+      const current2 = full.recipe;
+      let lines = full.ingredients.map((i) => ({
+        ingredient_id: i.ingredient_id,
+        component_type: i.component_type,
+        quantity_used: i.quantity_used,
+        unit_used: i.unit_used,
+        wastage_override_pct: i.wastage_override_pct ?? null,
+        cut_type: i.cut_type ?? null
+      }));
+      if (args.ingredients) {
+        const resolved = await resolveLines(args.ingredients);
+        if ("error" in resolved) return fail2(resolved.error);
+        lines = resolved.lines;
+      }
+      let packagingLines;
+      let packagingCost = current2.packaging_cost ?? 0;
+      if (args.packaging) {
+        const pack = await resolvePackaging(args.packaging);
+        if ("error" in pack) return fail2(pack.error);
+        packagingLines = pack.lines;
+        packagingCost = pack.cost;
+      }
+      const header = {
+        recipe_name: args.name?.trim() || current2.recipe_name,
+        created_by_name: current2.created_by_name ?? actor.name,
+        category: args.category?.trim() || current2.category,
+        brand: current2.brand,
+        description: args.description ?? current2.description,
+        method: args.method ?? current2.method ?? [],
+        preparation_time: current2.preparation_time,
+        serving_size: args.serving_size ?? current2.serving_size,
+        selling_price: args.selling_price !== void 0 ? args.selling_price : current2.selling_price,
+        packaging_cost: packagingCost,
+        wastage_pct: args.wastage_pct ?? current2.wastage_pct ?? 0,
+        is_prep: current2.is_prep,
+        // Omitting this would make the repo recompute it from the line quantities,
+        // silently re-pricing every recipe that uses this prep.
+        yield_quantity: args.yield_quantity ?? current2.yield_quantity,
+        yield_unit: current2.yield_unit,
+        packaging: packagingLines
+      };
+      const saved = await recipesRepo2.update(current2.id, header, lines, actor.userId);
+      return text({
+        updated: recipeView(saved),
+        lines: lines.length,
+        note: current2.status === "approved" ? "This recipe was approved; editing returned it to draft for re-approval." : void 0
+      });
+    }
+  ),
+  defineTool(
+    "add_recipe_ingredients",
+    {
+      title: "Add ingredients to a recipe",
+      description: "Append ingredient lines to a recipe, keeping everything already there. An existing line for the same ingredient is updated to the new quantity.",
+      inputSchema: {
+        recipe: external_exports.string(),
+        ingredients: external_exports.array(lineSchema).min(1)
+      }
+    },
+    async ({ recipe, ingredients }) => {
+      const denied = requireRole(CATALOG_EDITORS, "edit recipes");
+      if (denied) return fail2(denied);
+      const found = await findRecipe(recipe);
+      if (!found) return fail2(`No recipe matches "${recipe}".`);
+      const full = await recipesRepo2.getWithIngredients(found.id);
+      if (!full) return fail2("That recipe could not be loaded.");
+      const resolved = await resolveLines(ingredients);
+      if ("error" in resolved) return fail2(resolved.error);
+      const lines = full.ingredients.map((i) => ({
+        ingredient_id: i.ingredient_id,
+        component_type: i.component_type,
+        quantity_used: i.quantity_used,
+        unit_used: i.unit_used,
+        wastage_override_pct: i.wastage_override_pct ?? null,
+        cut_type: i.cut_type ?? null
+      }));
+      const added = [];
+      const replaced = [];
+      for (const line of resolved.lines) {
+        const at = lines.findIndex((l) => l.ingredient_id === line.ingredient_id);
+        if (at >= 0) {
+          lines[at] = line;
+          replaced.push(line.ingredient_id);
+        } else {
+          lines.push(line);
+          added.push(line.ingredient_id);
+        }
+      }
+      const current2 = full.recipe;
+      const saved = await recipesRepo2.update(
+        current2.id,
+        {
+          recipe_name: current2.recipe_name,
+          created_by_name: current2.created_by_name ?? actor.name,
+          category: current2.category,
+          brand: current2.brand,
+          description: current2.description,
+          method: current2.method ?? [],
+          preparation_time: current2.preparation_time,
+          serving_size: current2.serving_size,
+          selling_price: current2.selling_price,
+          packaging_cost: current2.packaging_cost ?? 0,
+          wastage_pct: current2.wastage_pct ?? 0,
+          is_prep: current2.is_prep,
+          yield_quantity: current2.yield_quantity,
+          yield_unit: current2.yield_unit
+        },
+        lines,
+        actor.userId
+      );
+      return text({ updated: recipeView(saved), added: added.length, replaced: replaced.length, total_lines: lines.length });
+    }
+  ),
+  defineTool(
+    "set_recipe_price",
+    {
+      title: "Set a recipe's menu price",
+      description: "Set (or clear) the selling price of a menu recipe. Food-cost percentages follow from it.",
+      inputSchema: {
+        recipe: external_exports.string(),
+        price: external_exports.number().min(0).nullable().describe("null clears the price")
+      }
+    },
+    async ({ recipe, price }) => {
+      const denied = requireRole(CATALOG_EDITORS, "edit recipes");
+      if (denied) return fail2(denied);
+      const found = await findRecipe(recipe);
+      if (!found) return fail2(`No recipe matches "${recipe}".`);
+      const saved = await recipesRepo2.setSellingPrice(found.id, price, actor.userId);
+      return text({ updated: recipeView(saved), was: found.selling_price });
+    }
+  ),
+  defineTool(
+    "set_prep_cooked_weight",
+    {
+      title: "Set a prep's cooked weight",
+      description: "Record what a prep batch weighs after cooking, in grams. This is the denominator for pricing it into other recipes, so every recipe using it is re-costed.",
+      inputSchema: {
+        prep: external_exports.string().describe("In-house prep name or id"),
+        grams: external_exports.number().positive().nullable().describe("null clears it (falls back to the raw yield)")
+      }
+    },
+    async ({ prep, grams }) => {
+      const denied = requireRole(CATALOG_EDITORS, "edit recipes");
+      if (denied) return fail2(denied);
+      const found = await findRecipe(prep);
+      if (!found) return fail2(`No prep matches "${prep}".`);
+      if (!found.is_prep) return fail2(`"${found.recipe_name}" is a menu recipe, not an in-house prep.`);
+      const saved = await recipesRepo2.setCookedWeight(found.id, grams, actor.userId);
+      return text({ updated: recipeView(saved), note: "Recipes using this prep were re-costed." });
+    }
+  ),
+  // ── Wastage ───────────────────────────────────────────────────────────────
+  defineTool(
+    "record_wastage",
+    {
+      title: "Record wastage",
+      description: "Log wasted ingredients or dishes for an outlet. The cost of each line is worked out from current prices and yields, exactly as the wastage form does.",
+      inputSchema: {
+        date: external_exports.string().describe("YYYY-MM-DD"),
+        outlet: external_exports.string().describe("Outlet name or id \u2014 see list_brands_and_outlets"),
+        wastage_type: external_exports.enum(WASTAGE_TYPES),
+        department: external_exports.enum(DEPARTMENTS),
+        items: external_exports.array(
+          external_exports.object({
+            item: external_exports.string().describe("Ingredient name, or recipe name for a finished dish"),
+            type: external_exports.enum(["ingredient", "recipe"]).default("ingredient"),
+            quantity: external_exports.number().positive()
+          })
+        ).min(1),
+        reason: external_exports.string().optional(),
+        done_by: external_exports.string().optional().describe("Who handled it"),
+        notes: external_exports.string().optional()
+      }
+    },
+    async (args) => {
+      const denied = requireRole(CATALOG_EDITORS, "record wastage");
+      if (denied) return fail2(denied);
+      const outlets2 = await outletsRepo2.list();
+      const outlet = outlets2.find((o) => o.id === args.outlet) ?? outlets2.find((o) => norm8(o.name) === norm8(args.outlet)) ?? outlets2.find((o) => norm8(o.name).includes(norm8(args.outlet)));
+      if (!outlet) return fail2(`No outlet matches "${args.outlet}". Call list_brands_and_outlets first.`);
+      const [materials, recipes2, yields] = await Promise.all([
+        materialsRepo2.list(),
+        recipesRepo2.list(),
+        yieldsRepo2.list()
+      ]);
+      const lines = [];
+      for (const item of args.items) {
+        if (item.type === "recipe") {
+          const recipe = await findRecipe(item.item);
+          if (!recipe) return fail2(`No recipe matches "${item.item}".`);
+          const unitCost = applicableUnitCost("recipe", recipe.id, materials, recipes2, yields);
+          lines.push({
+            item_type: "recipe",
+            ingredient_id: null,
+            recipe_id: recipe.id,
+            quantity: item.quantity,
+            unit: "Portion",
+            unit_cost: Math.round(unitCost * 100) / 100
+          });
+        } else {
+          const material = await findMaterial2(item.item);
+          if (!material) return fail2(`No ingredient matches "${item.item}".`);
+          const unitCost = applicableUnitCost("ingredient", material.id, materials, recipes2, yields);
+          lines.push({
+            item_type: "ingredient",
+            ingredient_id: material.id,
+            recipe_id: null,
+            quantity: item.quantity,
+            unit: material.base_unit,
+            unit_cost: Math.round(unitCost * 100) / 100
+          });
+        }
+      }
+      const input = {
+        wastage_date: args.date,
+        brand: outlet.brand_id,
+        outlet_id: outlet.id,
+        wastage_type: args.wastage_type,
+        department: args.department,
+        reason: args.reason ?? null,
+        done_by: args.done_by ?? actor.name,
+        notes: args.notes ?? null,
+        lines
+      };
+      const entry = await wastageRepo2.create(input, actor.userId);
+      return text({
+        recorded: {
+          id: entry.id,
+          date: entry.wastage_date,
+          outlet: outlet.name,
+          type: entry.wastage_type,
+          total_cost: entry.total_cost,
+          items: lines.length
+        }
+      });
+    }
+  ),
+  defineTool(
+    "list_wastage",
+    {
+      title: "List wastage entries",
+      description: "Recent wastage entries with their cost, newest first.",
+      inputSchema: {
+        outlet: external_exports.string().optional(),
+        from: external_exports.string().optional().describe("YYYY-MM-DD"),
+        to: external_exports.string().optional().describe("YYYY-MM-DD"),
+        limit: external_exports.number().int().min(1).max(200).optional()
+      }
+    },
+    async ({ outlet, from, to, limit }) => {
+      const [entries, outlets2] = await Promise.all([wastageRepo2.list(), outletsRepo2.list()]);
+      const byId = new Map(outlets2.map((o) => [o.id, o.name]));
+      let rows = entries;
+      if (outlet) {
+        const match = outlets2.find((o) => o.id === outlet || norm8(o.name).includes(norm8(outlet)));
+        if (!match) return fail2(`No outlet matches "${outlet}".`);
+        rows = rows.filter((w) => w.outlet_id === match.id);
+      }
+      if (from) rows = rows.filter((w) => w.wastage_date >= from);
+      if (to) rows = rows.filter((w) => w.wastage_date <= to);
+      return text({
+        total: rows.length,
+        total_cost: Math.round(rows.reduce((s, w) => s + (w.total_cost ?? 0), 0) * 100) / 100,
+        entries: rows.slice(0, limit ?? 50).map((w) => ({
+          id: w.id,
+          date: w.wastage_date,
+          outlet: byId.get(w.outlet_id) ?? w.outlet_id,
+          type: w.wastage_type,
+          department: w.department,
+          cost: w.total_cost,
+          reason: w.reason
+        }))
+      });
+    }
+  )
+];
+
+// mcp/src/tools.ts
+var CORE_TOOLS = [
   defineTool(
     "whoami",
     {
@@ -53720,8 +55191,8 @@ var TOOLS = [
     },
     async ({ search, category, missing_price_only, limit }) => {
       let rows = await materialsRepo2.list();
-      if (search) rows = rows.filter((m) => norm4(m.ingredient_name).includes(norm4(search)));
-      if (category) rows = rows.filter((m) => norm4(m.category) === norm4(category));
+      if (search) rows = rows.filter((m) => norm8(m.ingredient_name).includes(norm8(search)));
+      if (category) rows = rows.filter((m) => norm8(m.category) === norm8(category));
       if (missing_price_only) rows = rows.filter((m) => m.purchase_price == null);
       return text({ total: rows.length, ingredients: rows.slice(0, limit ?? 100).map(materialView) });
     }
@@ -53798,7 +55269,7 @@ var TOOLS = [
     },
     async ({ name, category, measurement, price }) => {
       const existing = await findMaterial2(name);
-      if (existing && norm4(existing.ingredient_name) === norm4(name)) {
+      if (existing && norm8(existing.ingredient_name) === norm8(name)) {
         return fail2(`"${name}" already exists \u2014 use update_ingredient_price instead.`);
       }
       const created = await materialsRepo2.create(
@@ -53821,7 +55292,7 @@ var TOOLS = [
     },
     async ({ search, preps_only, limit }) => {
       let rows = await recipesRepo2.list();
-      if (search) rows = rows.filter((r) => norm4(r.recipe_name).includes(norm4(search)));
+      if (search) rows = rows.filter((r) => norm8(r.recipe_name).includes(norm8(search)));
       if (preps_only !== void 0) rows = rows.filter((r) => !!r.is_prep === preps_only);
       return text({
         total: rows.length,
@@ -53947,7 +55418,7 @@ var TOOLS = [
     },
     async ({ search }) => {
       let rows = await packagingRepo2.list();
-      if (search) rows = rows.filter((p) => norm4(p.name).includes(norm4(search)));
+      if (search) rows = rows.filter((p) => norm8(p.name).includes(norm8(search)));
       return text({
         total: rows.length,
         packaging: rows.map((p) => ({ id: p.id, name: p.name, type: p.packaging_type, unit: p.unit, price: p.unit_price }))
@@ -54033,7 +55504,7 @@ var TOOLS = [
     async ({ rows, mode }) => {
       const materials = await materialsRepo2.list();
       const parsed = rows.map((r, i) => {
-        const m = materials.find((x) => norm4(x.ingredient_name) === norm4(r.ingredient));
+        const m = materials.find((x) => norm8(x.ingredient_name) === norm8(r.ingredient));
         return {
           row: i + 1,
           value: {
@@ -54080,7 +55551,7 @@ var TOOLS = [
       if (!confirm) return fail2("Not applied. Run preview_yield_import, show the user, then pass confirm: true.");
       const materials = await materialsRepo2.list();
       const inputs = rows.map((r) => {
-        const m = materials.find((x) => norm4(x.ingredient_name) === norm4(r.ingredient));
+        const m = materials.find((x) => norm8(x.ingredient_name) === norm8(r.ingredient));
         return {
           ingredient_name: r.ingredient,
           name: r.name ?? null,
@@ -54141,6 +55612,7 @@ var TOOLS = [
     }
   )
 ];
+var TOOLS = [...CORE_TOOLS, ...CATALOG_TOOLS];
 
 // mcp/src/jsonRpc.ts
 var PROTOCOL_VERSION = "2025-06-18";

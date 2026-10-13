@@ -1,13 +1,12 @@
-// KostKraft MCP server — lets an AI agent read and update the costing data as the
-// person running it.
+// The MCP tool catalogue — what an AI assistant can do in KostKraft.
 //
-// Every write goes through the app's own repositories, so an agent's change gets
-// the same treatment as one made in the browser: unit conversion, the recipe cost
-// cascade, price history, the Activity Log entry, and the snapshots a Super Admin
-// needs to revert it. Nothing here talks to the database directly.
+// Every write goes through the app's own repositories, so an assistant's change
+// gets the same treatment as one made in the browser: unit conversion, the recipe
+// cost cascade, price history, the Activity Log entry, and the snapshot a Super
+// Admin needs to revert it. Nothing here talks to the database directly.
 //
-// Permissions are Supabase's: the server signs in as the user, so row-level
-// security and their KostKraft role decide what the agent can do.
+// Permissions are the user's own: the server acts as them, so row-level security
+// and their KostKraft role decide what an assistant may do.
 
 import { z } from "zod";
 
@@ -20,125 +19,28 @@ import {
   yieldsRepo,
   type MaterialInput,
 } from "@/lib/data";
-import { canonicalPurchase, type MeasurementType } from "@/lib/units";
 import { previewMaterials, previewYields } from "@/lib/import/previewPlan";
 import type { ParsedRow } from "@/lib/import/importTypes";
 import type { ImportYieldRow } from "@/lib/data/mock/yields";
-import type { RawMaterial, Recipe } from "@/lib/data/types";
+import { CATALOG_TOOLS } from "./catalogTools.js";
+import {
+  actor,
+  defineTool,
+  fail,
+  findMaterial,
+  findRecipe,
+  materialInput,
+  materialView,
+  norm,
+  text,
+  type ToolDef,
+} from "./toolkit.js";
 
-/** One tool, shared by both transports: stdio (Claude Code) and hosted HTTP (ChatGPT). */
-export interface ToolDef<S extends z.ZodRawShape = z.ZodRawShape> {
-  name: string;
-  title: string;
-  description: string;
-  inputSchema: S;
-  handler: (args: z.objectOutputType<S, z.ZodTypeAny>) => Promise<ToolResult>;
-}
+export { setActor, currentActor } from "./toolkit.js";
+export type { Actor, ToolDef, ToolResult } from "./toolkit.js";
 
-export interface ToolResult {
-  content: { type: "text"; text: string }[];
-  isError?: boolean;
-}
-
-function defineTool<S extends z.ZodRawShape>(
-  name: string,
-  meta: { title: string; description: string; inputSchema: S },
-  handler: (args: z.objectOutputType<S, z.ZodTypeAny>) => Promise<ToolResult>,
-): ToolDef {
-  return { name, ...meta, handler } as unknown as ToolDef;
-}
-
-/** Who the current request acts as. Set once per stdio session, per request when hosted. */
-export interface Actor {
-  userId: string;
-  email: string;
-  name: string;
-  role: string;
-}
-
-let actor: Actor;
-
-export function setActor(next: Actor): void {
-  actor = next;
-}
-
-export function currentActor(): Actor {
-  return actor;
-}
-
-const text = (value: unknown) => ({
-  content: [{ type: "text" as const, text: typeof value === "string" ? value : JSON.stringify(value, null, 2) }],
-});
-const fail = (message: string) => ({
-  content: [{ type: "text" as const, text: message }],
-  isError: true,
-});
-
-const norm = (s: string) => s.trim().toLowerCase();
-
-async function findMaterial(nameOrId: string): Promise<RawMaterial | null> {
-  const all = await materialsRepo.list();
-  return (
-    all.find((m) => m.id === nameOrId) ??
-    all.find((m) => norm(m.ingredient_name) === norm(nameOrId)) ??
-    all.find((m) => norm(m.ingredient_name).includes(norm(nameOrId))) ??
-    null
-  );
-}
-
-async function findRecipe(nameOrId: string): Promise<Recipe | null> {
-  const all = await recipesRepo.list();
-  return (
-    all.find((r) => r.id === nameOrId) ??
-    all.find((r) => norm(r.recipe_name) === norm(nameOrId)) ??
-    all.find((r) => norm(r.recipe_name).includes(norm(nameOrId))) ??
-    null
-  );
-}
-
-const materialView = (m: RawMaterial) => ({
-  id: m.id,
-  name: m.ingredient_name,
-  category: m.category,
-  price: m.purchase_price,
-  per: `1 ${m.purchase_unit}`,
-  cost_per_base_unit: m.cost_per_base_unit,
-  base_unit: m.base_unit,
-  status: m.status,
-  last_price_update: m.last_price_update,
-});
-
-const MEASUREMENT: Record<string, MeasurementType> = {
-  weight: "weight",
-  kg: "weight",
-  liquid: "volume",
-  volume: "volume",
-  litre: "volume",
-  count: "count",
-  piece: "count",
-};
-
-function materialInput(
-  name: string,
-  category: string,
-  type: string,
-  price: number | null,
-): MaterialInput {
-  const measurement = MEASUREMENT[norm(type)] ?? "weight";
-  const canon = canonicalPurchase(measurement);
-  return {
-    ingredient_name: name.trim(),
-    category: category.trim() || "Other",
-    notes: null,
-    purchase_price: price,
-    purchase_quantity: 1,
-    purchase_unit: canon.purchase_unit,
-    base_unit: canon.base_unit,
-  };
-}
-
-/** Every tool this server exposes. */
-export const TOOLS: ToolDef[] = [
+/** The core catalogue: ingredients, recipes (read), yields, packaging (read), activity. */
+const CORE_TOOLS: ToolDef[] = [
   defineTool(
     "whoami",
     {
@@ -606,3 +508,9 @@ export const TOOLS: ToolDef[] = [
     },
   ),
 ];
+
+/**
+ * Every tool this server exposes, in the order an assistant should meet them:
+ * reading and pricing first, then the catalogue-editing tools.
+ */
+export const TOOLS: ToolDef[] = [...CORE_TOOLS, ...CATALOG_TOOLS];
