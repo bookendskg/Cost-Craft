@@ -1,15 +1,19 @@
-// "Connect an AI assistant" — the setup details each person needs to point Claude
-// (or any MCP client) at KostKraft as themselves.
+// "Connect an AI assistant" — everything a person needs to point Claude or ChatGPT
+// at KostKraft as themselves.
 //
-// Everything shown here is already public in the browser bundle: the project URL
-// and the anon key, which grant nothing on their own — the assistant still has to
-// sign in as the user, and their role decides what it can do. No secret is exposed.
+// Two ways in, presented identically: a connector that runs on their own computer
+// (paired with a one-time code) or the hosted server (reached with a personal
+// token). Same tools either way; the difference is only where the code runs.
+//
+// Nothing secret is on display: the pairing code is single-use and short-lived, and
+// a token is shown once and revocable here.
 
 import { useEffect, useState } from "react";
-import { Bot, Check, Copy, Globe, KeyRound, Loader2, ShieldCheck, Trash2 } from "lucide-react";
+import { Bot, Check, Copy, Globe, Laptop, Loader2, ShieldCheck, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { roleLabel } from "@/lib/auth/roleCache";
@@ -39,23 +43,36 @@ function abilities(role: string): { can: string[]; cannot: string[] } {
   };
 }
 
+/** The message a user pastes into ChatGPT's connector settings. */
+function hostedInstructions(url: string, token: string): string {
+  return [
+    "Add a custom MCP connector with these details:",
+    "",
+    `Server URL: ${url}`,
+    `Authorization header: Bearer ${token}`,
+    "",
+    "In Claude Code instead, run:",
+    `claude mcp add --transport http kostkraft ${url} --header "Authorization: Bearer ${token}"`,
+  ].join("\n");
+}
+
 export function McpConnectPanel() {
   const user = useSession((s) => s.user)!;
   const role = abilities(user.role);
   const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const hosted = hostedUrl();
+
   const [pairing, setPairing] = useState<{ code: string; expiresAt: string } | null>(null);
   const [generating, setGenerating] = useState(false);
-
   const [tokens, setTokens] = useState<McpToken[]>([]);
   const [newToken, setNewToken] = useState<string | null>(null);
   const [issuing, setIssuing] = useState(false);
-  const hosted = hostedUrl();
 
   const refreshTokens = async () => {
     try {
       setTokens(await listTokens(user.id));
     } catch {
-      // The table may not exist yet; issuing one reports the real reason.
+      // The table may not exist yet; creating one reports the real reason.
     }
   };
   useEffect(() => {
@@ -63,10 +80,21 @@ export function McpConnectPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id]);
 
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      setPairing(await createPairingCode(user.id, "AI assistant"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create a code");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const issue = async () => {
     setIssuing(true);
     try {
-      setNewToken(await createToken(user.id, "ChatGPT"));
+      setNewToken(await createToken(user.id, "Assistant"));
       await refreshTokens();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not create a token");
@@ -82,17 +110,6 @@ export function McpConnectPanel() {
       toast.success("Token revoked — that assistant is disconnected.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not revoke");
-    }
-  };
-
-  const generate = async () => {
-    setGenerating(true);
-    try {
-      setPairing(await createPairingCode(user.id, "AI assistant"));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not create a code");
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -115,104 +132,108 @@ export function McpConnectPanel() {
           <Badge variant="outline">MCP</Badge>
         </div>
         <p className="max-w-3xl text-sm text-muted-foreground">
-          Let Claude — or any assistant that speaks MCP — look things up and make changes in KostKraft
-          for you. It signs in <strong>as you</strong>, so it can only do what you can, and every change
-          it makes appears in the Activity Log under your name.
+          Let Claude or ChatGPT look things up and make changes in KostKraft for you. It signs in{" "}
+          <strong>as you</strong>, so it can only do what you can, and every change it makes appears in
+          the Activity Log under your name.
         </p>
       </Card>
 
       <Card className="p-6">
-        <div className="mb-2 flex items-center gap-2">
-          <KeyRound className="h-5 w-5 text-muted-foreground" />
-          <p className="text-sm font-semibold">Connect in one step</p>
-        </div>
-        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-          Generate a setup code, paste the block below into Claude (or any assistant that can run
-          commands), and it installs and connects the connector for you. The code works once and
-          expires in {CODE_TTL_MINUTES} minutes — you never type your password into a terminal.
-        </p>
+        <Tabs defaultValue="computer">
+          <TabsList className="mb-4">
+            <TabsTrigger value="computer">
+              <Laptop className="mr-1.5 h-4 w-4" /> On my computer
+            </TabsTrigger>
+            <TabsTrigger value="online">
+              <Globe className="mr-1.5 h-4 w-4" /> Online
+            </TabsTrigger>
+          </TabsList>
 
-        {!pairing ? (
-          <Button variant="accent" onClick={generate} disabled={generating}>
-            {generating && <Loader2 className="h-4 w-4 animate-spin" />}
-            Generate setup code
-          </Button>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <code className="rounded-md bg-muted px-3 py-1.5 text-base font-semibold tracking-widest">
-                {pairing.code}
-              </code>
-              <span className="text-xs text-muted-foreground">
-                Single use · expires {new Date(pairing.expiresAt).toLocaleTimeString()}
-              </span>
-              <Button variant="ghost" size="sm" onClick={generate} disabled={generating}>
-                New code
-              </Button>
-            </div>
-            <CopyBlock label="Setup message" value={setupPrompt(origin, pairing.code)} />
-          </div>
-        )}
-      </Card>
-
-      <Card className="p-6">
-        <div className="mb-2 flex items-center gap-2">
-          <Globe className="h-5 w-5 text-muted-foreground" />
-          <p className="text-sm font-semibold">ChatGPT and other online assistants</p>
-        </div>
-        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-          ChatGPT can't run the connector on your computer — it can only reach a web address. Create a
-          personal token and add this server in your assistant's connector settings. It still acts as
-          you, with your permissions, and you can revoke it here at any time.
-        </p>
-
-        {hosted && (
-          <div className="mb-4 space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">Server URL</p>
-            <CopyBlock label="Server URL" value={hosted} />
-          </div>
-        )}
-
-        {newToken ? (
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">
-              Your token — copy it now, it won't be shown again
-            </p>
-            <CopyBlock label="Token" value={newToken} />
-            <p className="text-xs text-muted-foreground">
-              In ChatGPT, add a connector with the URL above and this token as the authentication /
-              Bearer token.
-            </p>
-            <Button variant="ghost" size="sm" onClick={() => setNewToken(null)}>
-              Done — hide it
-            </Button>
-          </div>
-        ) : (
-          <Button variant="outline" onClick={issue} disabled={issuing}>
-            {issuing && <Loader2 className="h-4 w-4 animate-spin" />}
-            Create connector token
-          </Button>
-        )}
-
-        {tokens.length > 0 && (
-          <div className="mt-5 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">Your tokens</p>
-            {tokens.map((t) => (
-              <div key={t.id} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{t.name ?? "Assistant"}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Created {new Date(t.created_at).toLocaleDateString()} ·{" "}
-                    {t.last_used_at ? `last used ${new Date(t.last_used_at).toLocaleString()}` : "never used"}
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => revoke(t.id)} aria-label={`Revoke ${t.name ?? "token"}`}>
-                  <Trash2 className="h-4 w-4 text-destructive" /> Revoke
+          {/* ── Local connector: Claude Code / Claude Desktop ─────────────── */}
+          <TabsContent value="computer">
+            <ConnectStep
+              title="Claude Code or Claude Desktop"
+              blurb={`Generate a setup code and paste the message below into Claude. It installs the connector and connects it for you. The code works once and expires in ${CODE_TTL_MINUTES} minutes — you never type your password into a terminal.`}
+              action={
+                <Button variant="accent" onClick={generate} disabled={generating}>
+                  {generating && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {pairing ? "New setup code" : "Generate setup code"}
                 </Button>
-              </div>
-            ))}
-          </div>
-        )}
+              }
+            >
+              {pairing && (
+                <>
+                  <Secret
+                    value={pairing.code}
+                    note={`Single use · expires ${new Date(pairing.expiresAt).toLocaleTimeString()}`}
+                  />
+                  <CopyBlock label="Setup message" value={setupPrompt(origin, pairing.code)} />
+                </>
+              )}
+            </ConnectStep>
+          </TabsContent>
+
+          {/* ── Hosted server: ChatGPT (and Claude Code over HTTP) ────────── */}
+          <TabsContent value="online">
+            <ConnectStep
+              title="ChatGPT, or Claude without a download"
+              blurb="Create a personal token and paste the details below into your assistant's connector settings. Nothing is installed — your assistant talks to KostKraft directly. Revoke the token here whenever you like."
+              action={
+                <Button variant="accent" onClick={issue} disabled={issuing}>
+                  {issuing && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Create connector token
+                </Button>
+              }
+            >
+              {newToken ? (
+                <>
+                  <Secret value={newToken} note="Copy it now — it won't be shown again" />
+                  <CopyBlock label="Connector details" value={hostedInstructions(hosted, newToken)} />
+                  <Button variant="ghost" size="sm" onClick={() => setNewToken(null)}>
+                    Done — hide it
+                  </Button>
+                </>
+              ) : (
+                hosted && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">Server URL</p>
+                    <CopyBlock label="Server URL" value={hosted} />
+                  </div>
+                )
+              )}
+
+              {tokens.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Your tokens</p>
+                  {tokens.map((t) => (
+                    <div
+                      key={t.id}
+                      className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{t.name ?? "Assistant"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Created {new Date(t.created_at).toLocaleDateString()} ·{" "}
+                          {t.last_used_at
+                            ? `last used ${new Date(t.last_used_at).toLocaleString()}`
+                            : "never used"}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => revoke(t.id)}
+                        aria-label={`Revoke ${t.name ?? "token"}`}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" /> Revoke
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ConnectStep>
+          </TabsContent>
+        </Tabs>
       </Card>
 
       <Card className="p-6">
@@ -241,6 +262,42 @@ export function McpConnectPanel() {
           Admin can undo any change — or a whole import — from the Activity Log.
         </p>
       </Card>
+    </div>
+  );
+}
+
+/** One connection route, so both tabs read the same way. */
+function ConnectStep({
+  title,
+  blurb,
+  action,
+  children,
+}: {
+  title: string;
+  blurb: string;
+  action: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="mb-1 text-sm font-semibold">{title}</p>
+        <p className="max-w-3xl text-sm text-muted-foreground">{blurb}</p>
+      </div>
+      {action}
+      {children}
+    </div>
+  );
+}
+
+/** A code or token: big, monospaced, with what to know about it. */
+function Secret({ value, note }: { value: string; note: string }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <code className="break-all rounded-md bg-muted px-3 py-1.5 text-base font-semibold tracking-wide">
+        {value}
+      </code>
+      <span className="text-xs text-muted-foreground">{note}</span>
     </div>
   );
 }
