@@ -29,3 +29,6 @@ signing-key-info.txt
 
 # Petpooja API emails + exported price lists (contain live API credentials)
 apidocs/
+
+# MCP server build output
+mcp/dist
