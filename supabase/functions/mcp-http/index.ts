@@ -4,8 +4,12 @@
 // URL. Same tools as the local connector (they share mcp/src/tools.ts, pre-bundled
 // into _bundle.js), same safety rules.
 //
-// Authentication is a personal connector token (0039_mcp_tokens.sql), sent as
-// `Authorization: Bearer kk_…`. The function looks the token up with the service
+// Authentication is a personal connector token (0039_mcp_tokens.sql), sent either
+// as `Authorization: Bearer kk_…` (Claude Code, scripts) or as the last path
+// segment — `…/mcp-http/kk_…` — because ChatGPT's custom-connector dialog offers
+// only "OAuth" or "No authentication" and has nowhere to put a token. The URL form
+// means the link itself is the credential: treat it like a password, and revoke it
+// from Profile → AI Assistant if it ever leaks. The function looks the token up with the service
 // role, mints a SHORT-LIVED JWT for that user, and runs the request with it — so
 // row-level security, the user's KostKraft role, the Activity Log attribution and
 // revert all behave exactly as they do in the browser. The service role is used
@@ -85,9 +89,22 @@ interface Caller {
   tokenId: string;
 }
 
-async function resolveToken(authHeader: string): Promise<Caller | { error: string }> {
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  if (!token) return { error: "Missing connector token. Add it as a Bearer token." };
+/** The token from the Authorization header, or from the end of the URL path. */
+function readToken(req: Request): string {
+  const header = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (header) return header;
+  // /functions/v1/mcp-http/<token>
+  const tail = new URL(req.url).pathname.split("/").filter(Boolean).pop() ?? "";
+  return tail === "mcp-http" ? "" : decodeURIComponent(tail);
+}
+
+async function resolveToken(token: string): Promise<Caller | { error: string }> {
+  if (!token) {
+    return {
+      error:
+        "Missing connector token. Send it as a Bearer token, or use the personal URL from KostKraft → Profile → AI Assistant.",
+    };
+  }
 
   const { data: row, error } = await admin
     .from("mcp_tokens")
@@ -139,7 +156,7 @@ Deno.serve(async (req) => {
     return rpcError(null, -32700, "Parse error");
   }
 
-  const caller = await resolveToken(req.headers.get("Authorization") ?? "");
+  const caller = await resolveToken(readToken(req));
   if ("error" in caller) return rpcError(null, -32001, caller.error, 401);
 
   return await serialize(async () => {

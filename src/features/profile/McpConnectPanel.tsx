@@ -43,16 +43,19 @@ function abilities(role: string): { can: string[]; cannot: string[] } {
   };
 }
 
-/** The message a user pastes into ChatGPT's connector settings. */
+/** ChatGPT has nowhere to put a token, so it goes in the URL — see the warning below. */
+const chatGptUrl = (url: string, token: string) => `${url}/${token}`;
+
+/** The details a user pastes into their assistant's connector settings. */
 function hostedInstructions(url: string, token: string): string {
   return [
-    "Add a custom MCP connector with these details:",
+    "ChatGPT → Settings → Plugins/Connectors → Add custom MCP server:",
     "",
-    `Server URL: ${url}`,
-    `Authorization header: Bearer ${token}`,
+    `  Server URL:      ${chatGptUrl(url, token)}`,
+    "  Authentication:  No authentication",
     "",
-    "In Claude Code instead, run:",
-    `claude mcp add --transport http kostkraft ${url} --header "Authorization: Bearer ${token}"`,
+    "Claude Code (keeps the token out of the URL):",
+    `  claude mcp add --transport http kostkraft ${url} --header "Authorization: Bearer ${token}"`,
   ].join("\n");
 }
 
@@ -189,6 +192,11 @@ export function McpConnectPanel() {
                 <>
                   <Secret value={newToken} note="Copy it now — it won't be shown again" />
                   <CopyBlock label="Connector details" value={hostedInstructions(hosted, newToken)} />
+                  <p className="max-w-3xl text-xs text-muted-foreground">
+                    ChatGPT can't store a token separately, so for ChatGPT it sits in the URL — that
+                    link <strong>is</strong> your password. Don't share it, and revoke it below if it
+                    ever gets out. Claude Code uses the header form instead, which keeps it hidden.
+                  </p>
                   <Button variant="ghost" size="sm" onClick={() => setNewToken(null)}>
                     Done — hide it
                   </Button>
