@@ -18,6 +18,7 @@ import { navGroupsForUser } from "./nav";
 import { useUsers } from "@/features/users/hooks";
 // (global command-palette search removed per request)
 import { Button } from "@/components/ui/button";
+import { DevCredit } from "@/components/DevCredit";
 import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWordmark } from "@/features/dashboard/brandTheme";
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
@@ -224,7 +225,7 @@ export function AppLayout() {
           <ProfileMenu />
         </header>
 
-        <main className="relative flex-1 overflow-y-auto p-3 transition-colors sm:p-4 lg:p-6">
+        <main className="relative flex flex-1 flex-col overflow-y-auto p-3 transition-colors sm:p-4 lg:p-6">
           {/* Brand wordmark watermark behind the content — sized to fit the width */}
           {!dark && (
             <div
@@ -240,7 +241,7 @@ export function AppLayout() {
             </div>
           )}
           {/* Keyed on the route so each navigation replays the entrance animation. */}
-          <div key={location.pathname} className="relative z-10 animate-fade-in-up">
+          <div key={location.pathname} className="relative z-10 flex-1 animate-fade-in-up">
             <Suspense
               fallback={
                 <div className="flex items-center justify-center py-24 text-muted-foreground">
@@ -251,6 +252,9 @@ export function AppLayout() {
               <Outlet />
             </Suspense>
           </div>
+          <footer className="relative z-10 mt-8 border-t border-black/5 pt-3 dark:border-border">
+            <DevCredit />
+          </footer>
         </main>
       </div>
 

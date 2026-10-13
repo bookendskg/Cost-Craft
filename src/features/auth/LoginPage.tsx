@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/brand/Logo";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { AuthBrandPanel } from "./AuthBrandPanel";
+import { DevCredit } from "@/components/DevCredit";
 
 // Only the Super Admin owner is seeded in the live mock DB (buildMoinSeed →
 // buildEmptySeed keeps super_admins only). The old @brand.com demo users exist
@@ -192,6 +193,7 @@ export function LoginPage() {
           <p className="mt-8 text-center text-xs text-muted-foreground">
             Authorized Bookends Hospitality users only.
           </p>
+          <DevCredit className="mt-2" />
         </div>
       </main>
     </div>

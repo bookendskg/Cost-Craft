@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/brand/Logo";
 import { BrandLogoStrip } from "./parts";
+import { DevCredit } from "@/components/DevCredit";
 
 export function PublicFooter() {
   const year = new Date().getFullYear();
@@ -48,8 +49,9 @@ export function PublicFooter() {
           </div>
         </div>
 
-        <div className="mt-10 border-t pt-6 text-xs text-muted-foreground">
-          © {year} Kost Kraft · Bookends Hospitality. All rights reserved.
+        <div className="mt-10 flex flex-col gap-2 border-t pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <span>© {year} Kost Kraft · Bookends Hospitality. All rights reserved.</span>
+          <DevCredit className="text-left text-xs" />
         </div>
       </div>
     </footer>

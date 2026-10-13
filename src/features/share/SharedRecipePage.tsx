@@ -9,6 +9,7 @@ import type { ViewVisibility } from "@/lib/auth/permissions";
 import { generateRecipePdf } from "@/features/reports/pdf";
 import { toast } from "@/components/ui/use-toast";
 import { useResolveShareLink } from "@/features/exports/accessHooks";
+import { DevCredit } from "@/components/DevCredit";
 
 // Per-brand look for the public shared page: full-bleed brand-colour background
 // + the brand's official logo. `accent` is used for the bar/chip (white text
@@ -39,6 +40,7 @@ function Screen({ icon, title, sub }: { icon: React.ReactNode; title: string; su
         <h1 className="text-lg font-semibold">{title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{sub}</p>
         <p className="mt-4 text-xs text-muted-foreground">Shared via Kost Kraft · Bookends Hospitality</p>
+        <DevCredit className="mt-1" />
       </Card>
     </div>
   );
@@ -220,6 +222,7 @@ export function SharedRecipePage() {
         <p className="mt-5 text-center text-[11px] text-white/85 drop-shadow-sm">
           Confidential · Financial data hidden · Shared via Kost Kraft · Bookends Hospitality
         </p>
+        <DevCredit className="mt-1 text-white/75 drop-shadow-sm" />
       </div>
     </div>
   );

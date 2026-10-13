@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { forgotPasswordSchema, type ForgotPasswordValues } from "@/lib/validation/schemas";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/authError";
+import { DevCredit } from "@/components/DevCredit";
 
 export function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
@@ -76,6 +77,7 @@ export function ForgotPasswordPage() {
           </form>
         </CardContent>
       </Card>
+      <DevCredit className="mt-6" />
     </div>
   );
 }
