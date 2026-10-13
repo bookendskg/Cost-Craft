@@ -8,6 +8,7 @@ import { profileToUser, type ProfileRow } from "@/lib/supabase/types";
 import type { User } from "../types";
 import type { CreateUserInput, UpdateUserInput } from "../mock/users";
 import { audit } from "./helpers";
+import { captureEntity } from "./snapshot";
 
 function fail(context: string, message?: string): never {
   throw new Error(message || `${context} failed`);
@@ -52,8 +53,10 @@ export const supabaseUsersRepo = {
     if (patch.password) {
       fail("Update user", "Passwords are managed by Supabase — use “Send Password Reset”.");
     }
-    // Snapshot the current values so the activity log can show before → after.
+    // Snapshot the current values so the activity log can show before → after,
+    // and the full profile row so the change can be reverted.
     const existing = await this.getById(id);
+    const beforeState = await captureEntity("user", id);
     const row: Record<string, unknown> = {};
     if (patch.name !== undefined) row.name = patch.name;
     if (patch.email !== undefined) row.email = patch.email;
@@ -137,6 +140,8 @@ export const supabaseUsersRepo = {
         new_values: after,
         performed_by: actorId,
         notes: `Updated ${user.name || user.email} (${Object.keys(after).join(", ")}).${roleChange}`,
+        before_state: beforeState,
+        after_state: await captureEntity("user", id),
       });
     }
     return user;

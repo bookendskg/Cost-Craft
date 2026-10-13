@@ -14,6 +14,8 @@ import type { ImportSummary } from "../../import/importTypes";
 import type { IngredientPriceHistory, RawMaterial } from "../types";
 import type { MaterialInput } from "../mock/materials";
 import { audit, cascadeMaterial, fail, sb } from "./helpers";
+import { captureEntity } from "./snapshot";
+import { newBatchId } from "../batch";
 
 /** Per-row derived field — mirrors the mock's computeCpu (uses the pure helper). */
 function computeCpu(input: {
@@ -92,6 +94,8 @@ export const supabaseMaterialsRepo = {
       new_values: { name: material.ingredient_name, price: material.purchase_price },
       performed_by: actorId,
       notes: `Created ingredient ${material.ingredient_name}`,
+      before_state: { type: "ingredient", id: material.id, row: null },
+      after_state: await captureEntity("ingredient", material.id),
     });
 
     return material;
@@ -100,6 +104,7 @@ export const supabaseMaterialsRepo = {
   async update(id: string, input: MaterialInput, actorId: string): Promise<RawMaterial> {
     const existing = await this.getById(id);
     if (!existing) fail("Update ingredient", "Ingredient not found");
+    const before = await captureEntity("ingredient", id);
 
     const oldPrice = existing.purchase_price;
     const oldCpu = existing.cost_per_base_unit;
@@ -155,6 +160,8 @@ export const supabaseMaterialsRepo = {
       notes: priceChanged
         ? `Updated ${material.ingredient_name} price ${oldPrice ?? "—"}→${input.purchase_price ?? "—"}`
         : `Updated ${material.ingredient_name}`,
+      before_state: before,
+      after_state: await captureEntity("ingredient", material.id),
     });
 
     return material;
@@ -180,6 +187,9 @@ export const supabaseMaterialsRepo = {
     const byName = new Map(existingList.map((m) => [m.ingredient_name.toLowerCase(), m]));
     const changed = new Set<string>();
     const c = sb();
+    // One id ties every write of this import together, so the Activity Log can
+    // revert the whole run in one click.
+    const batchId = newBatchId();
 
     for (let i = 0; i < rows.length; i++) {
       const input = rows[i];
@@ -208,9 +218,22 @@ export const supabaseMaterialsRepo = {
             .select("*")
             .single();
           if (error) throw new Error(error.message);
-          byName.set(input.ingredient_name.toLowerCase(), data as RawMaterial);
+          const updated = data as RawMaterial;
+          byName.set(input.ingredient_name.toLowerCase(), updated);
           changed.add(existing.id);
           summary.updated++;
+          await audit({
+            entity_type: "ingredient",
+            entity_id: updated.id,
+            action: "update",
+            old_values: { price: existing.purchase_price },
+            new_values: { price: updated.purchase_price },
+            performed_by: actorId,
+            notes: `Imported — updated ${updated.ingredient_name}`,
+            before_state: { type: "ingredient", id: existing.id, row: existing as unknown as Record<string, unknown> },
+            after_state: await captureEntity("ingredient", updated.id),
+            batch_id: batchId,
+          });
         } else {
           if (mode === "update") {
             summary.skipped++;
@@ -238,6 +261,17 @@ export const supabaseMaterialsRepo = {
           byName.set(material.ingredient_name.toLowerCase(), material);
           changed.add(material.id);
           summary.imported++;
+          await audit({
+            entity_type: "ingredient",
+            entity_id: material.id,
+            action: "create",
+            new_values: { name: material.ingredient_name, price: material.purchase_price },
+            performed_by: actorId,
+            notes: `Imported — added ${material.ingredient_name}`,
+            before_state: { type: "ingredient", id: material.id, row: null },
+            after_state: await captureEntity("ingredient", material.id),
+            batch_id: batchId,
+          });
         }
       } catch (e) {
         summary.failed++;
@@ -255,6 +289,7 @@ export const supabaseMaterialsRepo = {
       new_values: { added: summary.imported, updated: summary.updated },
       performed_by: actorId,
       notes: `Imported ingredients — ${summary.imported} added, ${summary.updated} updated`,
+      batch_id: batchId,
     });
 
     return summary;
@@ -266,6 +301,7 @@ export const supabaseMaterialsRepo = {
     status: "active" | "inactive",
     actorId: string,
   ): Promise<RawMaterial> {
+    const before = await captureEntity("ingredient", id);
     const { data, error } = await sb()
       .from("raw_materials")
       .update({ status })
@@ -281,6 +317,8 @@ export const supabaseMaterialsRepo = {
       action: status === "inactive" ? "delete" : "update",
       performed_by: actorId,
       notes: `${status === "inactive" ? "Deactivated" : "Reactivated"} ${material.ingredient_name}`,
+      before_state: before,
+      after_state: await captureEntity("ingredient", material.id),
     });
 
     return material;
@@ -294,7 +332,9 @@ export const supabaseMaterialsRepo = {
   ): Promise<number> {
     const c = sb();
     let n = 0;
+    const batchId = newBatchId();
     for (const id of ids) {
+      const before = await captureEntity("ingredient", id);
       // Skip rows already in the target status (mirrors the mock's no-op guard).
       const { data, error } = await c
         .from("raw_materials")
@@ -313,6 +353,9 @@ export const supabaseMaterialsRepo = {
         action: status === "inactive" ? "delete" : "update",
         performed_by: actorId,
         notes: `${status === "inactive" ? "Deactivated" : "Reactivated"} ${material.ingredient_name} (bulk)`,
+        before_state: before,
+        after_state: await captureEntity("ingredient", material.id),
+        batch_id: batchId,
       });
     }
     return n;
@@ -341,6 +384,10 @@ export const supabaseMaterialsRepo = {
       fail("Delete ingredient", `Can't delete "${name}" — it's used in one or more recipes. Remove it from those recipes first.`);
     }
 
+    // Snapshot the whole record (and its yields) BEFORE anything is deleted —
+    // without this a delete is unrecoverable.
+    const before = await captureEntity("ingredient", id);
+
     const hist = await c.from("ingredient_price_history").delete().eq("ingredient_id", id);
     if (hist.error) fail("Delete ingredient", hist.error.message);
     const yld = await c.from("ingredient_yields").delete().eq("ingredient_id", id);
@@ -358,6 +405,8 @@ export const supabaseMaterialsRepo = {
       action: "delete",
       performed_by: actorId,
       notes: `Deleted ${name}`,
+      before_state: before,
+      after_state: { type: "ingredient", id, row: null },
     });
   },
 

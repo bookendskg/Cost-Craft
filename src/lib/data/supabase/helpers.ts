@@ -5,6 +5,7 @@
 
 import { supabase } from "@/lib/supabase/client";
 import type { MockDb } from "../mock/db";
+import type { EntitySnapshot } from "../types";
 import { cascadeFromMaterial, cascadeFromPrep, recomputeAndPropagate } from "../mock/recompute";
 
 /** Non-null Supabase client (Phase 2 repos are only selected when configured). */
@@ -117,6 +118,13 @@ export async function audit(entry: {
   new_values?: unknown;
   performed_by: string | null;
   notes?: string | null;
+  /** Full snapshots that make the change revertible (0036). */
+  before_state?: EntitySnapshot | null;
+  after_state?: EntitySnapshot | null;
+  /** Shared by every row written during one import / bulk action. */
+  batch_id?: string | null;
+  /** Set on the row written BY a revert; points at the change it undid. */
+  revert_of?: string | null;
 }): Promise<void> {
   try {
     const { error } = await sb().from("audit_logs").insert({
@@ -127,6 +135,10 @@ export async function audit(entry: {
       new_values: entry.new_values ?? null,
       performed_by: entry.performed_by,
       notes: entry.notes ?? null,
+      before_state: entry.before_state ?? null,
+      after_state: entry.after_state ?? null,
+      batch_id: entry.batch_id ?? null,
+      revert_of: entry.revert_of ?? null,
     });
     if (error) console.error("Audit insert failed:", error.message);
   } catch (e) {

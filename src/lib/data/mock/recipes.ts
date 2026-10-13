@@ -12,6 +12,8 @@ import type { ImportSummary } from "../../import/importTypes";
 import { delay, getDb, type MockDb, mutate, nowISO, uid } from "./db";
 import { groupRecipeLines } from "../../import/recipeGroups";
 import { cascadeFromPrep, findMaterial, recomputeAndPropagate, recordAudit } from "./recompute";
+import { captureEntity } from "./snapshot";
+import { newBatchId } from "../batch";
 
 /** One row of a recipe import (§37) — one ingredient line; many rows per recipe. */
 export interface ImportRecipeLine {
@@ -245,6 +247,8 @@ export const recipesRepo = {
           new_values: { name: recipe.recipe_name },
           performed_by: actorId,
           notes: `Created "${recipe.recipe_name}"`,
+          before_state: { type: "recipe", id: recipe.id, row: null },
+          after_state: captureEntity(db, "recipe", recipe.id),
         });
         return recipe;
       }),
@@ -259,6 +263,7 @@ export const recipesRepo = {
   ): Promise<Recipe> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "recipe", id);
         const recipe = db.recipes.find((r) => r.id === id);
         if (!recipe) throw new Error("Recipe not found");
         if (
@@ -308,6 +313,8 @@ export const recipesRepo = {
           notes: wasApproved
             ? `Edited "${recipe.recipe_name}" (reverted to Draft)`
             : `Edited "${recipe.recipe_name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "recipe", recipe.id),
         });
         return recipe;
       }),
@@ -356,6 +363,8 @@ export const recipesRepo = {
           );
         };
         const recomputeIds: string[] = [];
+        const batchId = newBatchId();
+        const touched: { id: string; name: string; action: "added" | "updated"; before: ReturnType<typeof captureEntity> }[] = [];
         const upsert = (
           name: string, category: string, sizeCode: "11_INCH" | "15_INCH" | null,
           parentId: string | null, ls: ImportRecipeLine[],
@@ -392,6 +401,7 @@ export const recipesRepo = {
           });
           writeRows(id, ls);
           recomputeIds.push(id);
+          touched.push({ id, name, action: "added", before: null });
           return { id, action: "added" };
         };
         const tally = (a: "added" | "updated" | "skipped") => {
@@ -427,6 +437,7 @@ export const recipesRepo = {
           entity_type: "recipe", entity_id: "import", action: "create",
           new_values: { added: S.imported, updated: S.updated },
           performed_by: actorId, notes: `Imported recipes — ${S.imported} added, ${S.updated} updated`,
+          batch_id: batchId,
         });
         return S;
       }),
@@ -479,6 +490,8 @@ export const recipesRepo = {
           action: "create",
           performed_by: actorId,
           notes: `Duplicated "${src.recipe_name}" → "${copy.recipe_name}"`,
+          before_state: { type: "recipe", id: copy.id, row: null },
+          after_state: captureEntity(db, "recipe", copy.id),
         });
         return copy;
       }),
@@ -488,6 +501,7 @@ export const recipesRepo = {
   async submit(id: string, note: string | null, actorId: string): Promise<Recipe> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "recipe", id);
         const recipe = db.recipes.find((r) => r.id === id);
         if (!recipe) throw new Error("Recipe not found");
         recipe.status = "testing";
@@ -500,6 +514,8 @@ export const recipesRepo = {
           action: "submit",
           performed_by: actorId,
           notes: note ? `Submitted for testing: ${note}` : `Submitted "${recipe.recipe_name}" for testing`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "recipe", id),
         });
         return recipe;
       }),
@@ -509,6 +525,7 @@ export const recipesRepo = {
   async approve(id: string, actorId: string): Promise<Recipe> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "recipe", id);
         const recipe = db.recipes.find((r) => r.id === id);
         if (!recipe) throw new Error("Recipe not found");
         recipe.status = "approved";
@@ -523,6 +540,8 @@ export const recipesRepo = {
           action: "approve",
           performed_by: actorId,
           notes: `Approved "${recipe.recipe_name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "recipe", id),
         });
         return recipe;
       }),
@@ -532,6 +551,7 @@ export const recipesRepo = {
   async reject(id: string, note: string, actorId: string): Promise<Recipe> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "recipe", id);
         const recipe = db.recipes.find((r) => r.id === id);
         if (!recipe) throw new Error("Recipe not found");
         recipe.status = "draft";
@@ -544,6 +564,8 @@ export const recipesRepo = {
           action: "reject",
           performed_by: actorId,
           notes: `Rejected "${recipe.recipe_name}": ${note}`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "recipe", id),
         });
         return recipe;
       }),
@@ -555,6 +577,7 @@ export const recipesRepo = {
   async archive(id: string, actorId: string): Promise<Recipe> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "recipe", id);
         const recipe = db.recipes.find((r) => r.id === id);
         if (!recipe) throw new Error("Recipe not found");
         if (recipe.archived_at) return recipe;
@@ -568,6 +591,8 @@ export const recipesRepo = {
           action: "update",
           performed_by: actorId,
           notes: `Archived "${recipe.recipe_name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "recipe", id),
         });
         return recipe;
       }),
@@ -578,6 +603,7 @@ export const recipesRepo = {
   async unarchive(id: string, actorId: string): Promise<Recipe> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "recipe", id);
         const recipe = db.recipes.find((r) => r.id === id);
         if (!recipe) throw new Error("Recipe not found");
         if (!recipe.archived_at) return recipe;
@@ -591,6 +617,8 @@ export const recipesRepo = {
           action: "update",
           performed_by: actorId,
           notes: `Restored "${recipe.recipe_name}" from archive`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "recipe", id),
         });
         return recipe;
       }),
@@ -620,11 +648,21 @@ export const recipesRepo = {
   async setImage(id: string, imageUrl: string | null, actorId: string): Promise<Recipe> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "recipe", id);
         const recipe = db.recipes.find((r) => r.id === id);
         if (!recipe) throw new Error("Recipe not found");
         recipe.image_url = imageUrl;
         recipe.updated_at = nowISO();
         recipe.updated_by = actorId;
+        recordAudit(db, {
+          entity_type: "recipe",
+          entity_id: id,
+          action: "update",
+          performed_by: actorId,
+          notes: `${imageUrl ? "Updated" : "Removed"} photo for ${recipe.recipe_name}`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "recipe", id),
+        });
         return recipe;
       }),
     );
@@ -633,6 +671,7 @@ export const recipesRepo = {
   async setSellingPrice(id: string, price: number | null, actorId: string): Promise<Recipe> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "recipe", id);
         const recipe = db.recipes.find((r) => r.id === id);
         if (!recipe) throw new Error("Recipe not found");
         recipe.selling_price = price;
@@ -644,6 +683,8 @@ export const recipesRepo = {
           action: "update",
           performed_by: actorId,
           notes: `Set menu price for "${recipe.recipe_name}" to ${price ?? "—"}`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "recipe", id),
         });
         return recipe;
       }),
@@ -655,6 +696,7 @@ export const recipesRepo = {
   async setCookedWeight(id: string, grams: number | null, actorId: string): Promise<Recipe> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "recipe", id);
         const recipe = db.recipes.find((r) => r.id === id);
         if (!recipe) throw new Error("Recipe not found");
         recipe.cooked_weight_g = grams;
@@ -668,6 +710,8 @@ export const recipesRepo = {
           action: "update",
           performed_by: actorId,
           notes: `Set cooked weight for "${recipe.recipe_name}" to ${grams != null ? `${grams} g` : "—"}`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "recipe", id),
         });
         return recipe;
       }),
@@ -699,6 +743,7 @@ export const recipesRepo = {
   async remove(id: string, actorId: string): Promise<void> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "recipe", id);
         const recipe = db.recipes.find((r) => r.id === id);
         if (!recipe) throw new Error("Recipe not found");
         // The recipe + its pizza size-variant children are deleted together.
@@ -739,6 +784,8 @@ export const recipesRepo = {
           old_values: { name: recipe.recipe_name },
           performed_by: actorId,
           notes: `Deleted "${recipe.recipe_name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "recipe", id),
         });
       }),
     );

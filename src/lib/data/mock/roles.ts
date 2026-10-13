@@ -10,6 +10,7 @@ import type { RoleRecord } from "../types";
 import { GRANTABLE_CAPABILITIES } from "@/lib/auth/permissions";
 import { delay, getDb, mutate, nowISO } from "./db";
 import { recordAudit } from "./recompute";
+import { captureEntity } from "./snapshot";
 
 export interface RoleInput {
   /** Immutable key. Ignored on update; auto-derived from the label on create. */
@@ -72,6 +73,8 @@ export const rolesRepo = {
           new_values: { label: role.label, capabilities: role.capabilities },
           performed_by: actorId,
           notes: `Created role "${role.label}"`,
+          before_state: { type: "role", id: role.key, row: null },
+          after_state: captureEntity(db, "role", role.key),
         });
         return role;
       }),
@@ -81,6 +84,7 @@ export const rolesRepo = {
   async update(key: string, input: RoleInput, actorId: string): Promise<RoleRecord> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "role", key);
         const role = db.roles.find((r) => r.key === key);
         if (!role) throw new Error("Role not found");
         if (role.is_system) throw new Error("Built-in roles can't be edited");
@@ -104,6 +108,8 @@ export const rolesRepo = {
           new_values: { label: role.label, capabilities: role.capabilities },
           performed_by: actorId,
           notes: `Updated role "${role.label}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "role", role.key),
         });
         return role;
       }),
@@ -114,6 +120,7 @@ export const rolesRepo = {
   async remove(key: string, actorId: string): Promise<void> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "role", key);
         const role = db.roles.find((r) => r.key === key);
         if (!role) throw new Error("Role not found");
         if (role.is_system) throw new Error("Built-in roles can't be deleted");
@@ -127,6 +134,8 @@ export const rolesRepo = {
           action: "delete",
           performed_by: actorId,
           notes: `Deleted role "${role.label}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "role", key),
         });
       }),
     );

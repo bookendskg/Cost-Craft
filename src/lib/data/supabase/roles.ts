@@ -7,6 +7,7 @@
 import type { RoleRecord } from "../types";
 import { GRANTABLE_CAPABILITIES } from "@/lib/auth/permissions";
 import { audit, fail, sb } from "./helpers";
+import { captureEntity } from "./snapshot";
 import { nowISO } from "../mock/db";
 import type { RoleInput } from "../mock/roles";
 
@@ -95,6 +96,8 @@ export const supabaseRolesRepo = {
       new_values: { label, capabilities: caps },
       performed_by: actorId,
       notes: `Created role "${label}"`,
+      before_state: { type: "role", id: key, row: null },
+      after_state: await captureEntity("role", key),
     });
     const now = nowISO();
     // Transient return — the mutation hook invalidates ["roles"] and the list
@@ -106,6 +109,7 @@ export const supabaseRolesRepo = {
   },
 
   async update(key: string, input: RoleInput, actorId: string): Promise<RoleRecord> {
+    const before = await captureEntity("role", key);
     const label = input.label.trim();
     if (!label) fail("Update role", "Role name is required");
     const caps = sanitizeCaps(input.capabilities);
@@ -130,6 +134,8 @@ export const supabaseRolesRepo = {
       new_values: { label, capabilities: caps },
       performed_by: actorId,
       notes: `Updated role "${label}"`,
+      before_state: before,
+      after_state: await captureEntity("role", key),
     });
     const now = nowISO();
     return {
@@ -139,6 +145,7 @@ export const supabaseRolesRepo = {
   },
 
   async remove(key: string, actorId: string): Promise<void> {
+    const before = await captureEntity("role", key);
     const existing = await supabaseRolesRepo.getByKey(key);
     const { error } = await sb().from("roles").delete().eq("key", key);
     if (error) {
@@ -153,6 +160,8 @@ export const supabaseRolesRepo = {
       action: "delete",
       performed_by: actorId,
       notes: existing ? `Deleted role "${existing.label}"` : "Deleted role",
+      before_state: before,
+      after_state: { type: "role", id: key, row: null },
     });
   },
 };

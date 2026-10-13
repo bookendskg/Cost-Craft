@@ -3,6 +3,8 @@ import type { IngredientPriceHistory, RawMaterial } from "../types";
 import type { ImportSummary } from "../../import/importTypes";
 import { delay, getDb, mutate, nowISO, todayISO, uid } from "./db";
 import { cascadeFromMaterial, recordAudit } from "./recompute";
+import { captureEntity } from "./snapshot";
+import { newBatchId } from "../batch";
 
 export interface MaterialInput {
   ingredient_name: string;
@@ -73,6 +75,8 @@ export const materialsRepo = {
           new_values: { name: material.ingredient_name, price: material.purchase_price },
           performed_by: actorId,
           notes: `Created ingredient ${material.ingredient_name}`,
+          before_state: { type: "ingredient", id: material.id, row: null },
+          after_state: captureEntity(db, "ingredient", material.id),
         });
         return material;
       }),
@@ -82,6 +86,7 @@ export const materialsRepo = {
   async update(id: string, input: MaterialInput, actorId: string): Promise<RawMaterial> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "ingredient", id);
         const m = db.raw_materials.find((x) => x.id === id);
         if (!m) throw new Error("Ingredient not found");
         if (
@@ -135,6 +140,8 @@ export const materialsRepo = {
           notes: priceChanged
             ? `Updated ${m.ingredient_name} price ${oldPrice ?? "—"}→${input.purchase_price ?? "—"}`
             : `Updated ${m.ingredient_name}`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "ingredient", m.id),
         });
         return m;
       }),
@@ -152,11 +159,15 @@ export const materialsRepo = {
         const summary: ImportSummary = { total: rows.length, imported: 0, updated: 0, skipped: 0, failed: 0, errors: [] };
         const byName = new Map(db.raw_materials.map((m) => [m.ingredient_name.toLowerCase(), m]));
         const changed = new Set<string>();
+        // Per-record audit rows share one batch id, so the whole import reverts at once.
+        const batchId = newBatchId();
         rows.forEach((input, i) => {
           try {
             const existing = byName.get(input.ingredient_name.toLowerCase());
             if (existing) {
               if (mode === "add") { summary.skipped++; return; }
+              const beforeRow = captureEntity(db, "ingredient", existing.id);
+              const previousPrice = existing.purchase_price;
               existing.category = input.category || existing.category;
               existing.notes = input.notes ?? existing.notes;
               existing.purchase_price = input.purchase_price;
@@ -167,6 +178,18 @@ export const materialsRepo = {
               existing.last_price_update = input.purchase_price === null ? existing.last_price_update : todayISO();
               changed.add(existing.id);
               summary.updated++;
+              recordAudit(db, {
+                entity_type: "ingredient",
+                entity_id: existing.id,
+                action: "update",
+                old_values: { price: previousPrice },
+                new_values: { price: existing.purchase_price },
+                performed_by: actorId,
+                notes: `Imported — updated ${existing.ingredient_name}`,
+                before_state: beforeRow,
+                after_state: captureEntity(db, "ingredient", existing.id),
+                batch_id: batchId,
+              });
             } else {
               if (mode === "update") { summary.skipped++; return; }
               const material: RawMaterial = {
@@ -188,6 +211,17 @@ export const materialsRepo = {
               byName.set(material.ingredient_name.toLowerCase(), material);
               changed.add(material.id);
               summary.imported++;
+              recordAudit(db, {
+                entity_type: "ingredient",
+                entity_id: material.id,
+                action: "create",
+                new_values: { name: material.ingredient_name, price: material.purchase_price },
+                performed_by: actorId,
+                notes: `Imported — added ${material.ingredient_name}`,
+                before_state: { type: "ingredient", id: material.id, row: null },
+                after_state: captureEntity(db, "ingredient", material.id),
+                batch_id: batchId,
+              });
             }
           } catch (e) {
             summary.failed++;
@@ -202,6 +236,7 @@ export const materialsRepo = {
           new_values: { added: summary.imported, updated: summary.updated },
           performed_by: actorId,
           notes: `Imported ingredients — ${summary.imported} added, ${summary.updated} updated`,
+          batch_id: batchId,
         });
         return summary;
       }),
@@ -216,6 +251,7 @@ export const materialsRepo = {
   ): Promise<RawMaterial> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "ingredient", id);
         const m = db.raw_materials.find((x) => x.id === id);
         if (!m) throw new Error("Ingredient not found");
         m.status = status;
@@ -225,6 +261,8 @@ export const materialsRepo = {
           action: status === "inactive" ? "delete" : "update",
           performed_by: actorId,
           notes: `${status === "inactive" ? "Deactivated" : "Reactivated"} ${m.ingredient_name}`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "ingredient", m.id),
         });
         return m;
       }),
@@ -240,6 +278,7 @@ export const materialsRepo = {
       mutate((db) => {
         let n = 0;
         for (const id of ids) {
+          const beforeSnap = captureEntity(db, "ingredient", id);
           const m = db.raw_materials.find((x) => x.id === id);
           if (!m || m.status === status) continue;
           m.status = status;
@@ -250,6 +289,8 @@ export const materialsRepo = {
             action: status === "inactive" ? "delete" : "update",
             performed_by: actorId,
             notes: `${status === "inactive" ? "Deactivated" : "Reactivated"} ${m.ingredient_name} (bulk)`,
+            before_state: beforeSnap,
+            after_state: captureEntity(db, "ingredient", m.id),
           });
         }
         return n;
@@ -277,6 +318,7 @@ export const materialsRepo = {
   async remove(id: string, actorId: string): Promise<void> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "ingredient", id);
         const m = db.raw_materials.find((x) => x.id === id);
         if (!m) throw new Error("Ingredient not found");
         const used = this.recipesUsing(db, id);
@@ -298,6 +340,8 @@ export const materialsRepo = {
           old_values: { name: m.ingredient_name },
           performed_by: actorId,
           notes: `Deleted ${m.ingredient_name}`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "ingredient", id),
         });
       }),
     );
@@ -310,6 +354,7 @@ export const materialsRepo = {
         let deleted = 0;
         let skipped = 0;
         for (const id of ids) {
+          const beforeSnap = captureEntity(db, "ingredient", id);
           const m = db.raw_materials.find((x) => x.id === id);
           if (!m) continue;
           if (this.recipesUsing(db, id).length) {
@@ -329,6 +374,8 @@ export const materialsRepo = {
             action: "delete",
             performed_by: actorId,
             notes: `Deleted ${m.ingredient_name} (bulk)`,
+            before_state: beforeSnap,
+            after_state: captureEntity(db, "ingredient", id),
           });
         }
         return { deleted, skipped };

@@ -4,6 +4,7 @@
 
 import type { BrandOutletStatus, OutletRecord } from "../types";
 import { audit, fail, sb } from "./helpers";
+import { captureEntity } from "./snapshot";
 import { nowISO } from "../mock/db";
 import type { OutletInput } from "../mock/outlets";
 
@@ -67,11 +68,14 @@ export const supabaseOutletsRepo = {
       new_values: { name: outlet.name, brand_id: outlet.brand_id, code: outlet.outlet_code },
       performed_by: actorId,
       notes: `Created outlet "${outlet.name}"`,
+      before_state: { type: "outlet", id: outlet.id, row: null },
+      after_state: await captureEntity("outlet", outlet.id),
     });
     return outlet;
   },
 
   async update(id: string, input: OutletInput, actorId: string): Promise<OutletRecord> {
+    const before = await captureEntity("outlet", id);
     const name = input.name.trim();
     const patch: Record<string, unknown> = {
       brand: input.brand_id,
@@ -106,11 +110,14 @@ export const supabaseOutletsRepo = {
       new_values: { name: outlet.name, brand_id: outlet.brand_id, status: outlet.status },
       performed_by: actorId,
       notes: `Updated outlet "${outlet.name}"`,
+      before_state: before,
+      after_state: await captureEntity("outlet", outlet.id),
     });
     return outlet;
   },
 
   async setStatus(id: string, status: BrandOutletStatus, actorId: string): Promise<OutletRecord> {
+    const before = await captureEntity("outlet", id);
     const { data, error } = await sb()
       .from("outlets")
       .update({ status, updated_by: actorId, updated_at: nowISO() })
@@ -127,11 +134,14 @@ export const supabaseOutletsRepo = {
       new_values: { status },
       performed_by: actorId,
       notes: `${verb} outlet "${outlet.name}"`,
+      before_state: before,
+      after_state: await captureEntity("outlet", outlet.id),
     });
     return outlet;
   },
 
   async remove(id: string, actorId: string): Promise<void> {
+    const before = await captureEntity("outlet", id);
     const existing = await supabaseOutletsRepo.getById(id);
     const { error } = await sb().from("outlets").delete().eq("id", id);
     if (error) {
@@ -146,6 +156,8 @@ export const supabaseOutletsRepo = {
       action: "delete",
       performed_by: actorId,
       notes: existing ? `Deleted outlet "${existing.name}"` : "Deleted outlet",
+      before_state: before,
+      after_state: { type: "outlet", id: id, row: null },
     });
   },
 };

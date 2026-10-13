@@ -4,6 +4,7 @@
 
 import type { BrandOutletStatus, BrandRecord } from "../types";
 import { audit, fail, sb } from "./helpers";
+import { captureEntity } from "./snapshot";
 import { nowISO } from "../mock/db";
 import type { BrandInput } from "../mock/brands";
 
@@ -53,11 +54,14 @@ export const supabaseBrandsRepo = {
       new_values: { name: brand.name, code: brand.brand_code },
       performed_by: actorId,
       notes: `Created brand "${brand.name}"`,
+      before_state: { type: "brand", id: brand.id, row: null },
+      after_state: await captureEntity("brand", brand.id),
     });
     return brand;
   },
 
   async update(id: string, input: BrandInput, actorId: string): Promise<BrandRecord> {
+    const before = await captureEntity("brand", id);
     const name = input.name.trim();
     const patch: Record<string, unknown> = {
       name,
@@ -84,11 +88,14 @@ export const supabaseBrandsRepo = {
       new_values: { name: brand.name, code: brand.brand_code, status: brand.status },
       performed_by: actorId,
       notes: `Updated brand "${brand.name}"`,
+      before_state: before,
+      after_state: await captureEntity("brand", brand.id),
     });
     return brand;
   },
 
   async setStatus(id: string, status: BrandOutletStatus, actorId: string): Promise<BrandRecord> {
+    const before = await captureEntity("brand", id);
     const { data, error } = await sb()
       .from("brands")
       .update({ status, updated_by: actorId, updated_at: nowISO() })
@@ -105,11 +112,14 @@ export const supabaseBrandsRepo = {
       new_values: { status },
       performed_by: actorId,
       notes: `${verb} brand "${brand.name}"`,
+      before_state: before,
+      after_state: await captureEntity("brand", brand.id),
     });
     return brand;
   },
 
   async remove(id: string, actorId: string): Promise<void> {
+    const before = await captureEntity("brand", id);
     const existing = await supabaseBrandsRepo.getById(id);
     const { error } = await sb().from("brands").delete().eq("id", id);
     if (error) {
@@ -124,6 +134,8 @@ export const supabaseBrandsRepo = {
       action: "delete",
       performed_by: actorId,
       notes: existing ? `Deleted brand "${existing.name}"` : "Deleted brand",
+      before_state: before,
+      after_state: { type: "brand", id: id, row: null },
     });
   },
 };

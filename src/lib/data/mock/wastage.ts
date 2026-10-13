@@ -3,6 +3,7 @@ import { round2 } from "../../costing";
 import { activeYield, effectiveCostPerBaseUnit } from "../../yield";
 import { delay, getDb, type MockDb, mutate, nowISO, uid } from "./db";
 import { recordAudit } from "./recompute";
+import { captureEntity } from "./snapshot";
 
 export interface WastageLineInput {
   item_type: "ingredient" | "recipe";
@@ -148,6 +149,8 @@ export const wastageRepo = {
           new_values: { total_cost: entry.total_cost, outlet: entry.outlet_id },
           performed_by: actorId,
           notes: `Recorded wastage ₹${entry.total_cost} (${entry.wastage_type})`,
+          before_state: { type: "wastage", id: entry.id, row: null },
+          after_state: captureEntity(db, "wastage", entry.id),
         });
         return entry;
       }),
@@ -157,6 +160,7 @@ export const wastageRepo = {
   async update(id: string, input: WastageInput, actorId: string): Promise<WastageEntry> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "wastage", id);
         const w = db.wastage_entries.find((x) => x.id === id);
         if (!w) throw new Error("Wastage entry not found");
         const lines = input.lines ?? [];
@@ -197,6 +201,8 @@ export const wastageRepo = {
           new_values: { total_cost: w.total_cost },
           performed_by: actorId,
           notes: `Updated wastage entry`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "wastage", w.id),
         });
         return w;
       }),
@@ -206,6 +212,7 @@ export const wastageRepo = {
   async remove(id: string, actorId: string): Promise<void> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "wastage", id);
         const w = db.wastage_entries.find((x) => x.id === id);
         if (!w) return;
         db.wastage_entries = db.wastage_entries.filter((x) => x.id !== id);
@@ -216,6 +223,8 @@ export const wastageRepo = {
           action: "delete",
           performed_by: actorId,
           notes: "Deleted wastage entry",
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "wastage", w.id),
         });
       }),
     );

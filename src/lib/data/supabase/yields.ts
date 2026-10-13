@@ -14,6 +14,8 @@ import { computeYield } from "../../yield";
 import { getUnitFamily } from "../../units";
 import { DUPLICATE_MSG, normalizeYieldName, type YieldInput, type ImportYieldRow } from "../mock/yields";
 import { sb, fail, cascadeMaterial, audit } from "./helpers";
+import { captureEntity } from "./snapshot";
+import { newBatchId } from "../batch";
 
 /** Today as an ISO date (YYYY-MM-DD) — matches the mock's todayISO(). */
 function todayISO(): string {
@@ -118,11 +120,15 @@ export const supabaseYieldsRepo = {
 
     await audit({
       entity_type: "yield",
-      entity_id: input.ingredient_id,
+      // The yield ROW id (not the ingredient's) — an ingredient can hold several
+      // preps, so the ingredient id could not identify which record changed.
+      entity_id: row.id,
       action: "create",
       new_values: { yield_pct: row.yield_percentage, adj_cost: row.yield_adjusted_unit_cost },
       performed_by: actorId,
-      notes: `Added yield (${row.yield_percentage}% yield)`,
+      notes: `Added yield ${row.name ?? ""} (${row.yield_percentage}% yield)`,
+      before_state: { type: "yield", id: row.id, row: null },
+      after_state: await captureEntity("yield", row.id),
     });
     await cascadeMaterial(input.ingredient_id, actorId, "Yield added");
     return row;
@@ -153,12 +159,14 @@ export const supabaseYieldsRepo = {
 
     await audit({
       entity_type: "yield",
-      entity_id: row.ingredient_id,
+      entity_id: row.id,
       action: "update",
       old_values: { yield_pct: prev.yield_percentage, adj_cost: prev.yield_adjusted_unit_cost },
       new_values: { yield_pct: row.yield_percentage, adj_cost: row.yield_adjusted_unit_cost },
       performed_by: actorId,
-      notes: `Updated yield (${row.yield_percentage}% yield)`,
+      notes: `Updated yield ${row.name ?? ""} (${row.yield_percentage}% yield)`,
+      before_state: { type: "yield", id, row: prev as unknown as Record<string, unknown> },
+      after_state: await captureEntity("yield", row.id),
     });
     // Recompute the new ingredient; if the row was repointed, the old one too.
     await cascadeMaterial(row.ingredient_id, actorId, "Yield updated");
@@ -191,6 +199,7 @@ export const supabaseYieldsRepo = {
     );
 
     const affected = new Set<string>();
+    const batchId = newBatchId();
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       S.total++;
@@ -227,22 +236,48 @@ export const supabaseYieldsRepo = {
             S.skipped++;
             continue;
           }
+          const beforeRow = await captureEntity("yield", existing.id);
           const { error: upErr } = await c
             .from("ingredient_yields")
             .update({ ...derived, updated_at: new Date().toISOString() })
             .eq("id", existing.id);
           if (upErr) throw new Error(upErr.message);
           S.updated++;
+          await audit({
+            entity_type: "yield",
+            entity_id: existing.id,
+            action: "update",
+            new_values: { yield_pct: derived.yield_percentage },
+            performed_by: actorId,
+            notes: `Imported — updated yield ${input.name ?? ""}`,
+            before_state: beforeRow,
+            after_state: await captureEntity("yield", existing.id),
+            batch_id: batchId,
+          });
         } else {
           if (mode === "update") {
             S.skipped++;
             continue;
           }
-          const { error: insErr } = await c
+          const { data: insData, error: insErr } = await c
             .from("ingredient_yields")
-            .insert({ ...derived, created_by: actorId });
+            .insert({ ...derived, created_by: actorId })
+            .select("id")
+            .single();
           if (insErr) throw new Error(insErr.message);
           S.imported++;
+          const newId = (insData as { id: string }).id;
+          await audit({
+            entity_type: "yield",
+            entity_id: newId,
+            action: "create",
+            new_values: { yield_pct: derived.yield_percentage },
+            performed_by: actorId,
+            notes: `Imported — added yield ${input.name ?? ""}`,
+            before_state: { type: "yield", id: newId, row: null },
+            after_state: await captureEntity("yield", newId),
+            batch_id: batchId,
+          });
         }
         affected.add(mat.id);
       } catch (e) {
@@ -259,6 +294,7 @@ export const supabaseYieldsRepo = {
       new_values: { added: S.imported, updated: S.updated },
       performed_by: actorId,
       notes: `Imported yields — ${S.imported} added, ${S.updated} updated`,
+      batch_id: batchId,
     });
     return S;
   },
@@ -267,24 +303,22 @@ export const supabaseYieldsRepo = {
     const c = sb();
     // Need the ingredient_id (for the cascade + audit) before deleting; mirror
     // the mock's silent no-op when the row doesn't exist.
-    const { data: existing, error: getErr } = await c
-      .from("ingredient_yields")
-      .select("ingredient_id")
-      .eq("id", id)
-      .maybeSingle();
-    if (getErr) fail("Delete yield", getErr.message);
-    if (!existing) return;
-    const ingredientId = (existing as { ingredient_id: string }).ingredient_id;
+    // Snapshot the full row BEFORE deleting — otherwise the delete is unrecoverable.
+    const before = await captureEntity("yield", id);
+    if (!before?.row) return;
+    const ingredientId = before.row.ingredient_id as string;
 
     const { error } = await c.from("ingredient_yields").delete().eq("id", id);
     if (error) fail("Delete yield", error.message);
 
     await audit({
       entity_type: "yield",
-      entity_id: ingredientId,
+      entity_id: id,
       action: "delete",
       performed_by: actorId,
-      notes: "Deleted yield record",
+      notes: `Deleted yield ${(before.row.name as string) ?? "record"}`,
+      before_state: before,
+      after_state: { type: "yield", id, row: null },
     });
     await cascadeMaterial(ingredientId, actorId, "Yield removed");
   },
@@ -294,17 +328,24 @@ export const supabaseYieldsRepo = {
     const c = sb();
     const affected = new Set<string>();
     let deleted = 0;
+    const batchId = newBatchId();
     for (const id of ids) {
-      const { data: existing } = await c
-        .from("ingredient_yields")
-        .select("ingredient_id")
-        .eq("id", id)
-        .maybeSingle();
-      if (!existing) continue;
+      const before = await captureEntity("yield", id);
+      if (!before?.row) continue;
       const { error } = await c.from("ingredient_yields").delete().eq("id", id);
       if (error) fail("Delete yields", error.message);
-      affected.add((existing as { ingredient_id: string }).ingredient_id);
+      affected.add(before.row.ingredient_id as string);
       deleted++;
+      await audit({
+        entity_type: "yield",
+        entity_id: id,
+        action: "delete",
+        performed_by: actorId,
+        notes: `Deleted yield ${(before.row.name as string) ?? "record"} (bulk)`,
+        before_state: before,
+        after_state: { type: "yield", id, row: null },
+        batch_id: batchId,
+      });
     }
     if (deleted > 0) {
       await audit({
@@ -313,6 +354,7 @@ export const supabaseYieldsRepo = {
         action: "delete",
         performed_by: actorId,
         notes: `Deleted ${deleted} yield record${deleted === 1 ? "" : "s"}`,
+        batch_id: batchId,
       });
     }
     for (const ing of affected) await cascadeMaterial(ing, actorId, "Yield removed");

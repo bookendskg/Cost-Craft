@@ -3,7 +3,7 @@
 // values. Super Admin only: the route guard and the audit_read RLS policy (0035)
 // both restrict it.
 import { useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, RotateCcw, AlertTriangle } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/TableSkeleton";
@@ -38,9 +38,10 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { cn, formatDateTime } from "@/lib/utils";
 import { AUDIT_ENTITY_LABELS, type AuditAction, type AuditEntityType, type AuditLog } from "@/lib/data/types";
+import { isRefusal, planRevert } from "@/lib/data/revertPlan";
 import { ROLE_LABELS } from "@/lib/data/types";
 import { useUsers } from "@/features/users/hooks";
-import { useActivityLog } from "./hooks";
+import { useActivityLog, useRevertChange, useRevertedIds } from "./hooks";
 import { exportActivityLog } from "./exportActivityLog";
 
 const PAGE_SIZE = 50;
@@ -93,6 +94,9 @@ export function ActivityLogPage() {
   const [page, setPage] = useState(1);
   const [detail, setDetail] = useState<AuditLog | null>(null);
   const [exporting, setExporting] = useState(false);
+  // A revert that hits a conflict comes back here, so the second press can force it.
+  const [conflict, setConflict] = useState<string | null>(null);
+  const revert = useRevertChange();
 
   const filter = { entityType, action, userId, search, from, to, page, pageSize: PAGE_SIZE };
   const { data, isLoading, error } = useActivityLog(filter);
@@ -101,6 +105,8 @@ export function ActivityLogPage() {
 
   const rows = data?.rows ?? [];
   const total = data?.total ?? 0;
+  const { data: revertedIds = [] } = useRevertedIds(rows.map((r) => r.id));
+  const reverted = useMemo(() => new Set(revertedIds), [revertedIds]);
 
   const reset = <T,>(set: (v: T) => void) => (v: T) => {
     set(v);
@@ -113,6 +119,29 @@ export function ActivityLogPage() {
     const name = r.actor_name || live?.name || (r.performed_by ? "Unknown user" : "System");
     const role = r.actor_role || live?.role;
     return { name, role: role ? ROLE_LABELS[role] ?? role : null };
+  };
+
+  const runRevert = async (entry: AuditLog, force = false) => {
+    const batchId = entry.batch_id ?? undefined;
+    const isSummary = entry.entity_id === "import" || entry.entity_id === "bulk";
+    try {
+      const result = await revert.mutateAsync({
+        entryId: entry.id,
+        batchId: isSummary ? batchId : undefined,
+        force,
+      });
+      if (result.ok) {
+        toast.success(result.message);
+        setConflict(null);
+        setDetail(null);
+      } else if (result.conflict) {
+        setConflict(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Revert failed");
+    }
   };
 
   const doExport = async () => {
@@ -232,7 +261,12 @@ export function ActivityLogPage() {
                           {AUDIT_ENTITY_LABELS[r.entity_type] ?? r.entity_type}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm">{r.notes || "—"}</TableCell>
+                      <TableCell className="text-sm">
+                        {r.notes || "—"}
+                        {reverted.has(r.id) && (
+                          <Badge variant="outline" className="ml-2 text-muted-foreground">Reverted</Badge>
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -251,7 +285,15 @@ export function ActivityLogPage() {
         )}
       </Card>
 
-      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+      <Dialog
+        open={!!detail}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDetail(null);
+            setConflict(null);
+          }
+        }}
+      >
         <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -269,11 +311,70 @@ export function ActivityLogPage() {
                 <div>Record id: {detail.entity_id}</div>
                 {detail.actor_email && <div>Actor: {detail.actor_email}</div>}
               </div>
+              <RevertPanel
+                entry={detail}
+                reverted={reverted.has(detail.id)}
+                conflict={conflict}
+                busy={revert.isPending}
+                onRevert={(force) => runRevert(detail, force)}
+              />
             </div>
           )}
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+/** Revert controls: what this would undo, any conflict, and the button itself. */
+function RevertPanel({
+  entry,
+  reverted,
+  conflict,
+  busy,
+  onRevert,
+}: {
+  entry: AuditLog;
+  reverted: boolean;
+  conflict: string | null;
+  busy: boolean;
+  onRevert: (force: boolean) => void;
+}) {
+  const isSummary = entry.entity_id === "import" || entry.entity_id === "bulk";
+  const batch = isSummary && entry.batch_id;
+  const decision = planRevert(entry);
+
+  if (reverted) {
+    return <p className="text-sm text-muted-foreground">This change has already been reverted.</p>;
+  }
+  if (!batch && isRefusal(decision)) {
+    return <p className="text-sm text-muted-foreground">{decision.reason}</p>;
+  }
+  return (
+    <div className="space-y-2 border-t pt-3">
+      {conflict && (
+        <div className="flex gap-2 rounded border border-amber-500/30 bg-amber-500/5 p-2 text-xs text-amber-700 dark:text-amber-500">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>{conflict} Press again to revert anyway.</p>
+        </div>
+      )}
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          {batch
+            ? "Undoes every record changed by this import or bulk action."
+            : "Puts this record back the way it was before this change."}
+        </p>
+        <Button
+          variant={conflict ? "destructive" : "outline"}
+          size="sm"
+          disabled={busy}
+          onClick={() => onRevert(!!conflict)}
+        >
+          <RotateCcw className="h-4 w-4" />
+          {conflict ? "Revert anyway" : batch ? "Revert all changes" : "Revert this change"}
+        </Button>
+      </div>
+    </div>
   );
 }
 

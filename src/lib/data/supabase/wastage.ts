@@ -8,6 +8,7 @@ import { round2 } from "../../costing";
 import type { WastageInput, WastageLineInput } from "../mock/wastage";
 import { applicableUnitCost } from "../mock/wastage";
 import { sb, fail, audit } from "./helpers";
+import { captureEntity } from "./snapshot";
 import { uid, nowISO } from "../mock/db";
 
 export { applicableUnitCost };
@@ -124,16 +125,19 @@ export const supabaseWastageRepo = {
       new_values: { total_cost: entry.total_cost, outlet: entry.outlet_id },
       performed_by: actorId,
       notes: `Recorded wastage ₹${entry.total_cost} (${entry.wastage_type})`,
+      before_state: { type: "wastage", id: entry.id, row: null },
+      after_state: await captureEntity("wastage", entry.id),
     });
     return entry;
   },
 
   async update(id: string, input: WastageInput, actorId: string): Promise<WastageEntry> {
+    const before = await captureEntity("wastage", id);
     const c = sb();
     const priorRes = await c.from("wastage_entries").select("*").eq("id", id).maybeSingle();
     if (priorRes.error) fail("Load wastage entry", priorRes.error.message);
     if (!priorRes.data) fail("Update wastage", "Wastage entry not found");
-    const before = { total_cost: (priorRes.data as WastageEntry).total_cost };
+    const priorCost = { total_cost: (priorRes.data as WastageEntry).total_cost };
 
     const lines = input.lines ?? [];
     if (lines.length === 0) fail("Update wastage", "Add at least one wasted item");
@@ -174,15 +178,18 @@ export const supabaseWastageRepo = {
       entity_type: "wastage",
       entity_id: entry.id,
       action: "update",
-      old_values: before,
+      old_values: priorCost,
       new_values: { total_cost: entry.total_cost },
       performed_by: actorId,
       notes: `Updated wastage entry`,
+      before_state: before,
+      after_state: await captureEntity("wastage", entry.id),
     });
     return entry;
   },
 
   async remove(id: string, actorId: string): Promise<void> {
+    const before = await captureEntity("wastage", id);
     const c = sb();
     const existing = await c.from("wastage_entries").select("*").eq("id", id).maybeSingle();
     if (existing.error) fail("Load wastage entry", existing.error.message);
@@ -197,6 +204,8 @@ export const supabaseWastageRepo = {
       action: "delete",
       performed_by: actorId,
       notes: "Deleted wastage entry",
+      before_state: before,
+      after_state: { type: "wastage", id: w.id, row: null },
     });
   },
 };

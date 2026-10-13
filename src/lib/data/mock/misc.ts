@@ -9,6 +9,7 @@ import type {
 } from "../types";
 import { delay, getDb, mutate, nowISO, uid } from "./db";
 import { recordAudit } from "./recompute";
+import { captureEntity } from "./snapshot";
 
 // --- Viewer access (user_recipe_views) ------------------------------------
 export const viewsRepo = {
@@ -80,19 +81,9 @@ export const settingsRepo = {
   async set(key: string, value: string, actorId: string): Promise<void> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "settings", key);
         const row = db.system_settings.find((s) => s.key === key);
         const previous = row?.value ?? null;
-        if (previous !== value) {
-          recordAudit(db, {
-            entity_type: "settings",
-            entity_id: key,
-            action: "update",
-            old_values: { [key]: previous },
-            new_values: { [key]: value },
-            performed_by: actorId,
-            notes: `Changed setting ${key}: ${previous ?? "—"} → ${value}`,
-          });
-        }
         if (row) {
           row.value = value;
           row.updated_by = actorId;
@@ -104,6 +95,20 @@ export const settingsRepo = {
             value,
             updated_by: actorId,
             updated_at: nowISO(),
+          });
+        }
+        // Audited AFTER the write so after_state is the new value.
+        if (previous !== value) {
+          recordAudit(db, {
+            entity_type: "settings",
+            entity_id: key,
+            action: "update",
+            old_values: { [key]: previous },
+            new_values: { [key]: value },
+            performed_by: actorId,
+            notes: `Changed setting ${key}: ${previous ?? "—"} → ${value}`,
+            before_state: beforeSnap,
+            after_state: captureEntity(db, "settings", key),
           });
         }
       }),

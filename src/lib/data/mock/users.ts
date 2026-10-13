@@ -1,6 +1,7 @@
 import type { BrandScope, OutletScope, Role, User, UserStatus } from "../types";
 import { delay, getDb, mutate, nowISO, uid } from "./db";
 import { recordAudit } from "./recompute";
+import { captureEntity } from "./snapshot";
 
 const MAX_SUPER_ADMINS = 2;
 const MAX_SUPER_MSG =
@@ -114,6 +115,8 @@ export const usersRepo = {
           new_values: { name: user.name, email: user.email, role: user.role },
           performed_by: actorId,
           notes: `Created user ${user.email}`,
+          before_state: { type: "user", id: user.id, row: null },
+          after_state: captureEntity(db, "user", user.id),
         });
         return publicUser(user);
       }),
@@ -123,6 +126,7 @@ export const usersRepo = {
   async update(id: string, patch: UpdateUserInput, actorId: string): Promise<User> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "user", id);
         const u = db.users.find((x) => x.id === id);
         if (!u) throw new Error("User not found");
         const before = { name: u.name, email: u.email, role: u.role, status: u.status };
@@ -199,6 +203,8 @@ export const usersRepo = {
           new_values: { name: u.name, email: u.email, role: u.role, status: u.status },
           performed_by: actorId,
           notes: roleChanged ? `Role changed ${before.role} → ${u.role}` : undefined,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "user", u.id),
         });
         return publicUser(u);
       }),
@@ -213,6 +219,7 @@ export const usersRepo = {
   async remove(id: string, actorId: string): Promise<void> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "user", id);
         const u = db.users.find((x) => x.id === id);
         if (!u) throw new Error("User not found");
         if (id === actorId) throw new Error("You cannot delete your own account");
@@ -235,6 +242,8 @@ export const usersRepo = {
           old_values: { name: u.name, email: u.email, role: u.role },
           performed_by: actorId,
           notes: `Deleted user ${u.email}`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "user", id),
         });
       }),
     );

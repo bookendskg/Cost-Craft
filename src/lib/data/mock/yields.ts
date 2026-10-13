@@ -4,6 +4,8 @@ import { computeYield } from "../../yield";
 import { getUnitFamily } from "../../units";
 import { delay, getDb, mutate, nowISO, todayISO, uid } from "./db";
 import { cascadeFromMaterial, recordAudit } from "./recompute";
+import { captureEntity } from "./snapshot";
+import { newBatchId } from "../batch";
 
 export interface YieldInput {
   name?: string | null;
@@ -127,6 +129,8 @@ export const yieldsRepo = {
           new_values: { yield_pct: row.yield_percentage, adj_cost: row.yield_adjusted_unit_cost },
           performed_by: actorId,
           notes: `Added yield (${row.yield_percentage}% yield)`,
+          before_state: { type: "yield", id: input.ingredient_id, row: null },
+          after_state: captureEntity(db, "yield", input.ingredient_id),
         });
         // Recompute every recipe using this ingredient with the yield-adjusted cost.
         cascadeFromMaterial(db, input.ingredient_id, actorId, "Yield added");
@@ -138,6 +142,7 @@ export const yieldsRepo = {
   async update(id: string, input: YieldInput, actorId: string): Promise<IngredientYield> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "yield", id);
         const y = db.ingredient_yields.find((x) => x.id === id);
         if (!y) throw new Error("Yield record not found");
         if (duplicateYield(db.ingredient_yields, input, input.effective_from ?? y.effective_from, id)) {
@@ -154,6 +159,8 @@ export const yieldsRepo = {
           new_values: { yield_pct: y.yield_percentage, adj_cost: y.yield_adjusted_unit_cost },
           performed_by: actorId,
           notes: `Updated yield (${y.yield_percentage}% yield)`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "yield", y.ingredient_id),
         });
         // Recompute recipes using this ingredient (and the old one, if it changed).
         cascadeFromMaterial(db, y.ingredient_id, actorId, "Yield updated");
@@ -178,6 +185,7 @@ export const yieldsRepo = {
         const S: ImportSummary = { total: 0, imported: 0, updated: 0, skipped: 0, failed: 0, errors: [] };
         const matByName = new Map(db.raw_materials.map((m) => [m.ingredient_name.toLowerCase(), m]));
         const affected = new Set<string>();
+        const batchId = newBatchId();
         rows.forEach((row, i) => {
           S.total++;
           try {
@@ -211,21 +219,45 @@ export const yieldsRepo = {
                 S.skipped++;
                 return;
               }
+              const beforeRow = captureEntity(db, "yield", existing.id);
               Object.assign(existing, derived, { updated_at: nowISO() });
               S.updated++;
+              recordAudit(db, {
+                entity_type: "yield",
+                entity_id: existing.id,
+                action: "update",
+                new_values: { yield_pct: existing.yield_percentage },
+                performed_by: actorId,
+                notes: `Imported — updated yield ${existing.name ?? ""}`,
+                before_state: beforeRow,
+                after_state: captureEntity(db, "yield", existing.id),
+                batch_id: batchId,
+              });
             } else {
               if (mode === "update") {
                 S.skipped++;
                 return;
               }
-              db.ingredient_yields.push({
+              const created = {
                 id: uid(),
                 ...derived,
                 created_at: nowISO(),
                 updated_at: nowISO(),
                 created_by: actorId,
-              });
+              };
+              db.ingredient_yields.push(created);
               S.imported++;
+              recordAudit(db, {
+                entity_type: "yield",
+                entity_id: created.id,
+                action: "create",
+                new_values: { yield_pct: created.yield_percentage },
+                performed_by: actorId,
+                notes: `Imported — added yield ${created.name ?? ""}`,
+                before_state: { type: "yield", id: created.id, row: null },
+                after_state: captureEntity(db, "yield", created.id),
+                batch_id: batchId,
+              });
             }
             affected.add(mat.id);
           } catch (e) {
@@ -241,6 +273,9 @@ export const yieldsRepo = {
           new_values: { added: S.imported, updated: S.updated },
           performed_by: actorId,
           notes: `Imported yields — ${S.imported} added, ${S.updated} updated`,
+          batch_id: batchId,
+          before_state: { type: "yield", id: "import", row: null },
+          after_state: captureEntity(db, "yield", "import"),
         });
         return S;
       }),
@@ -250,6 +285,7 @@ export const yieldsRepo = {
   async remove(id: string, actorId: string): Promise<void> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "yield", id);
         const y = db.ingredient_yields.find((x) => x.id === id);
         if (!y) return;
         db.ingredient_yields = db.ingredient_yields.filter((x) => x.id !== id);
@@ -259,6 +295,8 @@ export const yieldsRepo = {
           action: "delete",
           performed_by: actorId,
           notes: "Deleted yield record",
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "yield", y.ingredient_id),
         });
         // Removing the yield reverts affected recipes to the standard (un-adjusted) cost.
         cascadeFromMaterial(db, y.ingredient_id, actorId, "Yield removed");
@@ -273,6 +311,7 @@ export const yieldsRepo = {
         let deleted = 0;
         const affected = new Set<string>();
         for (const id of ids) {
+          const beforeSnap = captureEntity(db, "yield", id);
           const y = db.ingredient_yields.find((x) => x.id === id);
           if (!y) continue;
           db.ingredient_yields = db.ingredient_yields.filter((x) => x.id !== id);
@@ -282,6 +321,8 @@ export const yieldsRepo = {
             action: "delete",
             performed_by: actorId,
             notes: "Deleted yield record",
+            before_state: beforeSnap,
+            after_state: captureEntity(db, "yield", y.ingredient_id),
           });
           affected.add(y.ingredient_id);
           deleted++;

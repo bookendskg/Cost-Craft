@@ -6,6 +6,7 @@
 import type { BrandOutletStatus, OutletRecord } from "../types";
 import { delay, getDb, mutate, nowISO, uid } from "./db";
 import { recordAudit } from "./recompute";
+import { captureEntity } from "./snapshot";
 
 export interface OutletInput {
   brand_id: string;
@@ -88,6 +89,8 @@ export const outletsRepo = {
           new_values: { name: outlet.name, brand_id: outlet.brand_id, code: outlet.outlet_code },
           performed_by: actorId,
           notes: `Created outlet "${outlet.name}"`,
+          before_state: { type: "outlet", id: outlet.id, row: null },
+          after_state: captureEntity(db, "outlet", outlet.id),
         });
         return outlet;
       }),
@@ -97,6 +100,7 @@ export const outletsRepo = {
   async update(id: string, input: OutletInput, actorId: string): Promise<OutletRecord> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "outlet", id);
         const outlet = db.outlets.find((o) => o.id === id);
         if (!outlet) throw new Error("Outlet not found");
         if (!db.brands.some((b) => b.id === input.brand_id)) {
@@ -143,6 +147,8 @@ export const outletsRepo = {
           notes: brandChanged
             ? `Moved outlet "${outlet.name}" to a different brand`
             : `Updated outlet "${outlet.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "outlet", outlet.id),
         });
         return outlet;
       }),
@@ -152,6 +158,7 @@ export const outletsRepo = {
   async setStatus(id: string, status: BrandOutletStatus, actorId: string): Promise<OutletRecord> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "outlet", id);
         const outlet = db.outlets.find((o) => o.id === id);
         if (!outlet) throw new Error("Outlet not found");
         const before = outlet.status;
@@ -167,6 +174,8 @@ export const outletsRepo = {
           new_values: { status },
           performed_by: actorId,
           notes: `${verb} outlet "${outlet.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "outlet", outlet.id),
         });
         return outlet;
       }),
@@ -177,6 +186,7 @@ export const outletsRepo = {
   async remove(id: string, actorId: string): Promise<void> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "outlet", id);
         const outlet = db.outlets.find((o) => o.id === id);
         if (!outlet) throw new Error("Outlet not found");
         if (db.wastage_entries.some((w) => w.outlet_id === id)) {
@@ -189,6 +199,8 @@ export const outletsRepo = {
           action: "delete",
           performed_by: actorId,
           notes: `Deleted outlet "${outlet.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "outlet", id),
         });
       }),
     );

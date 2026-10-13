@@ -5,6 +5,7 @@
 import type { MaterialStatus, PackagingItem } from "../types";
 import { delay, getDb, mutate, nowISO, uid } from "./db";
 import { recomputeAndPropagate, recordAudit } from "./recompute";
+import { captureEntity } from "./snapshot";
 
 export interface PackagingInput {
   name: string;
@@ -56,6 +57,8 @@ export const packagingRepo = {
           new_values: { name: item.name, type: item.packaging_type, unit_price: item.unit_price },
           performed_by: actorId,
           notes: `Created packaging "${item.name}"`,
+          before_state: { type: "packaging", id: item.id, row: null },
+          after_state: captureEntity(db, "packaging", item.id),
         });
         return item;
       }),
@@ -65,6 +68,7 @@ export const packagingRepo = {
   async update(id: string, input: PackagingInput, actorId: string): Promise<PackagingItem> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "packaging", id);
         const item = db.packaging_items.find((p) => p.id === id);
         if (!item) throw new Error("Packaging item not found");
         const nn = norm(input.name);
@@ -91,6 +95,8 @@ export const packagingRepo = {
           new_values: { name: item.name, unit_price: item.unit_price, type: item.packaging_type },
           performed_by: actorId,
           notes: `Updated packaging "${item.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "packaging", item.id),
         });
         // Cascade: a price change recomputes every recipe that uses this packaging.
         if (priceChanged) {
@@ -105,6 +111,7 @@ export const packagingRepo = {
   async setStatus(id: string, status: MaterialStatus, actorId: string): Promise<PackagingItem> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "packaging", id);
         const item = db.packaging_items.find((p) => p.id === id);
         if (!item) throw new Error("Packaging item not found");
         const before = item.status;
@@ -119,6 +126,8 @@ export const packagingRepo = {
           new_values: { status },
           performed_by: actorId,
           notes: `${status === "active" ? "Activated" : "Deactivated"} packaging "${item.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "packaging", item.id),
         });
         return item;
       }),
@@ -129,6 +138,7 @@ export const packagingRepo = {
   async remove(id: string, actorId: string): Promise<void> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "packaging", id);
         const item = db.packaging_items.find((p) => p.id === id);
         if (!item) throw new Error("Packaging item not found");
         if (db.recipe_packaging.some((rp) => rp.packaging_item_id === id)) {
@@ -141,6 +151,8 @@ export const packagingRepo = {
           action: "delete",
           performed_by: actorId,
           notes: `Deleted packaging "${item.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "packaging", id),
         });
       }),
     );

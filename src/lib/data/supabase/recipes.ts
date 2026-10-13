@@ -28,6 +28,8 @@ import {
   recomputeRecipes,
   sb,
 } from "./helpers";
+import { captureEntity } from "./snapshot";
+import { newBatchId } from "../batch";
 import type {
   ImportRecipeLine,
   RecipeHeaderInput,
@@ -274,6 +276,8 @@ export const supabaseRecipesRepo = {
       new_values: { name: saved.recipe_name },
       performed_by: actorId,
       notes: `Created "${saved.recipe_name}"`,
+      before_state: { type: "recipe", id: id, row: null },
+      after_state: await captureEntity("recipe", id),
     });
     return saved;
   },
@@ -284,6 +288,7 @@ export const supabaseRecipesRepo = {
     lines: RecipeLineInput[],
     actorId: string,
   ): Promise<Recipe> {
+    const before = await captureEntity("recipe", id);
     const c = sb();
     const cur = await c.from("recipes").select("*").eq("id", id).maybeSingle();
     if (cur.error) fail("Update recipe", cur.error.message);
@@ -348,6 +353,8 @@ export const supabaseRecipesRepo = {
       notes: wasApproved
         ? `Edited "${saved.recipe_name}" (reverted to Draft)`
         : `Edited "${saved.recipe_name}"`,
+      before_state: before,
+      after_state: await captureEntity("recipe", id),
     });
     return saved;
   },
@@ -403,6 +410,9 @@ export const supabaseRecipesRepo = {
     const lineWrites: { recipeId: string; rows: RecipeIngredient[] }[] = [];
     const recipeUpdates: { id: string; patch: Record<string, unknown> }[] = [];
     const recomputeIds: string[] = [];
+    // Per-record audit rows share one batch id, so the whole import reverts at once.
+    const batchId = newBatchId();
+    const importedIds: { id: string; name: string; action: "added" | "updated" }[] = [];
 
     const buildRows = (recipeId: string, ls: ImportRecipeLine[]): RecipeIngredient[] =>
       ls.map((l, idx) => ({
@@ -443,6 +453,7 @@ export const supabaseRecipesRepo = {
         if (!isPrep && pkg != null) patch.packaging_cost = pkg;
         recipeUpdates.push({ id: existing.id, patch });
         recomputeIds.push(existing.id);
+        importedIds.push({ id: existing.id, name, action: "updated" });
         return { id: existing.id, action: "updated" };
       }
       if (mode === "update") return { id: null, action: "skipped" };
@@ -479,6 +490,7 @@ export const supabaseRecipesRepo = {
         updated_by: actorId,
       };
       recipeInserts.push(recipe);
+      importedIds.push({ id, name, action: "added" });
       db.recipes.push(recipe); // visible to later groups (e.g. 11-inch parent lookup)
       lineWrites.push({ recipeId: id, rows: buildRows(id, ls) });
       recomputeIds.push(id);
@@ -521,6 +533,10 @@ export const supabaseRecipesRepo = {
       const ins = await c.from("raw_materials").insert(newMaterials);
       if (ins.error) fail("Import recipes", ins.error.message);
     }
+    // Snapshot every recipe this import will overwrite, before the writes land.
+    const beforeStates = new Map<string, Awaited<ReturnType<typeof captureEntity>>>();
+    for (const u of recipeUpdates) beforeStates.set(u.id, await captureEntity("recipe", u.id));
+
     if (recipeInserts.length) {
       const ins = await c.from("recipes").insert(recipeInserts);
       if (ins.error) fail("Import recipes", ins.error.message);
@@ -534,6 +550,21 @@ export const supabaseRecipesRepo = {
     }
 
     await recomputeRecipes([...new Set(recomputeIds)], actorId, "Recipe import");
+
+    // One audit row per recipe, so each can be reverted individually or as a batch.
+    for (const rec of importedIds) {
+      await audit({
+        entity_type: "recipe",
+        entity_id: rec.id,
+        action: rec.action === "added" ? "create" : "update",
+        performed_by: actorId,
+        notes: `Imported — ${rec.action === "added" ? "added" : "updated"} ${rec.name}`,
+        before_state: beforeStates.get(rec.id) ?? { type: "recipe", id: rec.id, row: null },
+        after_state: await captureEntity("recipe", rec.id),
+        batch_id: batchId,
+      });
+    }
+
     S.total = S.imported + S.updated + S.skipped + S.failed;
     await audit({
       entity_type: "recipe",
@@ -542,6 +573,7 @@ export const supabaseRecipesRepo = {
       new_values: { added: S.imported, updated: S.updated },
       performed_by: actorId,
       notes: `Imported recipes — ${S.imported} added, ${S.updated} updated`,
+      batch_id: batchId,
     });
     return S;
   },
@@ -607,11 +639,14 @@ export const supabaseRecipesRepo = {
       action: "create",
       performed_by: actorId,
       notes: `Duplicated "${src.recipe_name}" → "${saved.recipe_name}"`,
+      before_state: { type: "recipe", id: copyId, row: null },
+      after_state: await captureEntity("recipe", copyId),
     });
     return saved;
   },
 
   async submit(id: string, note: string | null, actorId: string): Promise<Recipe> {
+    const before = await captureEntity("recipe", id);
     const c = sb();
     const cur = await c.from("recipes").select("recipe_name").eq("id", id).maybeSingle();
     if (cur.error) fail("Submit recipe", cur.error.message);
@@ -632,11 +667,14 @@ export const supabaseRecipesRepo = {
       notes: note
         ? `Submitted for testing: ${note}`
         : `Submitted "${recipe.recipe_name}" for testing`,
+      before_state: before,
+      after_state: await captureEntity("recipe", id),
     });
     return recipe;
   },
 
   async approve(id: string, actorId: string): Promise<Recipe> {
+    const before = await captureEntity("recipe", id);
     const c = sb();
     const cur = await c.from("recipes").select("recipe_name").eq("id", id).maybeSingle();
     if (cur.error) fail("Approve recipe", cur.error.message);
@@ -662,11 +700,14 @@ export const supabaseRecipesRepo = {
       action: "approve",
       performed_by: actorId,
       notes: `Approved "${recipe.recipe_name}"`,
+      before_state: before,
+      after_state: await captureEntity("recipe", id),
     });
     return recipe;
   },
 
   async reject(id: string, note: string, actorId: string): Promise<Recipe> {
+    const before = await captureEntity("recipe", id);
     const c = sb();
     const cur = await c.from("recipes").select("recipe_name").eq("id", id).maybeSingle();
     if (cur.error) fail("Reject recipe", cur.error.message);
@@ -685,6 +726,8 @@ export const supabaseRecipesRepo = {
       action: "reject",
       performed_by: actorId,
       notes: `Rejected "${recipe.recipe_name}": ${note}`,
+      before_state: before,
+      after_state: await captureEntity("recipe", id),
     });
     return recipe;
   },
@@ -692,6 +735,7 @@ export const supabaseRecipesRepo = {
   /** Soft-archive: retire a recipe from active lists without deleting it. Its
    *  workflow status, cost history and sub-recipe links are all preserved. */
   async archive(id: string, actorId: string): Promise<Recipe> {
+    const before = await captureEntity("recipe", id);
     const c = sb();
     const cur = await c.from("recipes").select("recipe_name").eq("id", id).maybeSingle();
     if (cur.error) fail("Archive recipe", cur.error.message);
@@ -710,12 +754,15 @@ export const supabaseRecipesRepo = {
       action: "update",
       performed_by: actorId,
       notes: `Archived "${recipe.recipe_name}"`,
+      before_state: before,
+      after_state: await captureEntity("recipe", id),
     });
     return recipe;
   },
 
   /** Restore a soft-archived recipe back into active lists (status is unchanged). */
   async unarchive(id: string, actorId: string): Promise<Recipe> {
+    const before = await captureEntity("recipe", id);
     const c = sb();
     const cur = await c.from("recipes").select("recipe_name").eq("id", id).maybeSingle();
     if (cur.error) fail("Restore recipe", cur.error.message);
@@ -734,6 +781,8 @@ export const supabaseRecipesRepo = {
       action: "update",
       performed_by: actorId,
       notes: `Restored "${recipe.recipe_name}" from archive`,
+      before_state: before,
+      after_state: await captureEntity("recipe", id),
     });
     return recipe;
   },
@@ -776,6 +825,7 @@ export const supabaseRecipesRepo = {
   },
 
   async setImage(id: string, imageUrl: string | null, actorId: string): Promise<Recipe> {
+    const before = await captureEntity("recipe", id);
     const { data, error } = await sb()
       .from("recipes")
       .update({ image_url: imageUrl, updated_at: nowISO(), updated_by: actorId })
@@ -790,11 +840,14 @@ export const supabaseRecipesRepo = {
       action: "update",
       performed_by: actorId,
       notes: `${imageUrl ? "Updated" : "Removed"} photo for ${recipe.recipe_name}`,
+      before_state: before,
+      after_state: await captureEntity("recipe", recipe.id),
     });
     return recipe;
   },
 
   async setSellingPrice(id: string, price: number | null, actorId: string): Promise<Recipe> {
+    const before = await captureEntity("recipe", id);
     const { data, error } = await sb()
       .from("recipes")
       .update({ selling_price: price, updated_at: nowISO(), updated_by: actorId })
@@ -809,6 +862,8 @@ export const supabaseRecipesRepo = {
       action: "update",
       performed_by: actorId,
       notes: `Set menu price for "${recipe.recipe_name}" to ${price ?? "—"}`,
+      before_state: before,
+      after_state: await captureEntity("recipe", id),
     });
     return recipe;
   },
@@ -816,6 +871,7 @@ export const supabaseRecipesRepo = {
   /** Record the final weight after cooking (grams). A measured attribute — it does
    *  NOT bump the version or revert an approved recipe to draft. */
   async setCookedWeight(id: string, grams: number | null, actorId: string): Promise<Recipe> {
+    const before = await captureEntity("recipe", id);
     const { data, error } = await sb()
       .from("recipes")
       .update({ cooked_weight_g: grams, updated_at: nowISO(), updated_by: actorId })
@@ -833,6 +889,8 @@ export const supabaseRecipesRepo = {
       action: "update",
       performed_by: actorId,
       notes: `Set cooked weight for "${recipe.recipe_name}" to ${grams != null ? `${grams} g` : "—"}`,
+      before_state: before,
+      after_state: await captureEntity("recipe", id),
     });
     return recipe;
   },
@@ -865,6 +923,7 @@ export const supabaseRecipesRepo = {
    * snapshot (recipe_id → null per the on-delete-set-null FK).
    */
   async remove(id: string, actorId: string): Promise<void> {
+    const before = await captureEntity("recipe", id);
     const c = sb();
     const cur = await c.from("recipes").select("recipe_name").eq("id", id).maybeSingle();
     if (cur.error) fail("Delete recipe", cur.error.message);
@@ -899,6 +958,8 @@ export const supabaseRecipesRepo = {
       action: "delete",
       performed_by: actorId,
       notes: `Deleted "${name}"`,
+      before_state: before,
+      after_state: { type: "recipe", id: id, row: null },
     });
   },
 };

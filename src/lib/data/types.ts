@@ -481,7 +481,17 @@ export type AuditEntityType =
   | "packaging" | "settings" | "export" | "accessLink" | "session" | "system";
 export type AuditAction =
   | "create" | "update" | "delete" | "approve" | "reject" | "submit"
-  | "login" | "logout" | "export" | "grant" | "revoke" | "archive";
+  | "login" | "logout" | "export" | "grant" | "revoke" | "archive" | "revert";
+
+/** A complete record plus its child rows — enough to restore it (0036). */
+export interface EntitySnapshot {
+  type: AuditEntityType;
+  id: string;
+  /** The entity's own row, or null when it doesn't exist (before a create / after a delete). */
+  row: Record<string, unknown> | null;
+  /** Child rows keyed by table, e.g. { recipe_ingredients: [...], recipe_packaging: [...] }. */
+  children?: Record<string, Record<string, unknown>[]>;
+}
 
 /** Human labels for the Activity Log filters. */
 export const AUDIT_ENTITY_LABELS: Record<AuditEntityType, string> = {
@@ -505,6 +515,13 @@ export interface AuditLog {
   actor_role?: string | null;
   performed_at: string;
   notes: string | null;
+  /** Full snapshots that make the change revertible (0036). */
+  before_state?: EntitySnapshot | null;
+  after_state?: EntitySnapshot | null;
+  /** Shared by every row written during one import / bulk action. */
+  batch_id?: string | null;
+  /** Set on the row written BY a revert; points at the change it undid. */
+  revert_of?: string | null;
 }
 
 /** One page of audit rows plus the total match count (server-side pagination). */

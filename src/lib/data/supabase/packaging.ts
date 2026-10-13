@@ -4,6 +4,7 @@
 
 import type { MaterialStatus, PackagingItem } from "../types";
 import { audit, fail, sb } from "./helpers";
+import { captureEntity } from "./snapshot";
 import { nowISO } from "../mock/db";
 import type { PackagingInput } from "../mock/packaging";
 
@@ -51,11 +52,14 @@ export const supabasePackagingRepo = {
       new_values: { name: item.name, type: item.packaging_type, unit_price: item.unit_price },
       performed_by: actorId,
       notes: `Created packaging "${item.name}"`,
+      before_state: { type: "packaging", id: item.id, row: null },
+      after_state: await captureEntity("packaging", item.id),
     });
     return item;
   },
 
   async update(id: string, input: PackagingInput, actorId: string): Promise<PackagingItem> {
+    const before = await captureEntity("packaging", id);
     const name = input.name.trim();
     const patch: Record<string, unknown> = {
       name,
@@ -81,11 +85,14 @@ export const supabasePackagingRepo = {
       new_values: { name: item.name, unit_price: item.unit_price, type: item.packaging_type },
       performed_by: actorId,
       notes: `Updated packaging "${item.name}"`,
+      before_state: before,
+      after_state: await captureEntity("packaging", item.id),
     });
     return item;
   },
 
   async setStatus(id: string, status: MaterialStatus, actorId: string): Promise<PackagingItem> {
+    const before = await captureEntity("packaging", id);
     const { data, error } = await sb()
       .from("packaging_items")
       .update({ status, updated_by: actorId, updated_at: nowISO() })
@@ -101,11 +108,14 @@ export const supabasePackagingRepo = {
       new_values: { status },
       performed_by: actorId,
       notes: `${status === "active" ? "Activated" : "Deactivated"} packaging "${item.name}"`,
+      before_state: before,
+      after_state: await captureEntity("packaging", item.id),
     });
     return item;
   },
 
   async remove(id: string, actorId: string): Promise<void> {
+    const before = await captureEntity("packaging", id);
     const existing = await supabasePackagingRepo.getById(id);
     const { error } = await sb().from("packaging_items").delete().eq("id", id);
     if (error) {
@@ -120,6 +130,8 @@ export const supabasePackagingRepo = {
       action: "delete",
       performed_by: actorId,
       notes: existing ? `Deleted packaging "${existing.name}"` : "Deleted packaging",
+      before_state: before,
+      after_state: { type: "packaging", id: id, row: null },
     });
   },
 };

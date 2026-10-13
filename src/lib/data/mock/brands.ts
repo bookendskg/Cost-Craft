@@ -6,6 +6,7 @@
 import type { BrandOutletStatus, BrandRecord } from "../types";
 import { delay, getDb, mutate, nowISO, uid } from "./db";
 import { recordAudit } from "./recompute";
+import { captureEntity } from "./snapshot";
 
 export interface BrandInput {
   name: string;
@@ -65,6 +66,8 @@ export const brandsRepo = {
           new_values: { name: brand.name, code: brand.brand_code },
           performed_by: actorId,
           notes: `Created brand "${brand.name}"`,
+          before_state: { type: "brand", id: brand.id, row: null },
+          after_state: captureEntity(db, "brand", brand.id),
         });
         return brand;
       }),
@@ -74,6 +77,7 @@ export const brandsRepo = {
   async update(id: string, input: BrandInput, actorId: string): Promise<BrandRecord> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "brand", id);
         const brand = db.brands.find((b) => b.id === id);
         if (!brand) throw new Error("Brand not found");
         const nn = norm(input.name);
@@ -105,6 +109,8 @@ export const brandsRepo = {
           new_values: { name: brand.name, code: brand.brand_code, status: brand.status },
           performed_by: actorId,
           notes: `Updated brand "${brand.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "brand", brand.id),
         });
         return brand;
       }),
@@ -114,6 +120,7 @@ export const brandsRepo = {
   async setStatus(id: string, status: BrandOutletStatus, actorId: string): Promise<BrandRecord> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "brand", id);
         const brand = db.brands.find((b) => b.id === id);
         if (!brand) throw new Error("Brand not found");
         const before = brand.status;
@@ -129,6 +136,8 @@ export const brandsRepo = {
           new_values: { status },
           performed_by: actorId,
           notes: `${verb} brand "${brand.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "brand", brand.id),
         });
         return brand;
       }),
@@ -139,6 +148,7 @@ export const brandsRepo = {
   async remove(id: string, actorId: string): Promise<void> {
     return delay(
       mutate((db) => {
+        const beforeSnap = captureEntity(db, "brand", id);
         const brand = db.brands.find((b) => b.id === id);
         if (!brand) throw new Error("Brand not found");
         if (db.outlets.some((o) => o.brand_id === id)) {
@@ -154,6 +164,8 @@ export const brandsRepo = {
           action: "delete",
           performed_by: actorId,
           notes: `Deleted brand "${brand.name}"`,
+          before_state: beforeSnap,
+          after_state: captureEntity(db, "brand", id),
         });
       }),
     );

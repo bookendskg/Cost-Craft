@@ -6,6 +6,7 @@
 
 import type { AuditEntityType, AuditLog, AuditPage, SystemSetting } from "../types";
 import type { AuditFilter } from "../mock/misc";
+import { captureEntity } from "./snapshot";
 import { sb, fail, audit as auditInsert } from "./helpers";
 
 export const supabaseSettingsRepo = {
@@ -37,6 +38,7 @@ export const supabaseSettingsRepo = {
 
   async set(key: string, value: string, actorId: string): Promise<void> {
     const previous = await this.get(key);
+    const before = await captureEntity("settings", key);
     // updated_by left null to sidestep the legacy users(id) FK; RLS already gates
     // writes to admins/super-admins (settings_write policy). The actor is recorded
     // in the activity log instead.
@@ -54,6 +56,8 @@ export const supabaseSettingsRepo = {
         new_values: { [key]: value },
         performed_by: actorId,
         notes: `Changed setting ${key}: ${previous ?? "—"} → ${value}`,
+        before_state: before,
+        after_state: await captureEntity("settings", key),
       });
     }
   },

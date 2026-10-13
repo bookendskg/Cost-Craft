@@ -7,6 +7,7 @@ import type { CreateLinkInput, ResolvedLink } from "../mock/accessLinks";
 import { generateToken, hashToken } from "../mock/accessLinks";
 import { nowISO, uid } from "../mock/db";
 import { sb, fail, audit } from "./helpers";
+import { captureEntity } from "./snapshot";
 
 export type { CreateLinkInput, ResolvedLink };
 
@@ -86,6 +87,8 @@ export const supabaseAccessLinksRepo = {
       },
       performed_by: input.granted_by_user_id ?? null,
       notes: `Shared recipe ${link.recipe_id} (${link.access_type})`,
+      before_state: { type: "accessLink", id: link.id, row: null },
+      after_state: await captureEntity("accessLink", link.id),
     });
     return { link, token };
   },
@@ -124,6 +127,7 @@ export const supabaseAccessLinksRepo = {
   },
 
   async revoke(id: string, byUserId: string | null): Promise<RecipeAccessLink> {
+    const before = await captureEntity("accessLink", id);
     const { data, error } = await sb()
       .from("recipe_access_links")
       .update({ revoked_at: nowISO(), revoked_by_user_id: byUserId, status: "REVOKED" })
@@ -138,6 +142,8 @@ export const supabaseAccessLinksRepo = {
       action: "revoke",
       performed_by: byUserId,
       notes: `Revoked share link for recipe ${link.recipe_id}`,
+      before_state: before,
+      after_state: await captureEntity("accessLink", link.id),
     });
     return link;
   },

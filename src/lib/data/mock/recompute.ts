@@ -10,6 +10,7 @@ import type {
   AuditAction,
   AuditEntityType,
   AuditLog,
+  EntitySnapshot,
   RawMaterial,
   Recipe,
 } from "../types";
@@ -199,6 +200,10 @@ export function recordAudit(
     new_values?: unknown;
     performed_by: string | null;
     notes?: string | null;
+    before_state?: EntitySnapshot | null;
+    after_state?: EntitySnapshot | null;
+    batch_id?: string | null;
+    revert_of?: string | null;
   },
 ): AuditLog {
   const log: AuditLog = {
@@ -211,6 +216,10 @@ export function recordAudit(
     performed_by: entry.performed_by,
     performed_at: nowISO(),
     notes: entry.notes ?? null,
+    before_state: entry.before_state ?? null,
+    after_state: entry.after_state ?? null,
+    batch_id: entry.batch_id ?? null,
+    revert_of: entry.revert_of ?? null,
   };
   db.audit_logs.push(log);
   return log;
