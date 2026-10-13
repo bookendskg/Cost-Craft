@@ -7,7 +7,7 @@ import { useSession } from "@/lib/auth/session";
 import { usersRepo } from "@/lib/data";
 import { isPendingApproval } from "@/lib/auth/permissions";
 import { toast } from "@/components/ui/use-toast";
-import { DevCredit } from "@/components/DevCredit";
+import { SiteFooter } from "@/components/SiteFooter";
 
 /**
  * Shown to a signed-in user whose self sign-up an admin hasn't verified yet.
@@ -43,8 +43,8 @@ export function PendingApprovalPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen flex-col items-center bg-muted/40 p-4">
+      <Card className="my-auto w-full max-w-sm">
         <CardHeader className="items-center text-center">
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
             <Clock className="h-7 w-7 text-amber-500" />
@@ -65,7 +65,7 @@ export function PendingApprovalPage() {
           </Button>
         </CardContent>
       </Card>
-      <DevCredit className="mt-6" />
+      <SiteFooter className="mt-6" />
     </div>
   );
 }

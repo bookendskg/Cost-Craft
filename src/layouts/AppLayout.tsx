@@ -1,11 +1,11 @@
 import { Suspense, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   Menu,
   Moon,
-  PanelLeftClose,
-  PanelLeftOpen,
   Sun,
   X,
 } from "lucide-react";
@@ -18,7 +18,7 @@ import { navGroupsForUser } from "./nav";
 import { useUsers } from "@/features/users/hooks";
 // (global command-palette search removed per request)
 import { Button } from "@/components/ui/button";
-import { DevCredit } from "@/components/DevCredit";
+import { SiteFooter } from "@/components/SiteFooter";
 import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWordmark } from "@/features/dashboard/brandTheme";
 import { BrandFilter } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
@@ -67,13 +67,25 @@ export function AppLayout() {
   // shows the full sidebar (rail=false).
   const sidebar = (rail: boolean) => (
     <div className="flex h-full flex-col">
+      {/* Header: logo + the collapse toggle, which sits INSIDE the sidebar (left of
+          the divider). Collapsed, the brand mark stays and the chevron sits under it. */}
       <div
         className={cn(
-          "flex h-14 items-center border-b border-black/5 px-4",
-          rail && "justify-center px-2",
+          "border-b border-black/5",
+          rail ? "flex flex-col items-center gap-1 px-2 py-2" : "flex h-14 items-center justify-between gap-2 px-4",
         )}
       >
         {rail ? <BrandMark size="sm" /> : <Logo size="sm" />}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden h-7 w-7 text-muted-foreground md:inline-flex"
+          onClick={toggleSidebar}
+          aria-label={rail ? "Expand sidebar" : "Collapse sidebar"}
+          title={rail ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {rail ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
       </div>
       <nav className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
         {groups.map(({ group, items }) => (
@@ -174,7 +186,7 @@ export function AppLayout() {
             dark ? "border-border bg-background" : "border-black/5 bg-white/70 backdrop-blur",
           )}
         >
-          {/* Mobile: open drawer. Desktop: collapse rail. */}
+          {/* Mobile: open the nav drawer (desktop collapses from inside the sidebar). */}
           <Button
             variant="ghost"
             size="icon"
@@ -183,16 +195,6 @@ export function AppLayout() {
             aria-label="Toggle navigation"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden md:inline-flex"
-            onClick={toggleSidebar}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
           </Button>
 
           <div className="flex-1" />
@@ -244,9 +246,7 @@ export function AppLayout() {
               <Outlet />
             </Suspense>
           </div>
-          <footer className="relative z-10 mt-8 border-t border-black/5 pt-3 dark:border-border">
-            <DevCredit />
-          </footer>
+          <SiteFooter className="relative z-10 mt-8 border-t border-black/5 pt-3 dark:border-border" />
         </main>
       </div>
 

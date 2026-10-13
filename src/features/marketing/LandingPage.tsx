@@ -17,6 +17,7 @@ import { usePageMeta } from "@/lib/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { PublicHeader } from "./PublicHeader";
 import { PublicFooter } from "./PublicFooter";
+import { useInitialScroll } from "./PublicPage";
 import { SectionHeading, FeatureCard, BrandBadge, CTASection, BrandLogoStrip } from "./parts";
 
 const OVERVIEW = [
@@ -81,6 +82,8 @@ export function LandingPage() {
     description:
       "Kost Kraft is the recipe costing, yield and wastage platform for Bookends Hospitality — Capiche and Aiko. Standardise recipes and control food cost across every brand and outlet.",
   });
+  // Lands on the #section when arriving from another page via "/#features" etc.
+  useInitialScroll();
 
   return (
     <div className="min-h-[100dvh] bg-[#faf8f3]">

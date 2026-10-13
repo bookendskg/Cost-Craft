@@ -1,10 +1,9 @@
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/brand/Logo";
 import { BrandLogoStrip } from "./parts";
-import { DevCredit } from "@/components/DevCredit";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export function PublicFooter() {
-  const year = new Date().getFullYear();
   return (
     <footer className="border-t bg-background">
       <div className="mx-auto max-w-[1728px] px-4 py-12 sm:px-6">
@@ -36,23 +35,26 @@ export function PublicFooter() {
               <p className="text-xs font-semibold uppercase tracking-wider text-foreground">Access</p>
               <ul className="mt-3 space-y-2 text-sm">
                 <li>
-                  <a href="#features" className="text-muted-foreground hover:text-foreground">Features</a>
+                  <a href="/#features" className="text-muted-foreground hover:text-foreground">Features</a>
                 </li>
                 <li>
-                  <a href="#how-it-works" className="text-muted-foreground hover:text-foreground">How It Works</a>
+                  <a href="/#how-it-works" className="text-muted-foreground hover:text-foreground">How It Works</a>
                 </li>
                 <li>
                   <Link to="/login" className="text-muted-foreground hover:text-foreground">Login</Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="text-muted-foreground hover:text-foreground">Contact</Link>
+                </li>
+                <li>
+                  <Link to="/terms" className="text-muted-foreground hover:text-foreground">Terms &amp; Conditions</Link>
                 </li>
               </ul>
             </div>
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-2 border-t pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <span>© {year} Kost Kraft · Bookends Hospitality. All rights reserved.</span>
-          <DevCredit className="text-left text-xs" />
-        </div>
+        <SiteFooter className="mt-10 border-t pt-6" />
       </div>
     </footer>
   );

@@ -71,12 +71,15 @@ export function SectionHeading({
   title,
   description,
   align = "center",
+  as: Heading = "h2",
   className,
 }: {
   eyebrow?: string;
   title: string;
   description?: string;
   align?: "center" | "left";
+  /** Heading level — `h1` when this is the page title (Contact, Terms). */
+  as?: "h1" | "h2";
   className?: string;
 }) {
   return (
@@ -87,7 +90,7 @@ export function SectionHeading({
           {eyebrow}
         </span>
       )}
-      <h2 className="font-display mt-4 text-3xl font-medium tracking-tight text-foreground sm:text-[2.5rem] sm:leading-[1.12]">{title}</h2>
+      <Heading className="font-display mt-4 text-3xl font-medium tracking-tight text-foreground sm:text-[2.5rem] sm:leading-[1.12]">{title}</Heading>
       {align === "center" && <div className="rule-gold mx-auto mt-5 w-20" />}
       {description && <p className="mt-4 text-base leading-relaxed text-muted-foreground">{description}</p>}
     </div>

@@ -24,6 +24,7 @@ import { Avatar } from "@/layouts/HeaderControls";
 import { useUpdateUser } from "@/features/users/hooks";
 import { useWipeCatalog } from "./adminHooks";
 import { CHARACTER_AVATARS } from "./presetAvatars";
+import { ContactDetailsForm } from "./ContactDetailsForm";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { updateOwnProfile } from "@/lib/supabase/profile";
 
@@ -31,7 +32,9 @@ export function ProfilePage() {
   const user = useSession((s) => s.user)!;
   const setUser = useSession((s) => s.setUser);
   const [params, setParams] = useSearchParams();
-  const tab = params.get("tab") ?? "profile";
+  const isSuperAdmin = user.role === "super_admin";
+  // The Contact Page tab is Super Admin only — a deep link from anyone else falls back to Profile.
+  const tab = params.get("tab") === "contact" && !isSuperAdmin ? "profile" : (params.get("tab") ?? "profile");
   const updateMut = useUpdateUser();
 
   const setTab = (t: string) => setParams(t === "profile" ? {} : { tab: t }, { replace: true });
@@ -112,7 +115,6 @@ export function ProfilePage() {
   };
 
   // ── Danger Zone (super admin only) ────────────────────────────────────
-  const isSuperAdmin = user.role === "super_admin";
   const [wipeOpen, setWipeOpen] = useState(false);
   const [wipeConfirm, setWipeConfirm] = useState("");
   const wipeMut = useWipeCatalog();
@@ -130,12 +132,20 @@ export function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="Profile Settings" description="Manage your account details and password." />
+      <PageHeader
+        title="Profile Settings"
+        description={
+          isSuperAdmin
+            ? "Manage your account details, password and public contact details."
+            : "Manage your account details and password."
+        }
+      />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="password">Password</TabsTrigger>
+          {isSuperAdmin && <TabsTrigger value="contact">Contact Page</TabsTrigger>}
         </TabsList>
 
         {/* ── Profile ─────────────────────────────────────────────────── */}
@@ -261,6 +271,12 @@ export function ProfilePage() {
           </Card>
         </TabsContent>
 
+        {/* ── Contact Page (super admin only) ─────────────────────────── */}
+        {isSuperAdmin && (
+          <TabsContent value="contact">
+            <ContactDetailsForm />
+          </TabsContent>
+        )}
       </Tabs>
 
       {isSuperAdmin && (

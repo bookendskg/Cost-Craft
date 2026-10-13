@@ -35,6 +35,8 @@ const ImportDataPage = lazy(() => import("@/features/data-import/ImportDataPage"
 const SharedRecipePage = lazy(() => import("@/features/share/SharedRecipePage").then((m) => ({ default: m.SharedRecipePage })));
 // Public marketing landing page (code-split; the app's public entry point at "/").
 const LandingPage = lazy(() => import("@/features/marketing/LandingPage").then((m) => ({ default: m.LandingPage })));
+const ContactPage = lazy(() => import("@/features/marketing/ContactPage").then((m) => ({ default: m.ContactPage })));
+const TermsPage = lazy(() => import("@/features/marketing/TermsPage").then((m) => ({ default: m.TermsPage })));
 
 /** Suspense wrapper for code-split PUBLIC routes (the app shell has its own). */
 function PublicRoute({ children }: { children: ReactNode }) {
@@ -102,6 +104,9 @@ export const router = createBrowserRouter([
   { path: "/reset-password", element: <ResetPasswordPage /> },
   // Public, read-only shared recipe — no auth guard, no app chrome.
   { path: "/share/:token", element: <SharedRecipePage /> },
+  // Public info pages, linked from the site-wide footer.
+  { path: "/contact", element: <PublicRoute><ContactPage /></PublicRoute> },
+  { path: "/terms", element: <PublicRoute><TermsPage /></PublicRoute> },
   {
     // Pathless layout route — its children resolve to absolute paths
     // (/dashboard, /materials, …). "/" itself is the public landing page above.

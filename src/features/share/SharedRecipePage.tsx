@@ -9,7 +9,7 @@ import type { ViewVisibility } from "@/lib/auth/permissions";
 import { generateRecipePdf } from "@/features/reports/pdf";
 import { toast } from "@/components/ui/use-toast";
 import { useResolveShareLink } from "@/features/exports/accessHooks";
-import { DevCredit } from "@/components/DevCredit";
+import { SiteFooter } from "@/components/SiteFooter";
 
 // Per-brand look for the public shared page: full-bleed brand-colour background
 // + the brand's official logo. `accent` is used for the bar/chip (white text
@@ -34,14 +34,14 @@ const NO_FINANCIALS: ViewVisibility = {
 
 function Screen({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <Card className="max-w-md p-8 text-center">
+    <div className="flex min-h-screen flex-col items-center bg-slate-50 p-6">
+      <Card className="my-auto max-w-md p-8 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500">{icon}</div>
         <h1 className="text-lg font-semibold">{title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{sub}</p>
         <p className="mt-4 text-xs text-muted-foreground">Shared via Kost Kraft · Bookends Hospitality</p>
-        <DevCredit className="mt-1" />
       </Card>
+      <SiteFooter className="mt-6 text-slate-500" />
     </div>
   );
 }
@@ -222,7 +222,7 @@ export function SharedRecipePage() {
         <p className="mt-5 text-center text-[11px] text-white/85 drop-shadow-sm">
           Confidential · Financial data hidden · Shared via Kost Kraft · Bookends Hospitality
         </p>
-        <DevCredit className="mt-1 text-white/75 drop-shadow-sm" />
+        <SiteFooter onBrand className="mt-4" />
       </div>
     </div>
   );

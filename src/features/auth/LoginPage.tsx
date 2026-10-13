@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/brand/Logo";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { AuthBrandPanel } from "./AuthBrandPanel";
-import { DevCredit } from "@/components/DevCredit";
+import { SiteFooter } from "@/components/SiteFooter";
 
 // Only the Super Admin owner is seeded in the live mock DB (buildMoinSeed →
 // buildEmptySeed keeps super_admins only). The old @brand.com demo users exist
@@ -71,8 +71,8 @@ export function LoginPage() {
       <AuthBrandPanel />
 
       {/* Right: the login card. Full width on mobile/tablet, right column on desktop. */}
-      <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-5 py-10 sm:px-8">
-        <div className="w-full max-w-sm">
+      <main className="flex min-h-[100dvh] flex-col items-center bg-background px-5 pb-6 pt-10 sm:px-8">
+        <div className="my-auto w-full max-w-sm">
           {/* Compact logo — the primary brand cue on small screens where the panel is hidden. */}
           <div className="mb-8 flex justify-center lg:hidden">
             <Logo size="lg" withSubtitle />
@@ -193,8 +193,8 @@ export function LoginPage() {
           <p className="mt-8 text-center text-xs text-muted-foreground">
             Authorized Bookends Hospitality users only.
           </p>
-          <DevCredit className="mt-2" />
         </div>
+        <SiteFooter className="mt-10" />
       </main>
     </div>
   );

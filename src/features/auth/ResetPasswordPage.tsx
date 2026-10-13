@@ -11,7 +11,7 @@ import { resetPasswordSchema, type ResetPasswordValues } from "@/lib/validation/
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/authError";
 import { toast } from "@/components/ui/use-toast";
-import { DevCredit } from "@/components/DevCredit";
+import { SiteFooter } from "@/components/SiteFooter";
 
 /** m***@example.com — never render the full address on this shared screen. */
 function maskEmail(email: string): string {
@@ -133,8 +133,8 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen flex-col items-center bg-muted/40 p-4">
+      <Card className="my-auto w-full max-w-sm">
         <CardHeader className="items-center text-center">
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
             {step === "otp" ? <ShieldCheck className="h-7 w-7 text-accent" /> : <ChefHat className="h-7 w-7 text-accent" />}
@@ -233,7 +233,7 @@ export function ResetPasswordPage() {
           )}
         </CardContent>
       </Card>
-      <DevCredit className="mt-6" />
+      <SiteFooter className="mt-6" />
     </div>
   );
 }

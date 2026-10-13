@@ -6,10 +6,10 @@ import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { label: "Overview", href: "#overview" },
-  { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Brands", href: "#brands" },
+  { label: "Overview", href: "/#overview" },
+  { label: "Features", href: "/#features" },
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Brands", href: "/#brands" },
 ];
 
 export function PublicHeader() {

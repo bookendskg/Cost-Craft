@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { settingsRepo } from "@/lib/data";
 import { useActorId } from "@/lib/hooks/useActor";
+import { CONTACT_SETTING_KEY, DEFAULT_CONTACT, type ContactDetails } from "@/lib/contact";
 
 const DEFAULT_CATEGORIES = [
   "Vegetables", "Protein", "Dairy", "Grains & Flour", "Oils & Fats",
@@ -59,6 +60,34 @@ export function useSetSetting() {
   return useMutation({
     mutationFn: ({ key, value }: { key: string; value: string }) =>
       settingsRepo.set(key, value, actorId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["settings"] }),
+  });
+}
+
+/** Public contact details (JSON object), falling back to DEFAULT_CONTACT. Also
+ *  read by the logged-out /contact and /terms pages. */
+export function useContactDetails() {
+  return useQuery({
+    queryKey: ["settings", "contact_details"],
+    queryFn: async (): Promise<ContactDetails> => {
+      const raw = await settingsRepo.get(CONTACT_SETTING_KEY);
+      if (!raw) return DEFAULT_CONTACT;
+      try {
+        return { ...DEFAULT_CONTACT, ...(JSON.parse(raw) as Partial<ContactDetails>) };
+      } catch {
+        return DEFAULT_CONTACT;
+      }
+    },
+  });
+}
+
+/** Persist the public contact details (Super Admin only — enforced by RLS too). */
+export function useSaveContactDetails() {
+  const qc = useQueryClient();
+  const actorId = useActorId();
+  return useMutation({
+    mutationFn: (details: ContactDetails) =>
+      settingsRepo.set(CONTACT_SETTING_KEY, JSON.stringify(details), actorId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["settings"] }),
   });
 }

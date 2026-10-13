@@ -234,6 +234,20 @@ export const outletSchema = z.object({
 });
 export type OutletValues = z.infer<typeof outletSchema>;
 
+// --- Public contact details (Super-Admin managed, shown on /contact) ---------
+// Every field is optional: an empty field hides its card on the Contact page.
+export const contactDetailsSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .max(120, "Keep the email under 120 characters")
+    .refine((v) => v === "" || z.string().email().safeParse(v).success, "Enter a valid email"),
+  phone: z.string().trim().max(40, "Keep the phone under 40 characters"),
+  address: z.string().trim().max(300, "Keep the address under 300 characters"),
+  hours: z.string().trim().max(120, "Keep the hours under 120 characters"),
+});
+export type ContactDetailsValues = z.infer<typeof contactDetailsSchema>;
+
 // --- Custom roles (Super-Admin managed) ------------------------------------
 export const roleSchema = z.object({
   label: z.string().min(1, "Role name is required"),
