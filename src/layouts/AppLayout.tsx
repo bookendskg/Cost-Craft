@@ -25,7 +25,7 @@ import { ProfileMenu } from "./HeaderControls";
 import { useBrands } from "@/features/brands/hooks";
 import { useRoles } from "@/features/roles/hooks";
 import { primeBrandCache } from "@/lib/data/brandCache";
-import { primeRoleCache, roleLabel } from "@/lib/auth/roleCache";
+import { primeRoleCache } from "@/lib/auth/roleCache";
 
 export function AppLayout() {
   const user = useSession((s) => s.user);
@@ -121,14 +121,6 @@ export function AppLayout() {
           </div>
         ))}
       </nav>
-      {!rail && (
-        <div className="border-t border-black/5 p-3">
-          <div className="px-1">
-            <p className="truncate text-sm font-medium">{user.name}</p>
-            <p className="text-xs text-muted-foreground">{roleLabel(user.role)}</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 
