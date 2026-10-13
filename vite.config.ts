@@ -80,6 +80,7 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // mcp/ holds the MCP server's wire-protocol tests, which share src/ code.
+    include: ["src/**/*.{test,spec}.{ts,tsx}", "mcp/src/**/*.{test,spec}.ts"],
   },
 });

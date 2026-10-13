@@ -11,10 +11,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "mcp:build": "node scripts/build-mcp.mjs",
+    "mcp:build": "node scripts/build-mcp.mjs && node scripts/build-mcp-http.mjs",
     "mcp:verify": "npm run mcp:typecheck && esbuild mcp/src/smoke.ts --bundle --platform=node --format=esm --target=node20 --outfile=mcp/dist/smoke.mjs --alias:@/lib/supabase/client=./mcp/src/supabaseClient.ts --alias:@=./src && node mcp/dist/smoke.mjs",
     "mcp": "npm run mcp:build && node mcp/dist/kostkraft-mcp.mjs",
-    "mcp:typecheck": "tsc -p mcp/tsconfig.json"
+    "mcp:typecheck": "tsc -p mcp/tsconfig.json",
+    "mcp:build:http": "node scripts/build-mcp-http.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

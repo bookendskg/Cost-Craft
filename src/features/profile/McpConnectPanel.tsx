@@ -5,8 +5,8 @@
 // and the anon key, which grant nothing on their own — the assistant still has to
 // sign in as the user, and their role decides what it can do. No secret is exposed.
 
-import { useState } from "react";
-import { Bot, Check, Copy, KeyRound, Loader2, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bot, Check, Copy, Globe, KeyRound, Loader2, ShieldCheck, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import { roleLabel } from "@/lib/auth/roleCache";
 import { useSession } from "@/lib/auth/session";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { CODE_TTL_MINUTES, createPairingCode, setupPrompt } from "./mcpPairing";
+import { createToken, hostedUrl, listTokens, revokeToken, type McpToken } from "./mcpTokens";
 
 /** What each role's assistant may do — mirrors src/lib/auth/permissions.ts. */
 function abilities(role: string): { can: string[]; cannot: string[] } {
@@ -44,6 +45,45 @@ export function McpConnectPanel() {
   const origin = typeof window === "undefined" ? "" : window.location.origin;
   const [pairing, setPairing] = useState<{ code: string; expiresAt: string } | null>(null);
   const [generating, setGenerating] = useState(false);
+
+  const [tokens, setTokens] = useState<McpToken[]>([]);
+  const [newToken, setNewToken] = useState<string | null>(null);
+  const [issuing, setIssuing] = useState(false);
+  const hosted = hostedUrl();
+
+  const refreshTokens = async () => {
+    try {
+      setTokens(await listTokens(user.id));
+    } catch {
+      // The table may not exist yet; issuing one reports the real reason.
+    }
+  };
+  useEffect(() => {
+    void refreshTokens();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.id]);
+
+  const issue = async () => {
+    setIssuing(true);
+    try {
+      setNewToken(await createToken(user.id, "ChatGPT"));
+      await refreshTokens();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create a token");
+    } finally {
+      setIssuing(false);
+    }
+  };
+
+  const revoke = async (id: string) => {
+    try {
+      await revokeToken(id);
+      await refreshTokens();
+      toast.success("Token revoked — that assistant is disconnected.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not revoke");
+    }
+  };
 
   const generate = async () => {
     setGenerating(true);
@@ -111,6 +151,66 @@ export function McpConnectPanel() {
               </Button>
             </div>
             <CopyBlock label="Setup message" value={setupPrompt(origin, pairing.code)} />
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-6">
+        <div className="mb-2 flex items-center gap-2">
+          <Globe className="h-5 w-5 text-muted-foreground" />
+          <p className="text-sm font-semibold">ChatGPT and other online assistants</p>
+        </div>
+        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
+          ChatGPT can't run the connector on your computer — it can only reach a web address. Create a
+          personal token and add this server in your assistant's connector settings. It still acts as
+          you, with your permissions, and you can revoke it here at any time.
+        </p>
+
+        {hosted && (
+          <div className="mb-4 space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Server URL</p>
+            <CopyBlock label="Server URL" value={hosted} />
+          </div>
+        )}
+
+        {newToken ? (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              Your token — copy it now, it won't be shown again
+            </p>
+            <CopyBlock label="Token" value={newToken} />
+            <p className="text-xs text-muted-foreground">
+              In ChatGPT, add a connector with the URL above and this token as the authentication /
+              Bearer token.
+            </p>
+            <Button variant="ghost" size="sm" onClick={() => setNewToken(null)}>
+              Done — hide it
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" onClick={issue} disabled={issuing}>
+            {issuing && <Loader2 className="h-4 w-4 animate-spin" />}
+            Create connector token
+          </Button>
+        )}
+
+        {tokens.length > 0 && (
+          <div className="mt-5 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Your tokens</p>
+            {tokens.map((t) => (
+              <div key={t.id} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{t.name ?? "Assistant"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Created {new Date(t.created_at).toLocaleDateString()} ·{" "}
+                    {t.last_used_at ? `last used ${new Date(t.last_used_at).toLocaleString()}` : "never used"}
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => revoke(t.id)} aria-label={`Revoke ${t.name ?? "token"}`}>
+                  <Trash2 className="h-4 w-4 text-destructive" /> Revoke
+                </Button>
+              </div>
+            ))}
           </div>
         )}
       </Card>
