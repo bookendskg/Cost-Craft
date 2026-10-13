@@ -10,67 +10,44 @@ name, exactly as if they had clicked it in the app.
 
 ---
 
-## Setup (once per person, ~2 minutes)
+## Setup — what a user actually does
 
-**1. Build it**
+They never clone this repo. On the deployed site:
 
-```bash
-npm install
-npm run mcp:build
-```
+1. Sign in → **Profile → AI Assistant** → **Generate setup code**.
+2. Copy the block shown and paste it into Claude (or any assistant that can run
+   commands).
+3. The assistant downloads `https://<your-site>/mcp/kostkraft-mcp.mjs`, runs
+   `pair <CODE>`, adds the MCP config and reconnects. Asking "who am I in KostKraft?"
+   confirms it.
 
-**2. Point it at your KostKraft project**
+The code is single-use, expires in 15 minutes, and only its SHA-256 is stored
+(`db/migrations/0038_mcp_pairing.sql`). It is redeemed by the **mcp-pair** Edge
+Function, which hands back a one-time sign-in token for that user — so no password
+is ever typed into a terminal or seen by the assistant.
 
-Add these to your shell profile (`~/.zshrc`), using the same values as the web app's
-`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`:
-
-```bash
-export KOSTKRAFT_SUPABASE_URL="https://xxxx.supabase.co"
-export KOSTKRAFT_SUPABASE_ANON_KEY="eyJ..."
-```
-
-The anon key is the same public key the website ships — it grants nothing on its
-own. **Never use the service-role key here**: it bypasses every permission rule.
-
-**3. Sign in**
+### What a Super Admin sets up once
 
 ```bash
-node mcp/dist/kostkraft-mcp.mjs login
+# 1. the pairing table
+#    run db/migrations/0038_mcp_pairing.sql in the Supabase SQL editor
+# 2. the redeemer (no JWT: the connector has no session yet — the code IS the credential)
+supabase functions deploy mcp-pair --no-verify-jwt
 ```
 
-Your email and password are used once to obtain a session. Only the refresh token
-is saved, to `~/.kostkraft/mcp-session.json`, readable by you alone. `logout`
-deletes it; `whoami` shows who this machine is signed in as.
+The connector itself ships with the site: `npm run build` bundles it to
+`public/mcp/kostkraft-mcp.mjs` with the project URL and anon key baked in, so a
+downloaded file already knows which KostKraft it belongs to.
 
-**4. Tell your AI client about it**
+### Terminal alternative
 
-Claude Desktop — `~/Library/Application Support/Claude/claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "kostkraft": {
-      "command": "node",
-      "args": ["/absolute/path/to/recepie-costing/mcp/dist/kostkraft-mcp.mjs", "serve"],
-      "env": {
-        "KOSTKRAFT_SUPABASE_URL": "https://xxxx.supabase.co",
-        "KOSTKRAFT_SUPABASE_ANON_KEY": "eyJ..."
-      }
-    }
-  }
-}
-```
-
-Claude Code: `claude mcp add kostkraft -- node /absolute/path/.../kostkraft-mcp.mjs serve`
-
-Restart the client and ask it "who am I in KostKraft?" to check the connection.
-
----
+`node ~/.kostkraft/kostkraft-mcp.mjs login` signs in with email + password instead
+of a pairing code. Handy for debugging; the pairing flow is what users get.
 
 ## What the assistant can do
 
 ```bash
-node mcp/dist/kostkraft-mcp.mjs tools   # the catalogue, no sign-in needed
+node ~/.kostkraft/kostkraft-mcp.mjs tools   # the catalogue, no sign-in needed
 ```
 
 **Reading** — `whoami`, `list_ingredients`, `get_ingredient`, `list_recipes`,
@@ -120,6 +97,8 @@ of the browser client that uses the stored session — so there is one copy of t
 business rules, shared by the website and the assistant.
 
 ```bash
-npm run mcp:build    # bundle the CLI
-npm run mcp:verify   # connect a real MCP client in-memory and list the tools
+npm run mcp:build    # bundle to public/mcp/kostkraft-mcp.mjs (runs as part of npm run build)
+npm run mcp:verify   # typecheck, then connect a real MCP client in-memory and list the tools
 ```
+
+Commands: `pair <CODE>` · `login` · `whoami` · `config` · `tools` · `logout` · `serve`.

@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 // kostkraft-mcp — `login` once, then your AI client runs `serve` for you.
 //
-//   kostkraft-mcp login     sign in with your KostKraft email + password
+//   kostkraft-mcp pair CODE one-time code from the website (Profile → AI Assistant)
+//   kostkraft-mcp login     sign in with your KostKraft email + password instead
 //   kostkraft-mcp whoami    show who this machine is signed in as
 //   kostkraft-mcp logout    forget the stored session
+//   kostkraft-mcp config    print the exact config to paste into your AI client
 //   kostkraft-mcp serve     speak MCP over stdio (what the AI client runs)
 
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import { clearSession, loadSession, saveSession, sessionFilePath } from "./credentials.js";
-import { requireClient } from "./supabaseClient.js";
+import { pairWithCode, projectUrl, requireClient } from "./supabaseClient.js";
 import { main as serve, createServer, toolRegistry } from "./server.js";
 
 async function prompt(question: string, { mask = false } = {}): Promise<string> {
@@ -83,6 +85,17 @@ async function whoami(): Promise<void> {
 async function run(): Promise<void> {
   const command = process.argv[2] ?? "serve";
   switch (command) {
+    case "pair": {
+      const code = process.argv[3];
+      if (!code) {
+        console.error("Usage: kostkraft-mcp pair <CODE>  (get the code from KostKraft → Profile → AI Assistant)");
+        process.exit(1);
+      }
+      const who = await pairWithCode(code);
+      console.log(`Connected as ${who.name} <${who.email}>${who.role ? ` (${who.role})` : ""}.`);
+      console.log(`Session stored at ${sessionFilePath} (readable only by you).`);
+      break;
+    }
     case "login":
       await login();
       break;
@@ -96,6 +109,21 @@ async function run(): Promise<void> {
     case "serve":
       await serve();
       break;
+    case "config": {
+      // Absolute path to THIS file, so the printed config can be pasted as-is.
+      const self = process.argv[1];
+      console.log("Paste this into your AI client's MCP config:\n");
+      console.log(
+        JSON.stringify(
+          { mcpServers: { kostkraft: { command: "node", args: [self, "serve"] } } },
+          null,
+          2,
+        ),
+      );
+      console.log(`\nConnector: ${self}`);
+      console.log(`KostKraft project: ${projectUrl || "(not set — re-download the connector)"}`);
+      break;
+    }
     case "tools": {
       createServer(); // registers the catalogue; no sign-in, so no data access
       console.log(`kostkraft-mcp exposes ${toolRegistry.length} tools:\n`);
@@ -103,7 +131,7 @@ async function run(): Promise<void> {
       break;
     }
     default:
-      console.error(`Unknown command "${command}". Use login, logout, whoami, tools or serve.`);
+      console.error(`Unknown command "${command}". Use pair, login, logout, whoami, config, tools or serve.`);
       process.exit(1);
   }
 }

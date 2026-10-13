@@ -32,3 +32,4 @@ apidocs/
 
 # MCP server build output
 mcp/dist
+public/mcp

@@ -6,7 +6,7 @@
 // sign in as the user, and their role decides what it can do. No secret is exposed.
 
 import { useState } from "react";
-import { Bot, Check, Copy, ShieldCheck } from "lucide-react";
+import { Bot, Check, Copy, KeyRound, Loader2, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +15,7 @@ import { cn } from "@/lib/utils";
 import { roleLabel } from "@/lib/auth/roleCache";
 import { useSession } from "@/lib/auth/session";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
-
-const SERVER_PATH = "/absolute/path/to/recepie-costing/mcp/dist/kostkraft-mcp.mjs";
+import { CODE_TTL_MINUTES, createPairingCode, setupPrompt } from "./mcpPairing";
 
 /** What each role's assistant may do — mirrors src/lib/auth/permissions.ts. */
 function abilities(role: string): { can: string[]; cannot: string[] } {
@@ -41,24 +40,21 @@ function abilities(role: string): { can: string[]; cannot: string[] } {
 
 export function McpConnectPanel() {
   const user = useSession((s) => s.user)!;
-  const url = import.meta.env.VITE_SUPABASE_URL ?? "";
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "";
   const role = abilities(user.role);
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const [pairing, setPairing] = useState<{ code: string; expiresAt: string } | null>(null);
+  const [generating, setGenerating] = useState(false);
 
-  const loginCommand = `node ${SERVER_PATH} login`;
-  const config = JSON.stringify(
-    {
-      mcpServers: {
-        kostkraft: {
-          command: "node",
-          args: [SERVER_PATH, "serve"],
-          env: { KOSTKRAFT_SUPABASE_URL: url, KOSTKRAFT_SUPABASE_ANON_KEY: anonKey },
-        },
-      },
-    },
-    null,
-    2,
-  );
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      setPairing(await createPairingCode(user.id, "AI assistant"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create a code");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   if (!isSupabaseConfigured) {
     return (
@@ -86,33 +82,37 @@ export function McpConnectPanel() {
       </Card>
 
       <Card className="p-6">
-        <p className="mb-4 text-sm font-semibold">Setup — about two minutes, once per computer</p>
-        <ol className="space-y-5">
-          <Step n={1} title="Build the connector">
-            <p className="mb-2 text-sm text-muted-foreground">
-              In a terminal, inside the KostKraft project folder:
-            </p>
-            <CopyBlock label="Build" value={"npm install\nnpm run mcp:build"} />
-          </Step>
+        <div className="mb-2 flex items-center gap-2">
+          <KeyRound className="h-5 w-5 text-muted-foreground" />
+          <p className="text-sm font-semibold">Connect in one step</p>
+        </div>
+        <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
+          Generate a setup code, paste the block below into Claude (or any assistant that can run
+          commands), and it installs and connects the connector for you. The code works once and
+          expires in {CODE_TTL_MINUTES} minutes — you never type your password into a terminal.
+        </p>
 
-          <Step n={2} title="Sign in">
-            <p className="mb-2 text-sm text-muted-foreground">
-              Use your KostKraft email ({user.email}) and password. Only a renewable session token is
-              stored on your computer — never your password.
-            </p>
-            <CopyBlock label="Sign in" value={loginCommand} />
-          </Step>
-
-          <Step n={3} title="Add it to your assistant">
-            <p className="mb-2 text-sm text-muted-foreground">
-              Paste this into your MCP client's config — for Claude Desktop that's{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs">claude_desktop_config.json</code> — replacing
-              the path with where the project sits on your machine. Then restart the client and ask it
-              “who am I in KostKraft?”.
-            </p>
-            <CopyBlock label="Config" value={config} />
-          </Step>
-        </ol>
+        {!pairing ? (
+          <Button variant="accent" onClick={generate} disabled={generating}>
+            {generating && <Loader2 className="h-4 w-4 animate-spin" />}
+            Generate setup code
+          </Button>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <code className="rounded-md bg-muted px-3 py-1.5 text-base font-semibold tracking-widest">
+                {pairing.code}
+              </code>
+              <span className="text-xs text-muted-foreground">
+                Single use · expires {new Date(pairing.expiresAt).toLocaleTimeString()}
+              </span>
+              <Button variant="ghost" size="sm" onClick={generate} disabled={generating}>
+                New code
+              </Button>
+            </div>
+            <CopyBlock label="Setup message" value={setupPrompt(origin, pairing.code)} />
+          </div>
+        )}
       </Card>
 
       <Card className="p-6">
@@ -142,20 +142,6 @@ export function McpConnectPanel() {
         </p>
       </Card>
     </div>
-  );
-}
-
-function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
-  return (
-    <li className="flex gap-3">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-        {n}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="mb-1 text-sm font-medium">{title}</p>
-        {children}
-      </div>
-    </li>
   );
 }
 
