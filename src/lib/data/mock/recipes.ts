@@ -10,6 +10,7 @@ import type {
 } from "../types";
 import type { ImportSummary } from "../../import/importTypes";
 import { delay, getDb, type MockDb, mutate, nowISO, uid } from "./db";
+import { groupRecipeLines } from "../../import/recipeGroups";
 import { cascadeFromPrep, findMaterial, recomputeAndPropagate, recordAudit } from "./recompute";
 
 /** One row of a recipe import (§37) — one ingredient line; many rows per recipe. */
@@ -399,37 +400,25 @@ export const recipesRepo = {
           else S.skipped++;
         };
 
-        const groups = new Map<string, ImportRecipeLine[]>();
-        for (const l of rows) {
-          const k = l.recipe_name.trim().toLowerCase();
-          const arr = groups.get(k);
-          if (arr) arr.push(l);
-          else groups.set(k, [l]);
-        }
-        for (const glines of groups.values()) {
+        for (const group of groupRecipeLines(rows)) {
           try {
-            const name = glines[0].recipe_name.trim();
-            const category = glines[0].category || "Uncategorised";
-            if (glines.some((l) => l.size)) {
-              const fifteen = glines.filter((l) => l.size === "15_INCH");
-              const eleven = glines.filter((l) => l.size === "11_INCH");
-              let masterId: string | null = null;
-              if (fifteen.length) {
-                const r = upsert(name, category, "15_INCH", null, fifteen);
-                masterId = r.id;
-                tally(r.action);
-              }
-              if (eleven.length) {
-                const mId = masterId ?? db.recipes.find((r) => r.recipe_name.toLowerCase() === name.toLowerCase() && !r.parent_recipe_id)?.id ?? null;
-                const r = upsert(name, category, "11_INCH", mId, eleven);
-                tally(r.action);
-              }
-            } else {
-              tally(upsert(name, category, null, null, glines).action);
+            let masterId: string | null = null;
+            for (const variant of group.variants) {
+              const parentId =
+                variant.sizeCode !== "11_INCH"
+                  ? null
+                  : masterId ??
+                    db.recipes.find(
+                      (r) => r.recipe_name.toLowerCase() === group.name.toLowerCase() && !r.parent_recipe_id,
+                    )?.id ??
+                    null;
+              const r = upsert(group.name, group.category, variant.sizeCode, parentId, variant.lines);
+              if (variant.sizeCode === "15_INCH") masterId = r.id;
+              tally(r.action);
             }
           } catch (e) {
             S.failed++;
-            S.errors.push({ row: 0, message: `${glines[0]?.recipe_name}: ${e instanceof Error ? e.message : "failed"}` });
+            S.errors.push({ row: 0, message: `${group.name}: ${e instanceof Error ? e.message : "failed"}` });
           }
         }
         recomputeAndPropagate(db, [...new Set(recomputeIds)], actorId, "Recipe import");

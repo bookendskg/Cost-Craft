@@ -1,4 +1,4 @@
-import type { RawRow } from "./importTypes";
+import type { ImportColumn, RawRow } from "./importTypes";
 
 /** Parse the first sheet of a CSV/XLSX file into header-keyed row objects. */
 export async function parseSpreadsheet(file: File): Promise<RawRow[]> {
@@ -10,10 +10,22 @@ export async function parseSpreadsheet(file: File): Promise<RawRow[]> {
   return XLSX.utils.sheet_to_json<RawRow>(ws, { defval: "", raw: true });
 }
 
-/** Download a one-row .xlsx template from a sample row. */
-export async function downloadTemplate(filename: string, sample: RawRow): Promise<void> {
+/**
+ * Download an .xlsx template: the configured columns in order (so an optional
+ * column is never dropped just because the sample omits it) and one row per
+ * example — recipe/prep templates need several rows to show that one recipe spans
+ * one row per ingredient.
+ */
+export async function downloadTemplate(
+  filename: string,
+  columns: ImportColumn[],
+  sampleRows: RawRow[],
+): Promise<void> {
   const XLSX = await import("xlsx");
-  const ws = XLSX.utils.json_to_sheet([sample]);
+  const headers = columns.map((c) => c.label);
+  const rows = sampleRows.map((r) => Object.fromEntries(headers.map((h) => [h, r[h] ?? ""])));
+  const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+  ws["!cols"] = headers.map((h) => ({ wch: Math.max(14, h.length + 4) }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Template");
   XLSX.writeFile(wb, filename);

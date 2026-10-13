@@ -12,6 +12,7 @@ import {
   type ImportRecipeLine,
 } from "@/lib/data";
 import { pick, toNum, toText, type ImportConfig } from "@/lib/import/importTypes";
+import { previewMaterials, previewRecipes, previewYields } from "@/lib/import/previewPlan";
 import { canonicalPurchase, type MeasurementType, PURCHASE_UNITS } from "@/lib/units";
 
 interface Deps {
@@ -30,13 +31,11 @@ export function materialsImportConfig({ queryClient, userId }: Deps): ImportConf
       { label: "Purchase Price" },
       { label: "Notes" },
     ],
-    sample: {
-      Ingredient: "Onion",
-      Category: "Vegetables",
-      "Material Type": "Weight",
-      "Purchase Price": 100,
-      Notes: "",
-    },
+    sampleRows: [
+      { Ingredient: "Onion", Category: "Vegetables", "Material Type": "Weight", "Purchase Price": 100, Notes: "" },
+      { Ingredient: "Olive Oil", Category: "Oils", "Material Type": "Liquid", "Purchase Price": 850, Notes: "Price per 1 litre" },
+      { Ingredient: "Pizza Box 11-inch", Category: "Packaging", "Material Type": "Count", "Purchase Price": 12, Notes: "Price per 1 piece" },
+    ],
     parseRow: (row, n) => {
       const name = toText(pick(row, ["Ingredient", "Ingredient Name", "Name"]));
       if (!name) return { error: `Row ${n}: ingredient name is required` };
@@ -65,6 +64,7 @@ export function materialsImportConfig({ queryClient, userId }: Deps): ImportConf
         },
       };
     },
+    preview: async (mode, rows) => previewMaterials(mode, rows, await materialsRepo.list()),
     run: async (mode, rows) => {
       const summary = await materialsRepo.importMaterials(mode, rows, userId);
       await queryClient.invalidateQueries({ queryKey: ["materials"] });
@@ -88,16 +88,38 @@ export function yieldImportConfig({ queryClient, userId }: Deps): ImportConfig<I
       { label: "Effective From" },
       { label: "Notes" },
     ],
-    sample: {
-      Ingredient: "Onion",
-      "Yield Name": "Chopped Onion",
-      "Purchase Cost": 125,
-      "Purchase Quantity": 1,
-      "Purchase Unit": "KG",
-      "Wastage Quantity": 200,
-      "Effective From": "2026-06-01",
-      Notes: "Peeling + trimming loss",
-    },
+    sampleRows: [
+      {
+        Ingredient: "Onion",
+        "Yield Name": "Chopped Onion",
+        "Purchase Cost": 125,
+        "Purchase Quantity": 1,
+        "Purchase Unit": "KG",
+        "Wastage Quantity": 200,
+        "Effective From": "2026-06-01",
+        Notes: "Peeling + trimming loss",
+      },
+      {
+        Ingredient: "Onion",
+        "Yield Name": "Sliced Onion",
+        "Purchase Cost": 125,
+        "Purchase Quantity": 1,
+        "Purchase Unit": "KG",
+        "Wastage Quantity": 333,
+        "Effective From": "2026-06-01",
+        Notes: "Several preps of one ingredient can share a date",
+      },
+      {
+        Ingredient: "Arborio Rice",
+        "Yield Name": "Boiled Arborio Rice",
+        "Purchase Cost": 367.5,
+        "Purchase Quantity": 1,
+        "Purchase Unit": "KG",
+        "Wastage Quantity": -400,
+        "Effective From": "2026-06-01",
+        Notes: "Negative = weight GAINED while cooking (1 kg → 1.4 kg)",
+      },
+    ],
     parseRow: (row, n) => {
       const ingredient_name = toText(pick(row, ["Ingredient", "Ingredient Name"]));
       if (!ingredient_name) return { error: `Row ${n}: ingredient is required` };
@@ -127,6 +149,8 @@ export function yieldImportConfig({ queryClient, userId }: Deps): ImportConfig<I
         },
       };
     },
+    preview: async (mode, rows) =>
+      previewYields(mode, rows, await materialsRepo.list(), await yieldsRepo.list()),
     run: async (mode, rows) => {
       const summary = await yieldsRepo.importYields(mode, rows, userId);
       await queryClient.invalidateQueries({ queryKey: ["yields"] });
@@ -157,13 +181,15 @@ export function recipeImportConfig({
         { label: "Quantity", required: true },
         { label: "Unit" },
       ],
-      sample: {
-        "Prep Name": "Tomato Sauce",
-        Category: "Sauces",
-        Ingredient: "Tomato",
-        Quantity: 500,
-        Unit: "Gram",
-      },
+      // One row per ingredient — repeat the prep name to add more ingredients.
+      sampleRows: [
+        { "Prep Name": "Tomato Sauce", Category: "Sauces", Ingredient: "Tomato", Quantity: 500, Unit: "Gram" },
+        { "Prep Name": "Tomato Sauce", Category: "Sauces", Ingredient: "Onion", Quantity: 100, Unit: "Gram" },
+        { "Prep Name": "Tomato Sauce", Category: "Sauces", Ingredient: "Olive Oil", Quantity: 30, Unit: "ML" },
+        { "Prep Name": "Pizza Dough", Category: "Doughs", Ingredient: "Flour", Quantity: 1000, Unit: "Gram" },
+        { "Prep Name": "Pizza Dough", Category: "Doughs", Ingredient: "Water", Quantity: 600, Unit: "ML" },
+        { "Prep Name": "Pizza Dough", Category: "Doughs", Ingredient: "Yeast", Quantity: 10, Unit: "Gram" },
+      ],
       parseRow: (row, n) => {
         const recipe_name = toText(pick(row, ["Prep Name", "Recipe Name", "Name"]));
         if (!recipe_name) return { error: `Row ${n}: prep name is required` };
@@ -184,6 +210,8 @@ export function recipeImportConfig({
           },
         };
       },
+        preview: async (mode, rows) =>
+          previewRecipes(mode, rows, await recipesRepo.list(), await materialsRepo.list(), true),
       run: async (mode, rows) => {
         const summary = await recipesRepo.importRecipes(mode, rows, userId, true);
         await queryClient.invalidateQueries({ queryKey: ["recipes"] });
@@ -204,16 +232,16 @@ export function recipeImportConfig({
       { label: "Selling Price" },
       { label: "Packaging" },
     ],
-    sample: {
-      "Recipe Name": "Margherita Pizza",
-      Category: "Pizza",
-      Size: "15-inch",
-      Ingredient: "Pizza Dough",
-      Quantity: 310,
-      Unit: "Gram",
-      "Selling Price": 940,
-      Packaging: 30,
-    },
+    // One row per ingredient; a dish sold in two sizes repeats with each Size.
+    sampleRows: [
+      { "Recipe Name": "Margherita Pizza", Category: "Pizza", Size: "15-inch", Ingredient: "Pizza Dough", Quantity: 310, Unit: "Gram", "Selling Price": 940, Packaging: 30 },
+      { "Recipe Name": "Margherita Pizza", Category: "Pizza", Size: "15-inch", Ingredient: "Tomato Sauce", Quantity: 120, Unit: "Gram", "Selling Price": 940, Packaging: 30 },
+      { "Recipe Name": "Margherita Pizza", Category: "Pizza", Size: "15-inch", Ingredient: "Mozzarella", Quantity: 150, Unit: "Gram", "Selling Price": 940, Packaging: 30 },
+      { "Recipe Name": "Margherita Pizza", Category: "Pizza", Size: "11-inch", Ingredient: "Pizza Dough", Quantity: 210, Unit: "Gram", "Selling Price": 620, Packaging: 25 },
+      { "Recipe Name": "Margherita Pizza", Category: "Pizza", Size: "11-inch", Ingredient: "Tomato Sauce", Quantity: 90, Unit: "Gram", "Selling Price": 620, Packaging: 25 },
+      { "Recipe Name": "Katsu Curry", Category: "Mains", Size: "", Ingredient: "Chicken", Quantity: 220, Unit: "Gram", "Selling Price": 640, Packaging: 20 },
+      { "Recipe Name": "Katsu Curry", Category: "Mains", Size: "", Ingredient: "Curry Sauce", Quantity: 150, Unit: "Gram", "Selling Price": 640, Packaging: 20 },
+    ],
     parseRow: (row, n) => {
       const recipe_name = toText(pick(row, ["Recipe Name", "Recipe", "Name"]));
       if (!recipe_name) return { error: `Row ${n}: recipe name is required` };
@@ -238,6 +266,8 @@ export function recipeImportConfig({
         },
       };
     },
+    preview: async (mode, rows) =>
+      previewRecipes(mode, rows, await recipesRepo.list(), await materialsRepo.list(), false),
     run: async (mode, rows) => {
       const summary = await recipesRepo.importRecipes(mode, rows, userId, false, brand);
       await queryClient.invalidateQueries({ queryKey: ["recipes"] });

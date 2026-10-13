@@ -19,7 +19,7 @@ import type { ImportConfig } from "@/lib/import/importTypes";
 import { materialsImportConfig, yieldImportConfig, recipeImportConfig } from "./importConfigs";
 
 /** Only the format-preview fields of a config (no generic T → no variance issues). */
-type PreviewConfig = Pick<ImportConfig<unknown>, "columns" | "sample">;
+type PreviewConfig = Pick<ImportConfig<unknown>, "columns" | "sampleRows">;
 
 type Section = "materials" | "prep" | "yield" | "recipes";
 
@@ -171,9 +171,9 @@ function SectionCard({
  *  8-column table would otherwise force the whole page to scroll sideways), and the
  *  spreadsheet-shaped table from `sm` up. */
 function FormatPreview({ config }: { config: PreviewConfig }) {
-  const sample = config.sample as Record<string, unknown>;
+  const sample = config.sampleRows[0] as Record<string, unknown>;
   const rows = config.columns.map((c) => {
-    const v = sample[c.label];
+    const v = sample?.[c.label];
     return {
       label: c.label,
       required: c.required,

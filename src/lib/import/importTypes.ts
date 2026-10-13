@@ -20,16 +20,61 @@ export interface ImportColumn {
 
 export type RawRow = Record<string, unknown>;
 
+/** A parsed record together with the spreadsheet row it came from. */
+export interface ParsedRow<T> {
+  row: number;
+  value: T;
+}
+
+/** What a single file row will do when imported. */
+export type ImportRowStatus = "new" | "update" | "unchanged" | "skip" | "error";
+
+export interface ImportPreviewRow {
+  /** Spreadsheet row number (the header is row 1). */
+  row: number;
+  status: ImportRowStatus;
+  /** What the row refers to — "Onion", "Tomato Sauce → Tomato". */
+  label: string;
+  /** The values as the system read them, for the preview table. */
+  values: Record<string, string | number | null>;
+  /** Why it errored, or why it will be skipped. */
+  message?: string;
+}
+
+/** The full dry-run: nothing is written until the user approves it. */
+export interface ImportPreview {
+  rows: ImportPreviewRow[];
+  counts: Record<ImportRowStatus, number>;
+  /** Entity roll-up for multi-row types — "3 preps", "14 ingredient lines". */
+  groups?: { label: string; count: number }[];
+  /** Non-blocking notices, e.g. ingredients that will be created without a price. */
+  warnings: string[];
+}
+
+export const emptyCounts = (): Record<ImportRowStatus, number> => ({
+  new: 0,
+  update: 0,
+  unchanged: 0,
+  skip: 0,
+  error: 0,
+});
+
 export interface ImportConfig<T> {
   title: string;
   /** Expected columns — drives the template + the preview header hint. */
   columns: ImportColumn[];
   /** Validate + map one raw row to a typed record (rowNumber is 1-based incl. header). */
   parseRow: (row: RawRow, rowNumber: number) => { value: T } | { error: string };
+  /**
+   * Dry run: what WOULD happen, checked against current data. Called before the
+   * user approves the import; must not write anything.
+   */
+  preview: (mode: ImportMode, rows: ParsedRow<T>[]) => Promise<ImportPreview>;
   /** Persist the records in the chosen mode; returns a summary. */
   run: (mode: ImportMode, rows: T[]) => Promise<ImportSummary>;
-  /** A representative sample row for the downloadable template. */
-  sample: RawRow;
+  /** Representative sample rows for the downloadable template (first one is also
+   *  the single-row example shown on the Import Data cards). */
+  sampleRows: RawRow[];
   /** Which modes are offered (default all three). */
   modes?: ImportMode[];
 }
