@@ -25,6 +25,7 @@ import { useUpdateUser } from "@/features/users/hooks";
 import { useWipeCatalog } from "./adminHooks";
 import { CHARACTER_AVATARS } from "./presetAvatars";
 import { ContactDetailsForm } from "./ContactDetailsForm";
+import { McpConnectPanel } from "./McpConnectPanel";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import { updateOwnProfile } from "@/lib/supabase/profile";
 
@@ -145,6 +146,7 @@ export function ProfilePage() {
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="password">Password</TabsTrigger>
+          <TabsTrigger value="assistant">AI Assistant</TabsTrigger>
           {isSuperAdmin && <TabsTrigger value="contact">Contact Page</TabsTrigger>}
         </TabsList>
 
@@ -269,6 +271,11 @@ export function ProfilePage() {
               </Button>
             </div>
           </Card>
+        </TabsContent>
+
+        {/* ── AI assistant (MCP) — connection details, per person ─────── */}
+        <TabsContent value="assistant">
+          <McpConnectPanel />
         </TabsContent>
 
         {/* ── Contact Page (super admin only) ─────────────────────────── */}
