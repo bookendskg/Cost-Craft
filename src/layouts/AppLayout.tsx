@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   ChevronLeft,
@@ -20,7 +20,7 @@ import { useUsers } from "@/features/users/hooks";
 import { Button } from "@/components/ui/button";
 import { SiteFooter } from "@/components/SiteFooter";
 import { useDashboardBrand, applyBrand, brandBgClass, brandAccentText, brandWordmark } from "@/features/dashboard/brandTheme";
-import { BrandFilter } from "@/features/dashboard/BrandFilter";
+import { BrandFilter, BrandSelect } from "@/features/dashboard/BrandFilter";
 import { ProfileMenu } from "./HeaderControls";
 import { useBrands } from "@/features/brands/hooks";
 import { useRoles } from "@/features/roles/hooks";
@@ -38,8 +38,19 @@ export function AppLayout() {
   // route guards see custom-role capabilities on the same render the roles load.
   primeRoleCache(roleRecords);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
   const collapsed = usePrefs((s) => s.sidebarCollapsed);
   const toggleSidebar = usePrefs((s) => s.toggleSidebar);
+  /** Mobile drawer: choose a brand, then close the drawer once the Select has shut. */
+  const pickBrandAndClose = (next: string) => {
+    setBrand(next);
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setMobileOpen(false), 150);
+  };
+
   const location = useLocation();
   const isAdmin = user?.role === "admin";
   const { data: allUsers = [] } = useUsers();
@@ -172,7 +183,11 @@ export function AppLayout() {
           >
             <div className="shrink-0 border-b p-3">
               <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Brand</p>
-              <BrandFilter value={brand} onChange={(b) => setBrand(b)} className="w-full" />
+              {/* Picking a brand is a complete action, so the drawer closes with it —
+                  same as tapping a nav link. The close waits a beat: unmounting the
+                  drawer while the Select is still closing can leave the page with
+                  pointer-events disabled, i.e. untappable. */}
+              <BrandSelect value={brand} onChange={pickBrandAndClose} />
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">{sidebar(false)}</div>
           </aside>
