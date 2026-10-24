@@ -23,6 +23,7 @@ export type Capability =
   | "packaging.view"
   | "packaging.manage"
   // yield management (R&D)
+  | "yield.view"
   | "yield.manage"
   // operational wastage
   | "wastage.create"
@@ -58,6 +59,7 @@ export const MATRIX: Record<SystemRole, Capability[]> = {
     "material.edit",
     "packaging.view",
     "packaging.manage",
+    "yield.view",
     "yield.manage",
     "wastage.create",
     "recipe.create",
@@ -79,6 +81,7 @@ export const MATRIX: Record<SystemRole, Capability[]> = {
     "material.edit",
     "packaging.view",
     "packaging.manage",
+    "yield.view",
     "yield.manage",
     "wastage.create",
     "recipe.create",
@@ -99,6 +102,7 @@ export const MATRIX: Record<SystemRole, Capability[]> = {
     "material.edit",
     "packaging.view",
     "packaging.manage",
+    "yield.view",
     "yield.manage",
     "wastage.create",
     "recipe.create",
@@ -114,6 +118,7 @@ export const MATRIX: Record<SystemRole, Capability[]> = {
   head_chef: [
     "material.view",
     "packaging.view",
+    "yield.view",
     "yield.manage",
     "wastage.create",
     "recipe.create",
@@ -129,15 +134,25 @@ export const MATRIX: Record<SystemRole, Capability[]> = {
   viewer: [],
 };
 
+/** Managing something implies being able to see it, so a role granted only the
+ *  "manage" half still opens the page. This also keeps the app working while a
+ *  newly added "view" capability hasn't been seeded into role_capabilities yet. */
+const IMPLIED_BY: Partial<Record<Capability, Capability>> = {
+  "yield.view": "yield.manage",
+  "packaging.view": "packaging.manage",
+};
+
 export function can(role: Role | undefined, cap: Capability): boolean {
   if (!role) return false;
   if (role === "super_admin") return true; // Super Admin can do anything.
   // Prefer live capabilities from the role cache (built-ins + custom roles). Before
   // the cache is primed it returns null, so we fall back to the built-in matrix for
   // the six system roles (custom roles simply get nothing until the cache loads).
+  const implied = IMPLIED_BY[cap];
   const live = capabilitiesForRole(role);
-  if (live) return live.has(cap);
-  return (MATRIX[role as SystemRole] ?? []).includes(cap);
+  if (live) return live.has(cap) || (!!implied && live.has(implied));
+  const matrix = MATRIX[role as SystemRole] ?? [];
+  return matrix.includes(cap) || (!!implied && matrix.includes(implied));
 }
 
 /** The protected top-level role. Only a Super Admin manages roles/permissions. */
@@ -159,7 +174,7 @@ export function roleCapabilities(role: Role): Capability[] {
 /** Capabilities grouped by area — drives the Roles & Permissions checkboxes. */
 export const CAPABILITY_GROUPS: { label: string; capabilities: Capability[] }[] = [
   { label: "Recipes", capabilities: ["recipe.viewAll", "recipe.create", "recipe.editAll", "recipe.duplicate", "recipe.submit", "recipe.approve", "recipe.delete"] },
-  { label: "Raw Materials & Yield", capabilities: ["material.view", "material.edit", "yield.manage"] },
+  { label: "Raw Materials & Yield", capabilities: ["material.view", "material.edit", "yield.view", "yield.manage"] },
   { label: "Packaging", capabilities: ["packaging.view", "packaging.manage"] },
   { label: "Operations", capabilities: ["wastage.create", "report.excel", "viewer.assign", "audit.view"] },
   { label: "Settings", capabilities: ["settings.manage"] },
@@ -187,6 +202,7 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
   "material.edit": "Edit raw materials / prices",
   "packaging.view": "View packaging",
   "packaging.manage": "Manage packaging",
+  "yield.view": "View yields",
   "yield.manage": "Manage yields",
   "wastage.create": "Record wastage",
   "recipe.create": "Create recipes",

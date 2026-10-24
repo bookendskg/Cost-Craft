@@ -46,7 +46,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/packaging", label: "Packaging", icon: Package, group: "Catalog", roles: ["admin", "editor", "head_chef"], cap: "packaging.view" },
   { to: "/recipes", label: "Recipes", icon: BookOpen, group: "Catalog", roles: ["admin", "editor", "head_chef", "chef", "viewer"], cap: "recipe.viewAll" },
   { to: "/prep", label: "In-House Prep", icon: ChefHat, group: "Catalog", roles: ["admin", "editor", "head_chef"], cap: "recipe.editAll" },
-  { to: "/yield", label: "Yield Management", icon: Sprout, group: "Catalog", roles: ["admin", "editor", "head_chef"], cap: "yield.manage" },
+  { to: "/yield", label: "Yield Management", icon: Sprout, group: "Catalog", roles: ["admin", "editor", "head_chef"], cap: "yield.view" },
   // Wastage Management — Super Admins, plus any user a Super Admin grants can_manage_wastage.
   { to: "/wastage", label: "Wastage Management", icon: Trash2, group: "Operations", roles: ["super_admin"], grant: canManageWastage },
   { to: "/approvals", label: "Approvals", icon: CheckCircle2, group: "Operations", roles: ["admin"], cap: "recipe.approve" },

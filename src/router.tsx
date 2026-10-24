@@ -154,7 +154,7 @@ export const router = createBrowserRouter([
       {
         path: "yield",
         element: (
-          <RequireRole roles={["admin", "editor", "head_chef"]} cap="yield.manage">
+          <RequireRole roles={["admin", "editor", "head_chef"]} cap="yield.view">
             <YieldPage />
           </RequireRole>
         ),
