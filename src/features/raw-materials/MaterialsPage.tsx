@@ -5,6 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  ChefHat,
   Columns3,
   Download,
   MoreVertical,
@@ -17,6 +18,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { Pagination } from "@/components/Pagination";
+import { RecipesUsingDialog } from "@/components/RecipesUsingDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -100,6 +102,7 @@ export function MaterialsPage() {
 
   const navigate = useNavigate();
   const [historyFor, setHistoryFor] = useState<RawMaterial | null>(null);
+  const [recipesFor, setRecipesFor] = useState<RawMaterial | null>(null);
   const [deleting, setDeleting] = useState<RawMaterial | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkReactivateOpen, setBulkReactivateOpen] = useState(false);
@@ -220,6 +223,9 @@ export function MaterialsPage() {
       <DropdownMenuContent align="end">
         {canEdit && <DropdownMenuItem onClick={() => openEdit(m)}>Edit</DropdownMenuItem>}
         <DropdownMenuItem onClick={() => setHistoryFor(m)}>Price History</DropdownMenuItem>
+      <DropdownMenuItem onClick={() => setRecipesFor(m)}>
+        <ChefHat className="h-4 w-4" /> Recipes Using This
+      </DropdownMenuItem>
         {canEdit && m.status !== "active" && (
           <DropdownMenuItem
             onClick={async () => {
@@ -486,6 +492,11 @@ export function MaterialsPage() {
         material={historyFor}
         open={!!historyFor}
         onOpenChange={(o) => !o && setHistoryFor(null)}
+      />
+      <RecipesUsingDialog
+        ingredientId={recipesFor?.id ?? null}
+        ingredientName={recipesFor?.ingredient_name ?? null}
+        onOpenChange={(o) => !o && setRecipesFor(null)}
       />
       <ConfirmDialog
         open={!!deleting}

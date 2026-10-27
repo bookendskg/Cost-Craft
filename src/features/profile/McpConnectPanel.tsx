@@ -24,17 +24,30 @@ import { createToken, hostedUrl, listTokens, revokeToken, type McpToken } from "
 
 /** What each role's assistant may do — mirrors src/lib/auth/permissions.ts. */
 function abilities(role: string): { can: string[]; cannot: string[] } {
-  const read = "Read ingredients, recipes, yields and packaging";
+  const read = "Read ingredients, recipes, yields, packaging and wastage";
+  const catalogue = "Create and edit recipes, preps, yields and packaging, and record wastage";
+  const materials = "Add raw materials, rename them, and change their prices, units and categories";
+  const noDeletes = "Delete anything, or touch reports and approvals — those stay in the app";
   if (role === "super_admin") {
     return {
-      can: [read, "Update prices and create ingredients, yields and imports", "Read the Activity Log and revert any change"],
-      cannot: [],
+      can: [read, materials, catalogue, "Read the Activity Log and revert any change"],
+      cannot: [noDeletes],
     };
   }
   if (role === "admin" || role === "editor") {
     return {
-      can: [read, "Update prices and create ingredients, yields and imports"],
-      cannot: ["Read the Activity Log or revert changes (Super Admin only)"],
+      can: [read, materials, catalogue],
+      cannot: [noDeletes, "Read the Activity Log or revert changes (Super Admin only)"],
+    };
+  }
+  if (role === "head_chef") {
+    return {
+      can: [read, catalogue],
+      cannot: [
+        "Change ingredient prices or rename raw materials (Admin or Editor only)",
+        noDeletes,
+        "Read the Activity Log or revert changes (Super Admin only)",
+      ],
     };
   }
   return {

@@ -50,11 +50,28 @@ of a pairing code. Handy for debugging; the pairing flow is what users get.
 node ~/.kostkraft/kostkraft-mcp.mjs tools   # the catalogue, no sign-in needed
 ```
 
-**Reading** — `whoami`, `list_ingredients`, `get_ingredient`, `list_recipes`,
-`get_recipe`, `list_yields`, `list_packaging`, `list_activity`.
+**Reading** — `whoami`, `list_brands_and_outlets`, `list_ingredients`,
+`get_ingredient`, `list_recipes`, `get_recipe`, `list_yields`, `list_packaging`,
+`list_wastage`, `list_activity`.
 
-**Writing** — `update_ingredient_price`, `create_ingredient`, `create_yield`,
-`apply_ingredient_import`, `apply_yield_import`, `revert_change`.
+**Raw materials & yields** — `create_ingredient`, `update_ingredient` (rename,
+category, unit, notes), `update_ingredient_price`, `create_yield`, `update_yield`,
+`apply_ingredient_import`, `apply_yield_import`.
+
+**Recipes, packaging & operations** — `create_recipe`, `update_recipe`,
+`add_recipe_ingredients`, `set_recipe_price`, `set_prep_cooked_weight`,
+`create_packaging`, `update_packaging`, `record_wastage`.
+
+**Super Admin** — `list_activity`, `revert_change`.
+
+Reports and approvals are deliberately absent, and nothing can be deleted through
+MCP — an assistant can add and correct, never destroy.
+
+**Renames are reported, not repaired.** A recipe line stores its cut/prep as a label
+("Chopped"), derived from the yield record's name minus the ingredient's name. So
+renaming either side can leave a line pointing at a label that no longer exists,
+which quietly costs it without the yield adjustment. `update_ingredient` and
+`update_yield` list every affected recipe in their reply so it can be put right.
 
 **Bulk changes are two steps.** `preview_ingredient_import` / `preview_yield_import`
 show exactly what would happen — new, updated, unchanged, rejected — and write
@@ -65,7 +82,8 @@ Example conversation:
 
 > "Onion is now ₹120 a kilo, and chopped onion yields 66%."
 
-The assistant calls `update_ingredient_price`, then `create_yield`. Every recipe
+The assistant calls `update_ingredient_price`, then `create_yield` (or
+`update_yield`, if that preparation already has a record). Every recipe
 using onion is re-costed, price history records the move, and the Activity Log shows
 both changes under your name.
 

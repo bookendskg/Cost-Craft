@@ -28,17 +28,21 @@ import {
 } from "@/lib/data";
 import { DEPARTMENTS, WASTAGE_TYPES, type Department, type WastageType } from "@/lib/data/types";
 import { canConvert } from "@/lib/units";
-import { actor, defineTool, fail, findMaterial, findRecipe, norm, text, type ToolDef } from "./toolkit.js";
+import {
+  CATALOG_EDITORS,
+  actor,
+  defineTool,
+  fail,
+  findMaterial,
+  findRecipe,
+  norm,
+  requireRole,
+  text,
+  type ToolDef,
+} from "./toolkit.js";
 
-/** Roles allowed to edit the catalogue, mirroring can_edit_recipes() in the database. */
-const CATALOG_EDITORS = ["super_admin", "admin", "editor", "head_chef"];
 /** packaging_items writes are admin-only in the database (0025). */
 const PACKAGING_EDITORS = ["super_admin", "admin"];
-
-function requireRole(allowed: string[], what: string): string | null {
-  if (allowed.includes(actor.role)) return null;
-  return `Your role (${actor.role}) can't ${what}. Ask an Admin.`;
-}
 
 // ── Ingredient / sub-recipe line resolution ─────────────────────────────────
 const lineSchema = z.object({

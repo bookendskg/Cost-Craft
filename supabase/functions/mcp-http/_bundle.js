@@ -54616,6 +54616,13 @@ var fail2 = (message) => ({
   isError: true
 });
 var norm8 = (s) => s.trim().toLowerCase();
+var CATALOG_EDITORS = ["super_admin", "admin", "editor", "head_chef"];
+var INGREDIENT_EDITORS = ["super_admin", "admin", "editor"];
+var YIELD_EDITORS = CATALOG_EDITORS;
+function requireRole(allowed, what) {
+  if (allowed.includes(actor.role)) return null;
+  return `Your role (${actor.role}) can't ${what}. Ask an Admin.`;
+}
 async function findMaterial2(nameOrId) {
   const all = await materialsRepo2.list();
   return all.find((m) => m.id === nameOrId) ?? all.find((m) => norm8(m.ingredient_name) === norm8(nameOrId)) ?? all.find((m) => norm8(m.ingredient_name).includes(norm8(nameOrId))) ?? null;
@@ -54623,6 +54630,51 @@ async function findMaterial2(nameOrId) {
 async function findRecipe(nameOrId) {
   const all = await recipesRepo2.list();
   return all.find((r) => r.id === nameOrId) ?? all.find((r) => norm8(r.recipe_name) === norm8(nameOrId)) ?? all.find((r) => norm8(r.recipe_name).includes(norm8(nameOrId))) ?? null;
+}
+async function resolveMaterial(nameOrId) {
+  const all = await materialsRepo2.list();
+  const exact = all.find((m) => m.id === nameOrId) ?? all.find((m) => norm8(m.ingredient_name) === norm8(nameOrId));
+  if (exact) return { material: exact };
+  const partial = all.filter((m) => norm8(m.ingredient_name).includes(norm8(nameOrId)));
+  if (partial.length === 1) return { material: partial[0] };
+  if (partial.length > 1) {
+    const names = partial.slice(0, 8).map((m) => `"${m.ingredient_name}"`).join(", ");
+    return {
+      error: `"${nameOrId}" matches ${partial.length} ingredients (${names}). Use the exact name.`
+    };
+  }
+  return { error: `No ingredient matches "${nameOrId}".` };
+}
+function resolveYield(rows, ingredientName, selector) {
+  const describe = () => rows.slice(0, 8).map((y) => `"${y.name || ingredientName}" (${y.effective_from})`).join(", ");
+  if (!rows.length) return { error: `${ingredientName} has no yield records yet. Use create_yield.` };
+  if (!selector) {
+    if (rows.length === 1) return { record: rows[0] };
+    return { error: `${ingredientName} has ${rows.length} yield records (${describe()}). Say which one.` };
+  }
+  const byId = rows.find((y) => y.id === selector);
+  if (byId) return { record: byId };
+  const exact = rows.filter((y) => norm8(y.name ?? "") === norm8(selector) || y.effective_from === selector);
+  if (exact.length === 1) return { record: exact[0] };
+  if (exact.length > 1) return { error: `${exact.length} yield records match "${selector}" (${describe()}). Use its id.` };
+  const partial = rows.filter((y) => norm8(y.name ?? "").includes(norm8(selector)));
+  if (partial.length === 1) return { record: partial[0] };
+  if (partial.length > 1) return { error: `"${selector}" matches ${partial.length} yield records (${describe()}). Use the exact name.` };
+  return { error: `No yield record of ${ingredientName} matches "${selector}". It has: ${describe()}.` };
+}
+async function cutLabelImpact(before, after) {
+  const [lines, recipes2] = await Promise.all([recipesRepo2.allIngredients(), recipesRepo2.list()]);
+  const nameById = new Map(recipes2.map((r) => [r.id, r.recipe_name]));
+  const broken = [];
+  for (const line of lines) {
+    if (line.component_type === "recipe" || line.ingredient_id !== before.material.id || !line.cut_type) continue;
+    const had = cutYieldFor(before.material, line.cut_type, before.yields);
+    const has = cutYieldFor(after.material, line.cut_type, after.yields);
+    if (had !== null && has === null) {
+      broken.push({ recipe: nameById.get(line.recipe_id) ?? line.recipe_id, cut: line.cut_type });
+    }
+  }
+  return broken;
 }
 var materialView = (m) => ({
   id: m.id,
@@ -54659,12 +54711,7 @@ function materialInput(name, category, type, price) {
 }
 
 // mcp/src/catalogTools.ts
-var CATALOG_EDITORS = ["super_admin", "admin", "editor", "head_chef"];
 var PACKAGING_EDITORS = ["super_admin", "admin"];
-function requireRole(allowed, what) {
-  if (allowed.includes(actor.role)) return null;
-  return `Your role (${actor.role}) can't ${what}. Ask an Admin.`;
-}
 var lineSchema = external_exports.object({
   ingredient: external_exports.string().describe("Ingredient or in-house prep name (or id)"),
   quantity: external_exports.number().positive(),
@@ -55237,8 +55284,11 @@ var CORE_TOOLS = [
       }
     },
     async ({ ingredient, price }) => {
-      const m = await findMaterial2(ingredient);
-      if (!m) return fail2(`No ingredient matches "${ingredient}".`);
+      const denied = requireRole(INGREDIENT_EDITORS, "change ingredient prices");
+      if (denied) return fail2(denied);
+      const found = await resolveMaterial(ingredient);
+      if ("error" in found) return fail2(found.error);
+      const m = found.material;
       const updated = await materialsRepo2.update(
         m.id,
         {
@@ -55246,7 +55296,7 @@ var CORE_TOOLS = [
           category: m.category,
           notes: m.notes,
           purchase_price: price,
-          purchase_quantity: 1,
+          purchase_quantity: m.purchase_quantity,
           purchase_unit: m.purchase_unit,
           base_unit: m.base_unit
         },
@@ -55272,6 +55322,8 @@ var CORE_TOOLS = [
       }
     },
     async ({ name, category, measurement, price }) => {
+      const denied = requireRole(INGREDIENT_EDITORS, "create raw materials");
+      if (denied) return fail2(denied);
       const existing = await findMaterial2(name);
       if (existing && norm8(existing.ingredient_name) === norm8(name)) {
         return fail2(`"${name}" already exists \u2014 use update_ingredient_price instead.`);
@@ -55281,6 +55333,64 @@ var CORE_TOOLS = [
         actor.userId
       );
       return text({ created: materialView(created) });
+    }
+  ),
+  defineTool(
+    "update_ingredient",
+    {
+      title: "Update an ingredient",
+      description: "Rename a raw material, or change its category, unit, price or notes. Only the fields you pass change. A rename can orphan the cut/prep label on recipe lines \u2014 the reply lists any that break.",
+      inputSchema: {
+        ingredient: external_exports.string().describe("Current ingredient name or id"),
+        name: external_exports.string().optional().describe("New name"),
+        category: external_exports.string().optional(),
+        measurement: external_exports.enum(["weight", "liquid", "count"]).optional().describe("Changes the unit: weight \u2192 per 1 kg, liquid \u2192 per 1 litre, count \u2192 per 1 piece"),
+        price: external_exports.number().min(0).nullable().optional().describe("Price per 1 kg / 1 litre / 1 piece"),
+        notes: external_exports.string().nullable().optional()
+      }
+    },
+    async ({ ingredient, name, category, measurement, price, notes }) => {
+      const denied = requireRole(INGREDIENT_EDITORS, "edit raw materials");
+      if (denied) return fail2(denied);
+      if (name === void 0 && category === void 0 && measurement === void 0 && price === void 0 && notes === void 0) {
+        return fail2("Nothing to change \u2014 pass at least one of name, category, measurement, price or notes.");
+      }
+      const found = await resolveMaterial(ingredient);
+      if ("error" in found) return fail2(found.error);
+      const m = found.material;
+      const renamed = !!name && norm8(name) !== norm8(m.ingredient_name);
+      const was = { name: m.ingredient_name, category: m.category, price: m.purchase_price, per: `1 ${m.purchase_unit}` };
+      const before = { id: m.id, ingredient_name: m.ingredient_name };
+      const yields = (await yieldsRepo2.listForIngredient(m.id)).map((y) => ({ ...y }));
+      const units = measurement ? materialInput(m.ingredient_name, m.category, measurement, null) : null;
+      let updated;
+      try {
+        updated = await materialsRepo2.update(
+          m.id,
+          {
+            ingredient_name: name?.trim() || m.ingredient_name,
+            category: category?.trim() || m.category,
+            notes: notes === void 0 ? m.notes : notes,
+            purchase_price: price === void 0 ? m.purchase_price : price,
+            purchase_quantity: units ? 1 : m.purchase_quantity,
+            purchase_unit: units?.purchase_unit ?? m.purchase_unit,
+            base_unit: units?.base_unit ?? m.base_unit
+          },
+          actor.userId
+        );
+      } catch (e) {
+        return fail2(e instanceof Error ? e.message : "Could not update that ingredient.");
+      }
+      const broken = renamed ? await cutLabelImpact({ material: before, yields }, { material: updated, yields }) : [];
+      return text({
+        updated: materialView(updated),
+        was,
+        ...broken.length ? {
+          warning: `${broken.length} recipe line(s) name a cut/prep that no longer exists after the rename, so they now cost without the yield adjustment. Re-pick the cut on each.`,
+          cut_labels_affected: broken
+        } : {},
+        note: "Recipe costs were recalculated. A Super Admin can revert this from the Activity Log."
+      });
     }
   ),
   defineTool(
@@ -55388,8 +55498,11 @@ var CORE_TOOLS = [
       }
     },
     async ({ ingredient, name, purchase_cost, wastage_quantity, effective_from }) => {
-      const m = await findMaterial2(ingredient);
-      if (!m) return fail2(`No ingredient matches "${ingredient}".`);
+      const denied = requireRole(YIELD_EDITORS, "manage yields");
+      if (denied) return fail2(denied);
+      const found = await resolveMaterial(ingredient);
+      if ("error" in found) return fail2(found.error);
+      const m = found.material;
       const created = await yieldsRepo2.create(
         {
           name,
@@ -55410,6 +55523,85 @@ var CORE_TOOLS = [
           yield_pct: created.yield_percentage,
           usable: created.usable_quantity
         }
+      });
+    }
+  ),
+  defineTool(
+    "update_yield",
+    {
+      title: "Update a yield record",
+      description: "Correct or rename one of an ingredient's yield records. Only the fields you pass change. The record's name decides the cut/prep label recipes pick, so a rename can orphan recipe lines \u2014 the reply lists any that break.",
+      inputSchema: {
+        ingredient: external_exports.string().describe("Ingredient name or id"),
+        yield_record: external_exports.string().optional().describe('Which record: its name ("Chopped Onion"), its effective date or its id. Optional when the ingredient has only one.'),
+        name: external_exports.string().optional().describe("New preparation name"),
+        purchase_cost: external_exports.number().positive().optional().describe("Cost of 1 kg / 1 litre / 1 piece"),
+        wastage_quantity: external_exports.number().optional().describe("Lost (positive) or gained (negative) in the base unit"),
+        effective_from: external_exports.string().optional().describe("YYYY-MM-DD"),
+        notes: external_exports.string().nullable().optional()
+      }
+    },
+    async ({ ingredient, yield_record, name, purchase_cost, wastage_quantity, effective_from, notes }) => {
+      const denied = requireRole(YIELD_EDITORS, "manage yields");
+      if (denied) return fail2(denied);
+      if (name === void 0 && purchase_cost === void 0 && wastage_quantity === void 0 && effective_from === void 0 && notes === void 0) {
+        return fail2("Nothing to change \u2014 pass at least one of name, purchase_cost, wastage_quantity, effective_from or notes.");
+      }
+      const found = await resolveMaterial(ingredient);
+      if ("error" in found) return fail2(found.error);
+      const m = found.material;
+      const rows = await yieldsRepo2.listForIngredient(m.id);
+      const picked = resolveYield(rows, m.ingredient_name, yield_record);
+      if ("error" in picked) return fail2(picked.error);
+      const y = picked.record;
+      const renamed = name !== void 0 && norm8(name) !== norm8(y.name ?? "");
+      const was = {
+        name: y.name,
+        yield_pct: y.yield_percentage,
+        wastage_qty: y.wastage_quantity,
+        effective_from: y.effective_from
+      };
+      const before = rows.map((r) => ({ ...r }));
+      let updated;
+      try {
+        updated = await yieldsRepo2.update(
+          y.id,
+          {
+            name: name === void 0 ? y.name : name,
+            ingredient_id: y.ingredient_id,
+            purchase_cost: purchase_cost ?? y.purchase_cost,
+            purchase_quantity: y.purchase_quantity,
+            purchase_unit: y.purchase_unit,
+            wastage_quantity: wastage_quantity ?? y.wastage_quantity,
+            wastage_unit: y.wastage_unit,
+            effective_from: effective_from ?? y.effective_from,
+            notes: notes === void 0 ? y.notes : notes
+          },
+          actor.userId
+        );
+      } catch (e) {
+        return fail2(e instanceof Error ? e.message : "Could not update that yield record.");
+      }
+      const broken = renamed ? await cutLabelImpact(
+        { material: m, yields: before },
+        { material: m, yields: before.map((r) => r.id === updated.id ? { ...updated } : r) }
+      ) : [];
+      return text({
+        updated: {
+          id: updated.id,
+          name: updated.name,
+          ingredient: m.ingredient_name,
+          yield_pct: updated.yield_percentage,
+          wastage_qty: updated.wastage_quantity,
+          usable: updated.usable_quantity,
+          effective_from: updated.effective_from
+        },
+        was,
+        ...broken.length ? {
+          warning: `${broken.length} recipe line(s) name a cut/prep that no longer exists after the rename, so they now cost without the yield adjustment. Re-pick the cut on each.`,
+          cut_labels_affected: broken
+        } : {},
+        note: "Recipes using this ingredient were re-costed. A Super Admin can revert this from the Activity Log."
       });
     }
   ),

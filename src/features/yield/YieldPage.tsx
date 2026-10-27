@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   ArrowDown,
   ArrowUp,
@@ -16,6 +15,7 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/TableSkeleton";
+import { RecipesUsingDialog } from "@/components/RecipesUsingDialog";
 import { Pagination } from "@/components/Pagination";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,8 +55,6 @@ import { useSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import type { IngredientYield, RawMaterial } from "@/lib/data/types";
 import { useMaterials } from "@/features/raw-materials/hooks";
-import { useRecipes } from "@/features/recipes/hooks";
-import { useAllRecipeIngredients } from "@/features/reports/hooks";
 import { useYields, useDeleteYield, useBulkDeleteYield } from "./hooks";
 import { useUsersMap } from "@/features/users/hooks";
 import { YieldForm } from "./YieldForm";
@@ -68,12 +66,9 @@ type SortKey = "name" | "wastage" | "yield" | "cost";
 
 export function YieldPage() {
   const user = useSession((s) => s.user)!;
-  const navigate = useNavigate();
   const canEdit = can(user.role, "yield.manage");
   const { data: yields = [], isLoading } = useYields();
   const { data: materials = [] } = useMaterials();
-  const { data: recipes = [] } = useRecipes();
-  const { data: recipeIngredients = [] } = useAllRecipeIngredients();
   const deleteMut = useDeleteYield();
   const bulkDelMut = useBulkDeleteYield();
 
@@ -82,21 +77,6 @@ export function YieldPage() {
     () => [...new Set(materials.map((m) => m.category))].sort(),
     [materials],
   );
-
-  // Recipes that use a given ingredient (§6 "View recipes using ingredient").
-  const recipesUsing = useMemo(() => {
-    const recById = new Map(recipes.map((r) => [r.id, r]));
-    const map = new Map<string, { id: string; name: string }[]>();
-    for (const ri of recipeIngredients) {
-      if (ri.component_type === "recipe") continue;
-      const r = recById.get(ri.recipe_id);
-      if (!r) continue;
-      const list = map.get(ri.ingredient_id) ?? [];
-      if (!list.some((x) => x.id === r.id)) list.push({ id: r.id, name: r.recipe_name });
-      map.set(ri.ingredient_id, list);
-    }
-    return map;
-  }, [recipeIngredients, recipes]);
 
   const { map: usersMap } = useUsersMap();
   const [search, setSearch] = useState("");
@@ -491,37 +471,12 @@ export function YieldPage() {
         onConfirm={runBulkDelete}
       />
 
-      <Dialog open={!!recipesForYield} onOpenChange={(o) => !o && setRecipesForYield(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Recipes using {recipesForYield?.material?.ingredient_name ?? "this ingredient"}</DialogTitle>
-            <DialogDescription>
-              These recipes apply this ingredient's yield-adjusted cost. Editing the yield re-costs them all.
-            </DialogDescription>
-          </DialogHeader>
-          {(() => {
-            const list = recipesForYield ? recipesUsing.get(recipesForYield.ingredient_id) ?? [] : [];
-            if (list.length === 0) {
-              return <p className="py-4 text-sm text-muted-foreground">No recipes currently use this ingredient.</p>;
-            }
-            return (
-              <ul className="max-h-80 divide-y overflow-y-auto">
-                {list.map((r) => (
-                  <li key={r.id}>
-                    <button
-                      onClick={() => { navigate(`/recipes/${r.id}`); setRecipesForYield(null); }}
-                      className="flex w-full items-center gap-2 py-2.5 text-left text-sm hover:underline"
-                    >
-                      <ChefHat className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <span className="truncate">{r.name}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
+      <RecipesUsingDialog
+        ingredientId={recipesForYield?.ingredient_id ?? null}
+        ingredientName={recipesForYield?.material?.ingredient_name ?? null}
+        description="These recipes apply this ingredient's yield-adjusted cost. Editing the yield re-costs them all."
+        onOpenChange={(o) => !o && setRecipesForYield(null)}
+      />
     </>
   );
 }
