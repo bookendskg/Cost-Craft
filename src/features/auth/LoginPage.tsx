@@ -158,13 +158,14 @@ export function LoginPage() {
             </Button>
           </form>
 
-          {/* Supabase mode: offer account creation (mock mode uses demo accounts). */}
+          {/* Accounts are created by an admin — self sign-up is closed (see SignUpPage). */}
           {isSupabaseConfigured && (
             <p className="mt-6 text-center text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link to="/signup" className="font-medium text-primary hover:underline">
-                Request access
-              </Link>
+              Accounts are created by an administrator.{" "}
+              <Link to="/contact" className="font-medium text-primary hover:underline">
+                Get in touch
+              </Link>{" "}
+              if you need access.
             </p>
           )}
 

@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
@@ -69,10 +68,8 @@ export function ContactPage() {
 
       {isSupabaseConfigured && (
         <p className="mt-10 text-center text-sm text-muted-foreground">
-          Need an account?{" "}
-          <Link to="/signup" className="font-medium text-primary hover:underline">
-            Request access
-          </Link>
+          Need an account? An administrator creates it for you — use the form above and
+          we&apos;ll set one up.
         </p>
       )}
     </PublicPage>

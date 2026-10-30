@@ -75,9 +75,13 @@ export const useSession = create<SessionState>()(
     }),
     {
       name: "rcms.session",
-      // In Supabase mode the source of truth is supabase.auth; persisting `user`
-      // is just a first-paint optimisation re-validated by onAuthStateChange.
-      partialize: (s) => ({ user: s.user }),
+      // In Supabase mode the source of truth is supabase.auth, so nothing is kept
+      // here: a persisted `user` was only a first-paint optimisation, and one that
+      // could be hand-edited in devtools to flash an admin-looking UI (it granted
+      // no data access — every request is still judged by RLS on the signed JWT —
+      // but there is no reason to render it at all). Mock mode has no auth server,
+      // so it keeps the session.
+      partialize: (s) => (isSupabaseConfigured ? {} : { user: s.user }),
     },
   ),
 );

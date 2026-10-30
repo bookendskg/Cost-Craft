@@ -175,6 +175,46 @@ export function SignUpPage() {
     }
   };
 
+  // Self sign-up is CLOSED on the live app: an administrator creates accounts from
+  // User Management (which the create-user Edge Function made possible), and
+  // Supabase itself rejects signUp with "Signups not allowed for this instance".
+  // The form stays for local development against the mock layer, where there is no
+  // admin to create anyone.
+  if (isSupabaseConfigured) {
+    return (
+      <div className="flex min-h-screen flex-col items-center bg-muted/40 p-4">
+        <Card className="my-auto w-full max-w-sm">
+          <CardHeader className="items-center text-center">
+            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+              <ShieldCheck className="h-7 w-7 text-accent" />
+            </div>
+            <CardTitle>Accounts are created for you</CardTitle>
+            <CardDescription>
+              KostKraft isn't open to sign-ups. An administrator creates your account and sets
+              what you can see.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-center text-sm text-muted-foreground">
+            <p>
+              Already have one?{" "}
+              <Link to="/login" className="font-medium text-primary hover:underline">
+                Sign in
+              </Link>
+            </p>
+            <p>
+              Need access?{" "}
+              <Link to="/contact" className="font-medium text-primary hover:underline">
+                Get in touch
+              </Link>
+              .
+            </p>
+          </CardContent>
+        </Card>
+        <SiteFooter />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center bg-muted/40 p-4">
       <Card className="my-auto w-full max-w-sm">
